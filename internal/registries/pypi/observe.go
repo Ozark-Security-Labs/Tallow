@@ -33,6 +33,9 @@ func VerifyFileBytes(artifactID string, claims map[string]string, b []byte) (Ver
 		if blake := strings.ToLower(strings.TrimSpace(claims["blake2b_256"])); blake != "" {
 			registry["blake2b_256"] = blake
 			local["blake2b_256"] = blake2b256Hex(b)
+			if local["blake2b_256"] != blake {
+				return Verification{}, registry, local, &digest.MismatchError{Algorithm: "blake2b_256", Expected: blake, Actual: local["blake2b_256"], Source: "pypi-json-api", ArtifactID: artifactID}
+			}
 		}
 		return Verification{Status: Verified, Source: "pypi-json-api", Trust: "registry_sha256"}, registry, local, nil
 	}

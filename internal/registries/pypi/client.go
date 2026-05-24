@@ -118,7 +118,7 @@ func (c Client) validateArtifactURL(raw string) error {
 		allowed = append(allowed, "files.pythonhosted.org")
 	}
 	for _, h := range allowed {
-		if strings.EqualFold(u.Host, h) || strings.EqualFold(u.Hostname(), h) {
+		if strings.EqualFold(u.Host, h) || (strings.EqualFold(u.Hostname(), h) && (u.Port() == "" || u.Port() == "443")) {
 			return nil
 		}
 	}
