@@ -48,3 +48,5 @@ Findings with missing evidence, unknown severity, unknown category, overlong sni
 ## Evidence references
 
 Analyzer finding output uses bounded `EvidenceRef` objects sorted deterministically. Absolute paths, traversal segments, and unredacted excerpt ambiguity are rejected.
+
+- #38 EvidenceRef schema rejects absolute paths and requires excerpt redaction status.
