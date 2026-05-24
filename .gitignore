@@ -1,0 +1,28 @@
+# local config/secrets
+.env
+*.env
+tallow.yml
+
+# build outputs
+bin/
+dist/
+build/
+coverage/
+
+# Go
+*.test
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+web/dist/
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/

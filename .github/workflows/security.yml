@@ -1,0 +1,14 @@
+name: Security
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  documentation-security-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify security docs
+        run: test -f SECURITY.md && test -f docs/security/threat-model.md

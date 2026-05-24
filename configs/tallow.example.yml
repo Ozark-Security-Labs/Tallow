@@ -1,0 +1,17 @@
+server:
+  listen: "127.0.0.1:8844"
+database:
+  url_env: TALLOW_DATABASE_URL
+nats:
+  url: "nats://localhost:4222"
+storage:
+  backend: filesystem
+  path: ./var/artifacts
+analysis:
+  deterministic: true
+  llm_enabled: false
+notifications:
+  email:
+    enabled: false
+  teams:
+    enabled: false
