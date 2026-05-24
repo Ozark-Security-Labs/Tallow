@@ -22,3 +22,7 @@ LLM output should be structured JSON containing:
 - CLI providers: existing `codex`, `claude`, `opencode`, or custom commands.
 
 Store provider, model, prompt template version, redaction policy, input digest, and output for auditability.
+
+## Foundation status
+
+LLM features are not implemented in Foundation. Future LLM output is narrative enrichment only; deterministic scoring owns canonical severity and LLM inputs must be bounded, redacted evidence bundles after prompt-injection defenses.

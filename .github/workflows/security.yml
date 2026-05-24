@@ -6,9 +6,9 @@ on:
 permissions:
   contents: read
 jobs:
-  documentation-security-smoke:
+  repository-self-protection:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify security docs
-        run: test -f SECURITY.md && test -f docs/security/threat-model.md
+      - run: scripts/check-security-docs.sh
+      - run: docker compose config

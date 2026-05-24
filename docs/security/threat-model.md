@@ -38,3 +38,7 @@ Tallow ingests hostile package metadata and artifacts. Its own pipeline must be 
 - Registry-provided hashes are verified locally.
 - Package content is quoted hostile evidence for LLMs.
 - Notifications summarize evidence and avoid raw secret-like payloads.
+
+## Foundation additions
+
+Assets include dependency inventories, registry observations, artifact bytes, evidence DB rows, service credentials, NATS events, and notification destinations. Trust boundaries include API/CLI input, registry HTTP, artifact storage, PostgreSQL, NATS JetStream, future LLM providers, and future notifications. Package metadata, diffs, maintainer text, README text, and archive paths are hostile.
