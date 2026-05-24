@@ -29,8 +29,11 @@ def write_tar(name, entries):
 
 def write_zip(name, entries):
     with zipfile.ZipFile(ROOT / name, "w", zipfile.ZIP_DEFLATED) as zf:
-        for arcname, body in entries.items():
-            zf.writestr(arcname, body)
+        for arcname, body in sorted(entries.items()):
+            info = zipfile.ZipInfo(arcname, date_time=(2020, 1, 1, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = 0o644 << 16
+            zf.writestr(info, body)
 
 
 def generate():
