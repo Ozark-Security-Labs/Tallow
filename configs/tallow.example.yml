@@ -10,3 +10,11 @@ metrics:
   enabled: true
 log:
   level: "info"
+
+scheduler:
+  polling_tiers:
+    hot: 5m
+    warm: 30m
+    cold: 12h
+    jitter: 30s
+    burst_after_release: [5m, 30m, 6h, 24h]

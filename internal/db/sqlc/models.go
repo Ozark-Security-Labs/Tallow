@@ -9,20 +9,29 @@ import (
 )
 
 type Artifact struct {
-	ID           pgtype.UUID
-	VersionID    pgtype.UUID
-	ArtifactType string
-	Filename     string
-	DownloadUrl  string
-	Sha256       pgtype.Text
-	ObservedAt   pgtype.Timestamptz
+	ID                  pgtype.UUID
+	VersionID           pgtype.UUID
+	ArtifactType        string
+	Filename            string
+	DownloadUrl         string
+	Sha256              pgtype.Text
+	ObservedAt          pgtype.Timestamptz
+	RegistryDigestsJson string
+	LocalDigestsJson    string
+	VerificationStatus  string
+	StorageUri          string
+	SizeBytes           int64
+	MediaType           string
+	FirstSeenAt         pgtype.Timestamptz
+	LastSeenAt          pgtype.Timestamptz
 }
 
 type ArtifactObservation struct {
-	ID         pgtype.UUID
-	ArtifactID pgtype.UUID
-	Source     string
-	ObservedAt pgtype.Timestamptz
+	ID           pgtype.UUID
+	ArtifactID   pgtype.UUID
+	Source       string
+	ObservedAt   pgtype.Timestamptz
+	EvidenceJson string
 }
 
 type EventsInbox struct {

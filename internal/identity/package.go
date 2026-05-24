@@ -113,9 +113,9 @@ func NormalizeVersion(ec Ecosystem, raw string) VersionIdentity {
 type ArtifactKind string
 
 const (
-	ArtifactNPMTGZ    ArtifactKind = "npm_tgz"
-	ArtifactPyPISDist ArtifactKind = "pypi_sdist"
-	ArtifactPyPIWheel ArtifactKind = "pypi_wheel"
+	ArtifactNPMTarball ArtifactKind = "npm_tarball"
+	ArtifactPyPISDist  ArtifactKind = "pypi_sdist"
+	ArtifactPyPIWheel  ArtifactKind = "pypi_wheel"
 )
 
 type ArtifactIdentity struct {
@@ -126,7 +126,7 @@ type ArtifactIdentity struct {
 }
 
 func (a ArtifactIdentity) Validate() error {
-	if a.Kind != ArtifactNPMTGZ && a.Kind != ArtifactPyPISDist && a.Kind != ArtifactPyPIWheel {
+	if a.Kind != ArtifactNPMTarball && a.Kind != ArtifactPyPISDist && a.Kind != ArtifactPyPIWheel {
 		return tallowerr.New(tallowerr.CodeValidation, "invalid artifact kind")
 	}
 	if a.Filename == "" || strings.ContainsAny(a.Filename, "/\\\x00\n\r") || strings.Contains(a.Filename, "..") {

@@ -1,0 +1,9 @@
+ALTER TABLE artifact_observations DROP COLUMN IF EXISTS evidence_json;
+ALTER TABLE artifacts DROP COLUMN IF EXISTS last_seen_at;
+ALTER TABLE artifacts DROP COLUMN IF EXISTS first_seen_at;
+ALTER TABLE artifacts DROP COLUMN IF EXISTS media_type;
+ALTER TABLE artifacts DROP COLUMN IF EXISTS size_bytes;
+ALTER TABLE artifacts DROP COLUMN IF EXISTS storage_uri;
+ALTER TABLE artifacts DROP COLUMN IF EXISTS verification_status;
+ALTER TABLE artifacts DROP COLUMN IF EXISTS local_digests_json;
+ALTER TABLE artifacts DROP COLUMN IF EXISTS registry_digests_json;

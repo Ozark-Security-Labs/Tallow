@@ -53,3 +53,12 @@ Missing registry hash is not automatically malicious. Store `missing_claim`, com
 - Wrong claim produces `mismatch` and finding input.
 - Missing claim produces `missing_claim` without false critical severity.
 - HTTP gzip/content-encoding cannot cause hashing of a different byte stream than stored.
+
+
+## Failure policy
+
+Default verification policy is fail-closed:
+
+- `verified`: artifact may be unpacked and may dispatch analyzer jobs.
+- `unverified_missing_registry_hash`: artifact may proceed only when an operator explicitly enables unverified unpack or analysis; analyzer dispatch defaults to false.
+- `mismatch`: artifact is quarantined, emits a critical integrity event/finding candidate, and never dispatches analyzers by default.

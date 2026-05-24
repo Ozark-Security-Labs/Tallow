@@ -55,3 +55,14 @@ Expose counts and latencies for polls due, leases acquired, adapter errors, rate
 ## Implemented lease model
 
 Scheduled jobs use `kind`, `target`, `cadence_seconds`, `next_run_at`, `lease_owner`, and `lease_until`. The SQL claim query uses row locking with `FOR UPDATE SKIP LOCKED`; release only succeeds for the matching lease owner.
+
+
+## Hot/warm/cold polling tiers
+
+Default package polling tiers are configurable:
+
+- `hot`: 5 minutes for direct dependencies, production dependencies, or high-risk packages.
+- `warm`: 30 minutes for normal observed dependencies.
+- `cold`: 12 hours for low-priority retained packages.
+
+After a new release, burst rechecks are scheduled at 5 minutes, 30 minutes, 6 hours, and 24 hours. Deterministic jitter is bounded by configuration so repeated scheduler instances compute stable next-run times.
