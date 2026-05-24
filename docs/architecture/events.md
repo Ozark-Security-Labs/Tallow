@@ -55,3 +55,7 @@ HTTP and event flows use `X-Request-ID`; event traces include originating `reque
 ## Foundation event contracts
 
 Subjects follow `<domain>.<entity>.<action>.v<major>`, for example `artifact.package.observed.v1`. Envelopes use major version `1.x` and carry `trace.request_id`. Artifact observation events reference storage/evidence and never embed raw artifact bytes.
+
+## JetStream and outbox
+
+Publishers validate envelope major versions, inject `trace.request_id` from context, publish to JetStream with acknowledgements, and use an outbox/inbox pattern for at-least-once idempotency. Consumers must be idempotent by envelope ID.
