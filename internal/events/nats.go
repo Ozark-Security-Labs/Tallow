@@ -17,12 +17,12 @@ type Bus struct {
 func Connect(ctx context.Context, url string) (*Bus, error) {
 	nc, err := nats.Connect(url)
 	if err != nil {
-		return nil, err
+		return nil, tallowerr.Wrap(tallowerr.CodeEventBusUnavailable, "event bus unavailable", err)
 	}
 	js, err := nc.JetStream()
 	if err != nil {
 		nc.Close()
-		return nil, err
+		return nil, tallowerr.Wrap(tallowerr.CodeEventBusUnavailable, "jetstream unavailable", err)
 	}
 	return &Bus{Conn: nc, JS: js}, nil
 }
