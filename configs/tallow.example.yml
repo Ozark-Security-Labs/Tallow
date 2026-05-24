@@ -1,17 +1,12 @@
 server:
-  listen: "127.0.0.1:8844"
-database:
-  url_env: TALLOW_DATABASE_URL
+  listen_address: "127.0.0.1:8844"
+postgres:
+  dsn: "postgres://tallow:tallow@localhost:5432/tallow?sslmode=disable"
 nats:
   url: "nats://localhost:4222"
 storage:
-  backend: filesystem
-  path: ./var/artifacts
-analysis:
-  deterministic: true
-  llm_enabled: false
-notifications:
-  email:
-    enabled: false
-  teams:
-    enabled: false
+  root: "./var/tallow/storage"
+metrics:
+  enabled: true
+log:
+  level: "info"

@@ -258,3 +258,7 @@ Please keep findings explainable, evidence-bound, and defensive. New signals sho
 ## License
 
 Tallow is licensed under the [Apache License 2.0](LICENSE).
+
+### Foundation local configuration
+
+Copy `.env.example` for local defaults. The API reads `TALLOW_*` variables including `TALLOW_POSTGRES_DSN`, `TALLOW_NATS_URL`, and `TALLOW_STORAGE_ROOT`.
