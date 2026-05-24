@@ -59,6 +59,12 @@ func (m *Manifest) sort() {
 
 func (m Manifest) JSON() ([]byte, error) {
 	m.sort()
+	if m.Entries == nil {
+		m.Entries = []Entry{}
+	}
+	if m.Rejected == nil {
+		m.Rejected = []Entry{}
+	}
 	return json.MarshalIndent(m, "", "  ")
 }
 
