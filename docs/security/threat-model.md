@@ -42,3 +42,8 @@ Tallow ingests hostile package metadata and artifacts. Its own pipeline must be 
 ## Foundation additions
 
 Assets include dependency inventories, registry observations, artifact bytes, evidence DB rows, service credentials, NATS events, and notification destinations. Trust boundaries include API/CLI input, registry HTTP, artifact storage, PostgreSQL, NATS JetStream, future LLM providers, and future notifications. Package metadata, diffs, maintainer text, README text, and archive paths are hostile.
+
+
+## Artifact hash mismatch handling
+
+Registry/local digest mismatch is treated as a critical supply-chain integrity signal. Tallow stores bounded evidence, quarantines retained bytes according to retention policy, and blocks analyzer dispatch so hostile artifacts are not unpacked or processed as trusted inputs. Missing registry hashes are also blocked from analyzer dispatch unless an operator explicitly opts in.
