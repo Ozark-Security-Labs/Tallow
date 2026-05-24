@@ -55,3 +55,7 @@ If a Tallow release artifact is suspected compromised:
 3. Publish fixed release with new version.
 4. Add detection rule or self-monitoring signal if possible.
 5. Preserve evidence; do not delete compromised artifacts without retaining hashes and metadata.
+
+## Default Compose protection
+
+Default Docker Compose services must not use `privileged: true`, host networking, or Docker socket mounts. Future releases will add a Tallow self-scan hook alongside SBOM, checksum, and signing checks.

@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tallow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tallow}
+      POSTGRES_DB: ${POSTGRES_DB:-tallow}
+    ports: ["127.0.0.1:5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+  nats:
+    image: nats:2-alpine
+    command: ["-js", "-m", "8222"]
+    ports: ["127.0.0.1:4222:4222", "127.0.0.1:8222:8222"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8222/jsz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes: ["nats-data:/data"]
+  api:
+    build: .
+    environment:
+      TALLOW_SERVER_LISTEN: 0.0.0.0:8844
+      TALLOW_POSTGRES_DSN: postgres://tallow:tallow@postgres:5432/tallow?sslmode=disable
+      TALLOW_NATS_URL: nats://nats:4222
+      TALLOW_STORAGE_ROOT: /var/lib/tallow/storage
+    ports: ["127.0.0.1:8844:8844"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      nats: { condition: service_healthy }
+    volumes: ["./var/tallow/storage:/var/lib/tallow/storage"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8844/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+  worker:
+    build: .
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["echo worker placeholder: analyzers are not implemented in Foundation"]
+    profiles: ["worker"]
+  web:
+    image: nginx:alpine
+    profiles: ["web"]
+volumes:
+  postgres-data: {}
+  nats-data: {}

@@ -70,3 +70,7 @@ A release cannot be cut unless:
 - Safe-unpack malicious fixtures pass.
 - Hash mismatch and same-version mutation fixtures produce findings.
 - Prompt-injection fixtures cannot alter LLM system/developer instructions in tests.
+
+## Foundation validation
+
+Run `make test`, `make schema-validate`, `make generate-check`, and `docker compose config` before milestone review. Contract changes must update JSON Schemas and golden fixtures together.

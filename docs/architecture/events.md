@@ -47,3 +47,19 @@ Tallow uses NATS JetStream as the durable workflow spine. Events use versioned J
 ## Delivery assumptions
 
 JetStream is at-least-once. Consumers must be idempotent where practical. Event payloads should reference database IDs/artifact IDs rather than embedding large package content.
+
+## Request IDs
+
+HTTP and event flows use `X-Request-ID`; event traces include originating `request_id` when available.
+
+## Foundation event contracts
+
+Subjects follow `<domain>.<entity>.<action>.v<major>`, for example `artifact.package.observed.v1`. Envelopes use major version `1.x` and carry `trace.request_id`. Artifact observation events reference storage/evidence and never embed raw artifact bytes.
+
+## JetStream and outbox
+
+Publishers validate envelope major versions, inject `trace.request_id` from context, publish to JetStream with acknowledgements, and use an outbox/inbox pattern for at-least-once idempotency. Consumers must be idempotent by envelope ID.
+
+- #40 Request ID propagation is implemented in internal/requestid and injected into event traces.
+
+- #37 Artifact observation schema fixtures cover npm and PyPI without embedding artifact bytes.
