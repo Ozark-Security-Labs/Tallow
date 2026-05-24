@@ -48,8 +48,16 @@ func readTar(artifactID string, tr *tar.Reader, policy Policy) (Manifest, error)
 		seen++
 		switch h.Typeflag {
 		case tar.TypeDir:
+			if unsafeMode(h.Mode) {
+				m.addEntry(Entry{Path: name, Type: "directory", Mode: int64(h.Mode), Rejected: RejectUnsafeMode})
+				continue
+			}
 			m.addEntry(Entry{Path: name, Type: "directory", Mode: int64(h.Mode)})
 		case tar.TypeReg, tar.TypeRegA:
+			if unsafeMode(h.Mode) {
+				m.addEntry(Entry{Path: name, Type: "file", Size: h.Size, Mode: int64(h.Mode), Rejected: RejectUnsafeMode})
+				continue
+			}
 			if h.Size > policy.MaxFileBytes {
 				m.addEntry(Entry{Path: name, Type: "file", Size: h.Size, Mode: int64(h.Mode), Rejected: RejectMaxFileBytes})
 				m.Truncated = true

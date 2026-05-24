@@ -36,6 +36,10 @@ func readZip(artifactID string, zr *zip.Reader, policy Policy) (Manifest, error)
 		}
 		seen++
 		mode := f.Mode()
+		if unsafeMode(int64(mode)) {
+			m.addEntry(Entry{Path: name, Type: "file", Size: int64(f.UncompressedSize64), Mode: int64(mode), Rejected: RejectUnsafeMode})
+			continue
+		}
 		if strings.HasSuffix(f.Name, "/") || f.FileInfo().IsDir() {
 			m.addEntry(Entry{Path: name, Type: "directory", Mode: int64(mode)})
 			continue

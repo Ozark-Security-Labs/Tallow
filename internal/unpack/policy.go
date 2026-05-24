@@ -69,3 +69,5 @@ func safeLinkTarget(entryPath, target string) bool {
 	clean := path.Clean(path.Join(base, target))
 	return clean != "." && !strings.HasPrefix(clean, "../") && clean != ".."
 }
+
+func unsafeMode(mode int64) bool { return mode&0o7000 != 0 }

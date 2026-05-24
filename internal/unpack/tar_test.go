@@ -39,6 +39,7 @@ func TestTarManifestAndRejectsUnsafeEntries(t *testing.T) {
 		&tar.Header{Name: "/abs", Mode: 0o644, Typeflag: tar.TypeReg, PAXRecords: map[string]string{"body": "x"}},
 		&tar.Header{Name: "pkg/link", Mode: 0o777, Typeflag: tar.TypeSymlink, Linkname: "../../etc/passwd"},
 		&tar.Header{Name: "pkg/dev", Mode: 0o644, Typeflag: tar.TypeChar},
+		&tar.Header{Name: "pkg/setuid", Mode: 0o4644, Typeflag: tar.TypeReg, PAXRecords: map[string]string{"body": "x"}},
 	)
 	m, err := ReadTar("artifact-1", bytes.NewReader(data), Policy{MaxFiles: 10, MaxFileBytes: 20, MaxTotalBytes: 100})
 	if err != nil {
@@ -47,7 +48,7 @@ func TestTarManifestAndRejectsUnsafeEntries(t *testing.T) {
 	if len(m.Entries) != 1 || m.Entries[0].Path != "pkg/file.txt" || m.Entries[0].SHA256 == "" || *m.Entries[0].LineCount != 1 {
 		t.Fatalf("bad entries %#v", m.Entries)
 	}
-	if m.Totals.Rejected != 4 {
+	if m.Totals.Rejected != 5 {
 		t.Fatalf("want rejected entries got %#v", m.Rejected)
 	}
 }
