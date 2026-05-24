@@ -1,6 +1,7 @@
 package identity
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -46,7 +47,9 @@ func TestVersion(t *testing.T) {
 	}
 }
 func TestArtifact(t *testing.T) {
-	a := ArtifactIdentity{Kind: ArtifactPyPIWheel, Filename: "pkg-1-py3-none-any.whl", DownloadURL: "https://files.pythonhosted.org/pkg.whl", Digests: map[string]string{"sha256": "abcdef"}, ObservedAt: time.Now()}
+	sha256 := strings.Repeat("a", 64)
+	sha512 := strings.Repeat("b", 128)
+	a := ArtifactIdentity{Kind: ArtifactPyPIWheel, Filename: "pkg-1-py3-none-any.whl", DownloadURL: "https://files.pythonhosted.org/pkg.whl", Digests: map[string]string{"sha256": sha256}, ObservedAt: time.Now()}
 	b := a
 	b.Filename = "pkg-1-cp312-linux.whl"
 	if err := a.Validate(); err != nil {
@@ -54,5 +57,19 @@ func TestArtifact(t *testing.T) {
 	}
 	if a.PreDownloadKey() == b.PreDownloadKey() {
 		t.Fatal("wheel variants collide")
+	}
+	if !strings.Contains(a.ImmutableKey(), "sha256:"+sha256) {
+		t.Fatal(a.ImmutableKey())
+	}
+	a.Digests = map[string]string{"sha256": "abcdef"}
+	if err := a.Validate(); err == nil {
+		t.Fatal("want short sha256 rejection")
+	}
+	a.Digests = map[string]string{"sha512": sha512}
+	if err := a.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(a.ImmutableKey(), "sha512:"+sha512) {
+		t.Fatal(a.ImmutableKey())
 	}
 }

@@ -142,13 +142,18 @@ func (a ArtifactIdentity) Validate() error {
 	if len(a.Digests) == 0 {
 		return tallowerr.New(tallowerr.CodeValidation, "digest required")
 	}
-	hexRe := regexp.MustCompile(`^[a-f0-9]{6,128}$`)
 	for alg, value := range a.Digests {
-		if alg != "sha256" && alg != "sha512" {
+		switch alg {
+		case "sha256":
+			if !isHexDigest(value, 64) {
+				return tallowerr.New(tallowerr.CodeValidation, "invalid digest value")
+			}
+		case "sha512":
+			if !isHexDigest(value, 128) {
+				return tallowerr.New(tallowerr.CodeValidation, "invalid digest value")
+			}
+		default:
 			return tallowerr.New(tallowerr.CodeValidation, "unsupported digest algorithm")
-		}
-		if !hexRe.MatchString(value) {
-			return tallowerr.New(tallowerr.CodeValidation, "invalid digest value")
 		}
 	}
 	return nil
@@ -157,5 +162,15 @@ func (a ArtifactIdentity) PreDownloadKey() string {
 	return fmt.Sprintf("%s|%s|%s", a.Kind, a.Filename, a.DownloadURL)
 }
 func (a ArtifactIdentity) ImmutableKey() string {
-	return fmt.Sprintf("%s|%s|%s", a.Kind, a.Filename, a.Digests["sha256"])
+	if v := a.Digests["sha256"]; v != "" {
+		return fmt.Sprintf("%s|%s|sha256:%s", a.Kind, a.Filename, v)
+	}
+	return fmt.Sprintf("%s|%s|sha512:%s", a.Kind, a.Filename, a.Digests["sha512"])
+}
+
+func isHexDigest(value string, length int) bool {
+	if len(value) != length {
+		return false
+	}
+	return regexp.MustCompile(fmt.Sprintf(`^[a-f0-9]{%d}$`, length)).MatchString(value)
 }

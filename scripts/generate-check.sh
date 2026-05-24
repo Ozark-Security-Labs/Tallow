@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 make generate
-if ! git diff --exit-code -- . ':(exclude)go.sum' >/tmp/tallow-generate.diff; then
+if ! git diff --exit-code -- . >/tmp/tallow-generate.diff; then
   cat >&2 <<'MSG'
 Generated contract drift detected.
 Run `make generate` locally, commit regenerated sqlc/schema-derived files, and add/update golden fixtures for any public contract change.

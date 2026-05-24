@@ -108,6 +108,6 @@ func (s *Server) logger(next http.Handler) http.Handler {
 		rr := &responseRecorder{ResponseWriter: w, status: 200}
 		next.ServeHTTP(rr, r)
 		id, _ := requestid.FromContext(r.Context())
-		s.Logger.Info("http_request", "request_id", id, "method", r.Method, "path", r.URL.Path, "status", rr.status, "error_code", rr.errorCode, "latency", time.Since(start).String())
+		s.Logger.Info("http_request", "request_id", id, "method", r.Method, "route", metrics.RouteLabel(r), "status", rr.status, "error_code", rr.errorCode, "latency", time.Since(start).String())
 	})
 }

@@ -39,5 +39,10 @@ func main() {
 		},
 	}
 	srv := api.New(cfg, slog.Default(), checks)
-	log.Fatal(http.ListenAndServe(cfg.Server.ListenAddress, srv.Handler))
+	httpSrv := &http.Server{
+		Addr:              cfg.Server.ListenAddress,
+		Handler:           srv.Handler,
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+	log.Fatal(httpSrv.ListenAndServe())
 }

@@ -31,8 +31,11 @@ func ValidateEnvelopeVersion(v string) error {
 	return nil
 }
 func (e Envelope) Validate() error {
-	if e.ID == "" || e.Type == "" || e.Version == "" || e.Producer == "" || len(e.Data) == 0 {
+	if e.ID == "" || e.Type == "" || e.Version == "" || e.Producer == "" || len(e.Data) == 0 || e.OccurredAt.IsZero() {
 		return tallowerr.New(tallowerr.CodeValidation, "missing envelope field")
+	}
+	if e.Trace.TraceID == "" && e.Trace.RequestID == "" {
+		return tallowerr.New(tallowerr.CodeValidation, "missing envelope trace")
 	}
 	return ValidateEnvelopeVersion(e.Version)
 }
@@ -60,8 +63,18 @@ type ArtifactObserved struct {
 }
 
 func (a ArtifactObserved) Validate() error {
-	if a.Package == nil || a.Version == nil || a.Artifact == nil || a.Source == "" || a.ObservedAt.IsZero() || len(a.RegistryHashes) == 0 {
+	if !isJSONObject(a.Package) || !isJSONObject(a.Artifact) || a.Source == "" || a.ObservedAt.IsZero() || len(a.RegistryHashes) == 0 {
 		return tallowerr.New(tallowerr.CodeValidation, "artifact observation missing source or hash")
 	}
+	version, ok := a.Version.(map[string]any)
+	rawVersion, hasRawVersion := version["raw_version"].(string)
+	if !ok || !hasRawVersion || rawVersion == "" {
+		return tallowerr.New(tallowerr.CodeValidation, "artifact observation missing version")
+	}
 	return nil
+}
+
+func isJSONObject(v any) bool {
+	_, ok := v.(map[string]any)
+	return ok
 }

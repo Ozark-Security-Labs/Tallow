@@ -6,7 +6,7 @@
 
 **Architecture:** Implement the deterministic evidence spine before analyzers, UI, and LLM features. The Go control plane owns configuration, HTTP API, CLI, database access, event publishing/consuming, identity normalization, scheduler leases, metrics, and typed errors. PostgreSQL is the source of truth, NATS JetStream is the durable event bus, schemas define public contracts before producers/consumers depend on them, and local Docker Compose starts only unprivileged development services.
 
-**Tech Stack:** Go 1.23+, chi, pgx, sqlc, golang-migrate, slog, NATS JetStream, PostgreSQL, Prometheus client_golang, JSON Schema, GitHub Actions, Docker Compose, Apache-2.0 monorepo.
+**Tech Stack:** Go 1.25+, chi, pgx, sqlc, golang-migrate, slog, NATS JetStream, PostgreSQL, Prometheus client_golang, JSON Schema, GitHub Actions, Docker Compose, Apache-2.0 monorepo.
 
 ---
 

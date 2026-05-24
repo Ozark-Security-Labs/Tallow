@@ -16,6 +16,26 @@ func TestEnvelopeVersion(t *testing.T) {
 		t.Fatal("want err")
 	}
 }
+func TestEnvelopeValidateRequiresOccurredAtAndTrace(t *testing.T) {
+	e := NewEnvelope("test", json.RawMessage(`{}`))
+	if err := e.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	e.OccurredAt = time.Time{}
+	if err := e.Validate(); err == nil {
+		t.Fatal("want missing occurred_at error")
+	}
+	e = NewEnvelope("test", json.RawMessage(`{}`))
+	e.Trace = Trace{}
+	if err := e.Validate(); err == nil {
+		t.Fatal("want missing trace error")
+	}
+	e.Trace.RequestID = "rid"
+	if err := e.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestRequestIDPropagation(t *testing.T) {
 	ctx := requestid.WithContext(context.Background(), "rid")
 	e := WithRequestID(ctx, Envelope{})
@@ -24,12 +44,16 @@ func TestRequestIDPropagation(t *testing.T) {
 	}
 }
 func TestArtifactObserved(t *testing.T) {
-	a := ArtifactObserved{Package: map[string]string{"ecosystem": "npm"}, Version: map[string]string{"raw_version": "1.0.0"}, Artifact: map[string]string{"kind": "npm_tgz"}, RegistryHashes: map[string]string{"sha256": "abc"}, Source: "registry", ObservedAt: time.Now()}
+	a := ArtifactObserved{Package: map[string]any{"ecosystem": "npm"}, Version: map[string]any{"raw_version": "1.0.0"}, Artifact: map[string]any{"kind": "npm_tgz"}, RegistryHashes: map[string]string{"sha256": "abc"}, Source: "registry", ObservedAt: time.Now()}
 	if err := a.Validate(); err != nil {
 		t.Fatal(err)
 	}
 	b, _ := json.Marshal(a)
 	if len(b) == 0 {
 		t.Fatal()
+	}
+	a.Version = map[string]any{}
+	if err := a.Validate(); err == nil {
+		t.Fatal("want missing raw_version error")
 	}
 }

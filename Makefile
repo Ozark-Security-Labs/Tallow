@@ -11,7 +11,8 @@ test-race:
 
 generate:
 	go generate ./...
-	@if command -v sqlc >/dev/null 2>&1; then sqlc generate; else echo "sqlc not installed; install sqlc to regenerate database bindings"; fi
+	@command -v sqlc >/dev/null 2>&1 || { echo "sqlc is required; install sqlc to regenerate database bindings" >&2; exit 1; }
+	sqlc generate
 
 generate-check:
 	./scripts/generate-check.sh

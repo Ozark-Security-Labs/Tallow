@@ -10,23 +10,29 @@ import (
 	"strings"
 )
 
-func MigrateUp(dsn string) error              { return run(dsn, ".up.sql") }
-func MigrateDown(dsn string, steps int) error { return run(dsn, ".down.sql") }
-func run(dsn, suffix string) error {
+func MigrateUp(dsn string) error              { return run(dsn, ".up.sql", 0) }
+func MigrateDown(dsn string, steps int) error { return run(dsn, ".down.sql", steps) }
+func run(dsn, suffix string, steps int) error {
+	files, err := filepath.Glob("db/migrations/*" + suffix)
+	if err != nil {
+		return err
+	}
+	if len(files) == 0 {
+		return fmt.Errorf("no migration files found for suffix %s", suffix)
+	}
 	ctx := context.Background()
 	conn, err := pgx.Connect(ctx, dsn)
 	if err != nil {
 		return err
 	}
 	defer conn.Close(ctx)
-	files, err := filepath.Glob("db/migrations/*" + suffix)
-	if err != nil {
-		return err
-	}
 	sort.Strings(files)
 	if suffix == ".down.sql" {
 		for i, j := 0, len(files)-1; i < j; i, j = i+1, j-1 {
 			files[i], files[j] = files[j], files[i]
+		}
+		if steps > 0 && steps < len(files) {
+			files = files[:steps]
 		}
 	}
 	for _, f := range files {

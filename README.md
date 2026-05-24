@@ -8,7 +8,7 @@
   <a href="https://github.com/Ozark-Security-Labs/Tallow/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Ozark-Security-Labs/Tallow/actions/workflows/ci.yml/badge.svg?branch=main"></a>
   <a href="https://github.com/Ozark-Security-Labs/Tallow/actions/workflows/security.yml"><img alt="Security" src="https://github.com/Ozark-Security-Labs/Tallow/actions/workflows/security.yml/badge.svg?branch=main"></a>
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
-  <img alt="Go" src="https://img.shields.io/badge/go-1.23%2B-00ADD8.svg?logo=go&logoColor=white">
+  <img alt="Go" src="https://img.shields.io/badge/go-1.25%2B-00ADD8.svg?logo=go&logoColor=white">
   <img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-3776AB.svg?logo=python&logoColor=white">
   <img alt="NATS" src="https://img.shields.io/badge/NATS-event%20backbone-27AAE1.svg">
   <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-evidence%20store-4169E1.svg?logo=postgresql&logoColor=white">

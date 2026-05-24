@@ -60,6 +60,12 @@ func (c Consumer) Process(ctx context.Context, msg *nats.Msg) error {
 	if err := json.Unmarshal(msg.Data, &e); err != nil {
 		return err
 	}
+	if err := e.Validate(); err != nil {
+		return err
+	}
+	if err := validateEnvelopeData(e); err != nil {
+		return err
+	}
 	if c.Seen != nil && c.Seen(e.ID) {
 		return msg.Ack()
 	}
@@ -70,6 +76,19 @@ func (c Consumer) Process(ctx context.Context, msg *nats.Msg) error {
 	}
 	return msg.Ack()
 }
+func validateEnvelopeData(e Envelope) error {
+	switch e.Type {
+	case "artifact.observed":
+		var a ArtifactObserved
+		if err := json.Unmarshal(e.Data, &a); err != nil {
+			return err
+		}
+		return a.Validate()
+	default:
+		return nil
+	}
+}
+
 func NewEnvelope(t string, data []byte) Envelope {
 	id := requestid.New()
 	return Envelope{ID: id, Type: t, Version: "1.0", OccurredAt: time.Now().UTC(), Producer: "tallow", Trace: Trace{TraceID: id}, Data: data}

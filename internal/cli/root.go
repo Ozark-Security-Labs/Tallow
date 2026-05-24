@@ -1,15 +1,22 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/Ozark-Security-Labs/Tallow/internal/api"
 	"github.com/Ozark-Security-Labs/Tallow/internal/config"
 	"github.com/Ozark-Security-Labs/Tallow/internal/db"
+	"github.com/Ozark-Security-Labs/Tallow/internal/events"
 	"github.com/Ozark-Security-Labs/Tallow/internal/version"
+	"github.com/jackc/pgx/v5"
 	"io"
+	"log/slog"
+	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 const (
@@ -21,7 +28,12 @@ const (
 	ExitNotImplemented = 10
 )
 
-type App struct{ Out, Err io.Writer }
+type ServerRunner func(config.Config) error
+
+type App struct {
+	Out, Err  io.Writer
+	RunServer ServerRunner
+}
 
 func (a App) Run(args []string) int {
 	if a.Out == nil {
@@ -52,7 +64,14 @@ func (a App) Run(args []string) int {
 			fmt.Fprintln(a.Err, err)
 			return ExitConfig
 		}
-		fmt.Fprintf(a.Out, "server configured for %s\n", cfg.Server.ListenAddress)
+		runner := a.RunServer
+		if runner == nil {
+			runner = defaultServerRunner
+		}
+		if err := runner(cfg); err != nil {
+			fmt.Fprintln(a.Err, err)
+			return ExitDependency
+		}
 		return ExitOK
 	case "observe", "analyze":
 		fmt.Fprintf(a.Err, "%s is not implemented in Foundation and does not fetch or execute packages\n", args[0])
@@ -113,6 +132,36 @@ func (a App) db(args []string) int {
 	return ExitOK
 }
 func Main(args []string, out, err io.Writer) int { return App{Out: out, Err: err}.Run(args) }
+
+func defaultServerRunner(cfg config.Config) error {
+	checks := map[string]api.Check{
+		"postgres": func(ctx context.Context) error {
+			cctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+			defer cancel()
+			conn, err := pgx.Connect(cctx, cfg.Postgres.DSN)
+			if err != nil {
+				return err
+			}
+			defer conn.Close(cctx)
+			return conn.Ping(cctx)
+		},
+		"nats_jetstream": func(ctx context.Context) error {
+			bus, err := events.Connect(ctx, cfg.NATS.URL)
+			if err != nil {
+				return err
+			}
+			defer bus.Conn.Close()
+			return bus.Ready(ctx)
+		},
+	}
+	srv := api.New(cfg, slog.Default(), checks)
+	httpSrv := &http.Server{
+		Addr:              cfg.Server.ListenAddress,
+		Handler:           srv.Handler,
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+	return httpSrv.ListenAndServe()
+}
 
 func loadConfigFile(path string, base config.Config) (config.Config, error) {
 	b, err := os.ReadFile(path)
