@@ -8,6 +8,7 @@ import (
 	"github.com/Ozark-Security-Labs/Tallow/internal/db"
 	"github.com/Ozark-Security-Labs/Tallow/internal/version"
 	"io"
+	"os"
 	"strings"
 )
 
@@ -37,7 +38,7 @@ func (a App) Run(args []string) int {
 	case "version":
 		return a.version(args[1:])
 	case "server":
-		fmt.Fprintln(a.Out, "run `tallow-api` or `tallow server` to start the API")
+		fmt.Fprintln(a.Out, "starting API server is available via cmd/tallow-api; use tallow-api for long-running service execution")
 		return ExitOK
 	case "observe", "analyze":
 		fmt.Fprintf(a.Err, "%s is not implemented in Foundation and does not fetch or execute packages\n", args[0])
@@ -77,8 +78,15 @@ func (a App) db(args []string) int {
 	if fs.Parse(args[1:]) != nil {
 		return ExitUsage
 	}
-	_ = *cfgPath
 	cfg, err := config.LoadFromEnvironment()
+	if *cfgPath != "" {
+		if fileCfg, err := loadConfigFile(*cfgPath, cfg); err == nil {
+			cfg = fileCfg
+		} else {
+			fmt.Fprintln(a.Err, err)
+			return ExitConfig
+		}
+	}
 	if err != nil {
 		fmt.Fprintln(a.Err, err)
 		return ExitConfig
@@ -91,5 +99,43 @@ func (a App) db(args []string) int {
 	return ExitOK
 }
 func Main(args []string, out, err io.Writer) int { return App{Out: out, Err: err}.Run(args) }
+
+func loadConfigFile(path string, base config.Config) (config.Config, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return base, err
+	}
+	lines := strings.Split(string(b), "\n")
+	section := ""
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if strings.HasSuffix(line, ":") {
+			section = strings.TrimSuffix(line, ":")
+			continue
+		}
+		parts := strings.SplitN(line, ":", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key := strings.TrimSpace(parts[0])
+		val := strings.Trim(strings.TrimSpace(parts[1]), "\"")
+		switch section + "." + key {
+		case "postgres.dsn":
+			base.Postgres.DSN = val
+		case "nats.url":
+			base.NATS.URL = val
+		case "server.listen_address":
+			base.Server.ListenAddress = val
+		case "storage.root":
+			base.Storage.Root = val
+		case "log.level":
+			base.Log.Level = val
+		}
+	}
+	return base, base.Validate()
+}
 
 var _ = strings.Builder{}

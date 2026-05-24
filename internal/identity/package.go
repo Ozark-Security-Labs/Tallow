@@ -139,6 +139,18 @@ func (a ArtifactIdentity) Validate() error {
 	if a.ObservedAt.IsZero() {
 		return tallowerr.New(tallowerr.CodeValidation, "observed_at required")
 	}
+	if len(a.Digests) == 0 {
+		return tallowerr.New(tallowerr.CodeValidation, "digest required")
+	}
+	hexRe := regexp.MustCompile(`^[a-f0-9]{6,128}$`)
+	for alg, value := range a.Digests {
+		if alg != "sha256" && alg != "sha512" {
+			return tallowerr.New(tallowerr.CodeValidation, "unsupported digest algorithm")
+		}
+		if !hexRe.MatchString(value) {
+			return tallowerr.New(tallowerr.CodeValidation, "invalid digest value")
+		}
+	}
 	return nil
 }
 func (a ArtifactIdentity) PreDownloadKey() string {

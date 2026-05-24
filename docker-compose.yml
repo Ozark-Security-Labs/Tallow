@@ -5,7 +5,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-tallow}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tallow}
       POSTGRES_DB: ${POSTGRES_DB:-tallow}
-    ports: ["5432:5432"]
+    ports: ["127.0.0.1:5432:5432"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -15,7 +15,7 @@ services:
   nats:
     image: nats:2-alpine
     command: ["-js", "-m", "8222"]
-    ports: ["4222:4222", "8222:8222"]
+    ports: ["127.0.0.1:4222:4222", "127.0.0.1:8222:8222"]
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8222/jsz"]
       interval: 5s
@@ -29,7 +29,7 @@ services:
       TALLOW_POSTGRES_DSN: postgres://tallow:tallow@postgres:5432/tallow?sslmode=disable
       TALLOW_NATS_URL: nats://nats:4222
       TALLOW_STORAGE_ROOT: /var/lib/tallow/storage
-    ports: ["8844:8844"]
+    ports: ["127.0.0.1:8844:8844"]
     depends_on:
       postgres: { condition: service_healthy }
       nats: { condition: service_healthy }
@@ -41,7 +41,8 @@ services:
       retries: 6
   worker:
     build: .
-    command: ["/usr/local/bin/tallow", "analyze"]
+    entrypoint: ["/usr/local/bin/tallow"]
+    command: ["analyze"]
     profiles: ["worker"]
   web:
     image: nginx:alpine

@@ -46,7 +46,7 @@ func TestVersion(t *testing.T) {
 	}
 }
 func TestArtifact(t *testing.T) {
-	a := ArtifactIdentity{Kind: ArtifactPyPIWheel, Filename: "pkg-1-py3-none-any.whl", DownloadURL: "https://files.pythonhosted.org/pkg.whl", Digests: map[string]string{"sha256": "abc"}, ObservedAt: time.Now()}
+	a := ArtifactIdentity{Kind: ArtifactPyPIWheel, Filename: "pkg-1-py3-none-any.whl", DownloadURL: "https://files.pythonhosted.org/pkg.whl", Digests: map[string]string{"sha256": "abcdef"}, ObservedAt: time.Now()}
 	b := a
 	b.Filename = "pkg-1-cp312-linux.whl"
 	if err := a.Validate(); err != nil {

@@ -12,25 +12,23 @@ root=pathlib.Path('schemas')
 for p in root.glob('**/*.schema.json'):
     json.load(open(p))
 errors=[]
+def fail(p,msg): errors.append(f'{p}: {msg}')
 for p in root.glob('testdata/**/*.json'):
-    data=json.load(open(p))
-    name=p.name
-    expect_invalid='.invalid.' in name or name.endswith('.invalid.json')
-    failed=False
-    text=json.dumps(data)
-    if 'unknown-major' in name and str(data.get('version','')).startswith('2.'):
-        failed=True
-    if 'missing-type' in name and not data.get('type'):
-        failed=True
-    if 'absolute-path' in name and str(data.get('path','')).startswith('/'):
-        failed=True
-    if 'missing-source' in name and not data.get('source'):
-        failed=True
-    if expect_invalid and not failed:
-        errors.append(f"invalid fixture unexpectedly passed policy checks: {p}")
-    if not expect_invalid and failed:
-        errors.append(f"valid fixture failed policy checks: {p}")
+    data=json.load(open(p)); name=p.name; invalid='.invalid.' in name or name.endswith('.invalid.json'); failed=False
+    if name.startswith('envelope'):
+        req=['id','type','version','occurred_at','producer','trace','data']
+        failed = any(k not in data for k in req) or not str(data.get('version','')).startswith('1.')
+    elif name.startswith('artifact-observed'):
+        req=['package','version','artifact','registry_hashes','source','observed_at']
+        failed = any(k not in data for k in req) or not data.get('registry_hashes')
+    elif name.startswith('evidence-ref'):
+        path=str(data.get('path',''))
+        failed = ('kind' not in data or 'artifact_id' not in data or path.startswith('/') or '\\' in path or '..' in path)
+    else:
+        failed=False
+    if invalid and not failed: fail(p,'invalid fixture unexpectedly passed schema policy')
+    if not invalid and failed: fail(p,'valid fixture failed schema policy')
 if errors:
     print('\n'.join(errors), file=sys.stderr); sys.exit(1)
-print('Validated JSON syntax and Foundation fixture policies for schemas/testdata.')
+print('Validated Foundation schemas and valid/invalid fixtures.')
 PY

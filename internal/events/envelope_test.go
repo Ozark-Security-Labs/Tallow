@@ -24,7 +24,7 @@ func TestRequestIDPropagation(t *testing.T) {
 	}
 }
 func TestArtifactObserved(t *testing.T) {
-	a := ArtifactObserved{Package: map[string]string{"ecosystem": "npm"}, Artifact: map[string]string{"kind": "npm_tgz"}, RegistryHashes: map[string]string{"sha256": "abc"}, Source: "registry", ObservedAt: time.Now()}
+	a := ArtifactObserved{Package: map[string]string{"ecosystem": "npm"}, Version: map[string]string{"raw_version": "1.0.0"}, Artifact: map[string]string{"kind": "npm_tgz"}, RegistryHashes: map[string]string{"sha256": "abc"}, Source: "registry", ObservedAt: time.Now()}
 	if err := a.Validate(); err != nil {
 		t.Fatal(err)
 	}

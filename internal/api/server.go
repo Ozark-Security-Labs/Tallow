@@ -82,11 +82,24 @@ func (s *Server) recoverer(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+type responseRecorder struct {
+	http.ResponseWriter
+	status    int
+	errorCode string
+}
+
+func (rr *responseRecorder) WriteHeader(status int) {
+	rr.status = status
+	rr.ResponseWriter.WriteHeader(status)
+}
+
 func (s *Server) logger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		next.ServeHTTP(w, r)
+		rr := &responseRecorder{ResponseWriter: w, status: 200}
+		next.ServeHTTP(rr, r)
 		id, _ := requestid.FromContext(r.Context())
-		s.Logger.Info("http_request", "request_id", id, "method", r.Method, "path", r.URL.Path, "latency", time.Since(start).String())
+		s.Logger.Info("http_request", "request_id", id, "method", r.Method, "path", r.URL.Path, "status", rr.status, "error_code", rr.errorCode, "latency", time.Since(start).String())
 	})
 }

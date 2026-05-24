@@ -60,7 +60,7 @@ type ArtifactObserved struct {
 }
 
 func (a ArtifactObserved) Validate() error {
-	if a.Package == nil || a.Artifact == nil || a.Source == "" || len(a.RegistryHashes) == 0 {
+	if a.Package == nil || a.Version == nil || a.Artifact == nil || a.Source == "" || a.ObservedAt.IsZero() || len(a.RegistryHashes) == 0 {
 		return tallowerr.New(tallowerr.CodeValidation, "artifact observation missing source or hash")
 	}
 	return nil
