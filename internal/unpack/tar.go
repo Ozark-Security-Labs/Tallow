@@ -38,7 +38,7 @@ func readTar(artifactID string, tr *tar.Reader, policy Policy) (Manifest, error)
 			m.addEntry(Entry{Path: h.Name, Size: h.Size, Mode: int64(h.Mode), Rejected: RejectMaxFiles})
 			m.Truncated = true
 			m.Totals.TruncatedByPolicy = true
-			continue
+			break
 		}
 		seen++
 		name, code, ok := normalizeArchivePath(h.Name)

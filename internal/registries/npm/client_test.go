@@ -33,7 +33,7 @@ func TestObserveScopedPackageVersion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Package != "@scope/pkg" || got.Filename != "pkg-1.2.3.tgz" || got.Verification.Status != VerificationVerified || got.LocalHashes[digest.AlgorithmSHA256] == "" {
+	if got.Package != "@scope/pkg" || got.Filename != "pkg-1.2.3.tgz" || got.Verification.Status != VerificationVerified || got.LocalHashes[digest.AlgorithmSHA256] == "" || got.StorageURI == "" {
 		t.Fatalf("unexpected artifact %#v", got)
 	}
 	if !got.PublishedAt.Equal(time.Date(2026, 5, 24, 0, 0, 0, 0, time.UTC)) {

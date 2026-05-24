@@ -35,7 +35,7 @@ func TestObserveVersionWheelSdistAndYanked(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 2 || got[0].Kind != ArtifactKindWheel || got[1].Kind != ArtifactKindSdist || !got[1].Yanked {
+	if len(got) != 2 || got[0].Kind != ArtifactKindWheel || got[1].Kind != ArtifactKindSdist || !got[1].Yanked || got[0].StorageURI == "" {
 		t.Fatalf("unexpected artifacts %#v", got)
 	}
 	if !got[0].UploadedAt.Equal(time.Date(2026, 5, 24, 0, 0, 0, 0, time.UTC)) {

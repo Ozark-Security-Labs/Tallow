@@ -38,6 +38,7 @@ type Artifact struct {
 	RegistryHashes map[string]string
 	LocalHashes    map[string]string
 	Verification   Verification
+	StorageURI     string
 }
 
 type Verification struct {

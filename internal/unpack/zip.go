@@ -27,7 +27,7 @@ func readZip(artifactID string, zr *zip.Reader, policy Policy) (Manifest, error)
 			m.addEntry(Entry{Path: f.Name, Size: int64(f.UncompressedSize64), Mode: int64(f.Mode()), Rejected: RejectMaxFiles})
 			m.Truncated = true
 			m.Totals.TruncatedByPolicy = true
-			continue
+			break
 		}
 		seen++
 		name, code, ok := normalizeArchivePath(f.Name)

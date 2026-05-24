@@ -9,6 +9,10 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/Ozark-Security-Labs/Tallow/internal/artifacts"
+	"github.com/Ozark-Security-Labs/Tallow/internal/identity"
+	"github.com/Ozark-Security-Labs/Tallow/internal/storage"
 )
 
 const DefaultMaxDownloadBytes int64 = 256 << 20
@@ -17,6 +21,7 @@ type Client struct {
 	BaseURL          string
 	HTTPClient       *http.Client
 	MaxDownloadBytes int64
+	Store            *artifacts.FileStore
 }
 
 func NewClient(baseURL string, hc *http.Client) Client {
@@ -140,5 +145,17 @@ func (c Client) Observe(ctx context.Context, name, version string) (Artifact, er
 	if meta.Time != nil && meta.Time[version] != "" {
 		published, _ = time.Parse(time.RFC3339, meta.Time[version])
 	}
-	return Artifact{Package: meta.Name, Version: version, Filename: filenameFromTarballURL(v.Dist.Tarball), TarballURL: v.Dist.Tarball, Integrity: v.Dist.Integrity, Shasum: v.Dist.Shasum, PublishedAt: published, RegistryHashes: registry, LocalHashes: local, Verification: verification}, nil
+	storageURI := ""
+	parts, _ := identity.NormalizePackageName(identity.EcosystemNPM, meta.Name)
+	pkg := identity.PackageIdentity{Ecosystem: identity.EcosystemNPM, RawName: meta.Name, NormalizedName: parts.NormalizedName, Namespace: parts.Namespace, Name: parts.Name, RegistryURL: c.BaseURL}
+	art := identity.ArtifactIdentity{Kind: identity.ArtifactNPMTarball, Filename: filenameFromTarballURL(v.Dist.Tarball), DownloadURL: v.Dist.Tarball, Digests: map[string]string{"sha256": local["sha256"]}, ObservedAt: time.Now().UTC()}
+	if uri, err := storage.ArtifactRawURI(pkg, identity.NormalizeVersion(identity.EcosystemNPM, version), art, local["sha256"]); err == nil {
+		storageURI = uri
+		if c.Store != nil && verification.Status == VerificationVerified {
+			if _, err := c.Store.Write(uri, body); err != nil {
+				return Artifact{}, err
+			}
+		}
+	}
+	return Artifact{Package: meta.Name, Version: version, Filename: filenameFromTarballURL(v.Dist.Tarball), TarballURL: v.Dist.Tarball, Integrity: v.Dist.Integrity, Shasum: v.Dist.Shasum, PublishedAt: published, RegistryHashes: registry, LocalHashes: local, Verification: verification, StorageURI: storageURI}, nil
 }

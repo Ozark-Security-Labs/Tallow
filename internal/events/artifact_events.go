@@ -32,6 +32,20 @@ func NewArtifactEnvelope(eventType string, a ArtifactEvent) (Envelope, error) {
 	if err := a.Validate(); err != nil {
 		return Envelope{}, err
 	}
+	switch eventType {
+	case "artifact.downloaded":
+		if a.StorageURI == "" {
+			return Envelope{}, tallowerr.New(tallowerr.CodeValidation, "downloaded event requires storage_uri")
+		}
+	case "artifact.hash.verified":
+		if len(a.RegistryHashes) == 0 || len(a.LocalHashes) == 0 {
+			return Envelope{}, tallowerr.New(tallowerr.CodeValidation, "hash verified event requires hash evidence")
+		}
+	case "artifact.hash.mismatch":
+		if len(a.RegistryHashes) == 0 || len(a.LocalHashes) == 0 || a.Reason == "" {
+			return Envelope{}, tallowerr.New(tallowerr.CodeValidation, "hash mismatch event requires hash evidence and reason")
+		}
+	}
 	b, err := json.Marshal(a)
 	if err != nil {
 		return Envelope{}, err

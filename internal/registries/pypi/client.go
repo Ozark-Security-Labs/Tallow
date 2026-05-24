@@ -9,6 +9,10 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/Ozark-Security-Labs/Tallow/internal/artifacts"
+	"github.com/Ozark-Security-Labs/Tallow/internal/identity"
+	"github.com/Ozark-Security-Labs/Tallow/internal/storage"
 )
 
 type Client struct {
@@ -16,6 +20,7 @@ type Client struct {
 	HTTPClient           *http.Client
 	MaxDownloadBytes     int64
 	AllowedArtifactHosts []string
+	Store                *artifacts.FileStore
 }
 
 func NewClient(baseURL string, hc *http.Client) Client {
@@ -40,6 +45,9 @@ func (c Client) FetchMetadata(ctx context.Context, project string) (Metadata, er
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return Metadata{}, fmt.Errorf("pypi metadata status %d", resp.StatusCode)
+	}
+	if resp.ContentLength > c.maxBytes() {
+		return Metadata{}, fmt.Errorf("pypi metadata exceeds max bytes")
 	}
 	var meta Metadata
 	if err := json.NewDecoder(io.LimitReader(resp.Body, c.maxBytes()+1)).Decode(&meta); err != nil {
@@ -144,7 +152,20 @@ func (c Client) Observe(ctx context.Context, project, version string) ([]Artifac
 		if f.UploadTimeISO != "" {
 			uploaded, _ = time.Parse(time.RFC3339, strings.TrimSuffix(f.UploadTimeISO, "Z")+"Z")
 		}
-		out = append(out, Artifact{Project: meta.Info.Name, Version: version, Filename: f.Filename, Kind: ArtifactKind(f.PackageType), URL: f.URL, Yanked: f.Yanked, YankedReason: f.YankedReason, UploadedAt: uploaded, RegistryHashes: registry, LocalHashes: local, Verification: verification})
+		storageURI := ""
+		parts, _ := identity.NormalizePackageName(identity.EcosystemPyPI, meta.Info.Name)
+		pkg := identity.PackageIdentity{Ecosystem: identity.EcosystemPyPI, RawName: meta.Info.Name, NormalizedName: parts.NormalizedName, Name: parts.Name, RegistryURL: c.BaseURL}
+		kind := identity.ArtifactKind(ArtifactKind(f.PackageType))
+		art := identity.ArtifactIdentity{Kind: kind, Filename: f.Filename, DownloadURL: f.URL, Digests: map[string]string{"sha256": local["sha256"]}, ObservedAt: time.Now().UTC()}
+		if uri, err := storage.ArtifactRawURI(pkg, identity.NormalizeVersion(identity.EcosystemPyPI, version), art, local["sha256"]); err == nil {
+			storageURI = uri
+			if c.Store != nil && verification.Status == Verified {
+				if _, err := c.Store.Write(uri, body); err != nil {
+					return nil, err
+				}
+			}
+		}
+		out = append(out, Artifact{Project: meta.Info.Name, Version: version, Filename: f.Filename, Kind: ArtifactKind(f.PackageType), URL: f.URL, Yanked: f.Yanked, YankedReason: f.YankedReason, UploadedAt: uploaded, RegistryHashes: registry, LocalHashes: local, Verification: verification, StorageURI: storageURI})
 	}
 	return out, nil
 }

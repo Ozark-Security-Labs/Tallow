@@ -28,6 +28,10 @@ func TestArtifactEventsRejectMissingFields(t *testing.T) {
 	if _, err := NewArtifactEnvelope("artifact.downloaded", ArtifactEvent{}); err == nil {
 		t.Fatal("want validation error")
 	}
+	base := ArtifactEvent{Ecosystem: "npm", Package: "pkg", Version: "1", ArtifactID: "a", ArtifactKind: "npm_tarball", ObservedAt: time.Now().UTC()}
+	if _, err := NewArtifactEnvelope("artifact.downloaded", base); err == nil {
+		t.Fatal("want storage URI validation")
+	}
 }
 
 func TestArtifactObservationEvents(t *testing.T) {
