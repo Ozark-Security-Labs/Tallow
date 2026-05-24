@@ -1,6 +1,7 @@
 package npm
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -56,8 +57,11 @@ func (c Client) FetchMetadata(ctx context.Context, name string) (Metadata, error
 	if resp.StatusCode != http.StatusOK {
 		return Metadata{}, fmt.Errorf("npm metadata status %d", resp.StatusCode)
 	}
+	if resp.ContentLength > c.maxBytes() {
+		return Metadata{}, fmt.Errorf("npm metadata exceeds max bytes")
+	}
 	var meta Metadata
-	if err := json.NewDecoder(io.LimitReader(resp.Body, c.maxBytes())).Decode(&meta); err != nil {
+	if err := decodeBoundedJSON(resp.Body, c.maxBytes(), &meta); err != nil {
 		return Metadata{}, err
 	}
 	return meta, nil
@@ -146,16 +150,43 @@ func (c Client) Observe(ctx context.Context, name, version string) (Artifact, er
 		published, _ = time.Parse(time.RFC3339, meta.Time[version])
 	}
 	storageURI := ""
-	parts, _ := identity.NormalizePackageName(identity.EcosystemNPM, meta.Name)
+	parts, err := identity.NormalizePackageName(identity.EcosystemNPM, meta.Name)
+	if err != nil {
+		return Artifact{}, err
+	}
 	pkg := identity.PackageIdentity{Ecosystem: identity.EcosystemNPM, RawName: meta.Name, NormalizedName: parts.NormalizedName, Namespace: parts.Namespace, Name: parts.Name, RegistryURL: c.BaseURL}
 	art := identity.ArtifactIdentity{Kind: identity.ArtifactNPMTarball, Filename: filenameFromTarballURL(v.Dist.Tarball), DownloadURL: v.Dist.Tarball, Digests: map[string]string{"sha256": local["sha256"]}, ObservedAt: time.Now().UTC()}
-	if uri, err := storage.ArtifactRawURI(pkg, identity.NormalizeVersion(identity.EcosystemNPM, version), art, local["sha256"]); err == nil {
-		storageURI = uri
-		if c.Store != nil && verification.Status == VerificationVerified {
-			if _, err := c.Store.Write(uri, body); err != nil {
-				return Artifact{}, err
-			}
+	uri, err := storage.ArtifactRawURI(pkg, identity.NormalizeVersion(identity.EcosystemNPM, version), art, local["sha256"])
+	if err != nil {
+		return Artifact{}, err
+	}
+	storageURI = uri
+	if c.Store != nil && verification.Status == VerificationVerified {
+		if _, err := c.Store.Write(uri, body); err != nil {
+			return Artifact{}, err
 		}
 	}
 	return Artifact{Package: meta.Name, Version: version, Filename: filenameFromTarballURL(v.Dist.Tarball), TarballURL: v.Dist.Tarball, Integrity: v.Dist.Integrity, Shasum: v.Dist.Shasum, PublishedAt: published, RegistryHashes: registry, LocalHashes: local, Verification: verification, StorageURI: storageURI}, nil
+}
+
+func decodeBoundedJSON(r io.Reader, maxBytes int64, v any) error {
+	b, err := io.ReadAll(io.LimitReader(r, maxBytes+1))
+	if err != nil {
+		return err
+	}
+	if int64(len(b)) > maxBytes {
+		return fmt.Errorf("metadata exceeds max bytes")
+	}
+	dec := json.NewDecoder(bytes.NewReader(b))
+	if err := dec.Decode(v); err != nil {
+		return err
+	}
+	var extra any
+	if err := dec.Decode(&extra); err != io.EOF {
+		if err == nil {
+			return fmt.Errorf("metadata contains trailing JSON")
+		}
+		return err
+	}
+	return nil
 }

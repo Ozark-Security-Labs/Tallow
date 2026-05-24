@@ -1,6 +1,7 @@
 package pypi
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -37,8 +38,9 @@ func (c Client) FetchMetadata(ctx context.Context, project string) (Metadata, er
 		return Metadata{}, err
 	}
 	req.Header.Set("Accept-Encoding", "identity")
-	req.Header.Set("Accept-Encoding", "identity")
-	resp, err := c.HTTPClient.Do(req)
+	client := *c.HTTPClient
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error { return c.validateMetadataURL(req.URL.String()) }
+	resp, err := client.Do(req)
 	if err != nil {
 		return Metadata{}, err
 	}
@@ -50,7 +52,7 @@ func (c Client) FetchMetadata(ctx context.Context, project string) (Metadata, er
 		return Metadata{}, fmt.Errorf("pypi metadata exceeds max bytes")
 	}
 	var meta Metadata
-	if err := json.NewDecoder(io.LimitReader(resp.Body, c.maxBytes()+1)).Decode(&meta); err != nil {
+	if err := decodeBoundedJSON(resp.Body, c.maxBytes(), &meta); err != nil {
 		return Metadata{}, err
 	}
 	return meta, nil
@@ -93,6 +95,30 @@ func (c Client) maxBytes() int64 {
 		return 256 << 20
 	}
 	return c.MaxDownloadBytes
+}
+
+func (c Client) validateMetadataURL(raw string) error {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return err
+	}
+	if u.Scheme != "https" && u.Scheme != "http" {
+		return fmt.Errorf("unsupported metadata url scheme")
+	}
+	if u.User != nil {
+		return fmt.Errorf("metadata url userinfo forbidden")
+	}
+	base, err := url.Parse(c.BaseURL)
+	if err != nil {
+		return err
+	}
+	if base.Scheme == "https" && u.Scheme != "https" {
+		return fmt.Errorf("metadata url must use https")
+	}
+	if !strings.EqualFold(u.Host, base.Host) {
+		return fmt.Errorf("metadata url host %s not allowed", u.Host)
+	}
+	return nil
 }
 
 func (c Client) validateArtifactURL(raw string) error {
@@ -153,19 +179,49 @@ func (c Client) Observe(ctx context.Context, project, version string) ([]Artifac
 			uploaded, _ = time.Parse(time.RFC3339, strings.TrimSuffix(f.UploadTimeISO, "Z")+"Z")
 		}
 		storageURI := ""
-		parts, _ := identity.NormalizePackageName(identity.EcosystemPyPI, meta.Info.Name)
+		parts, err := identity.NormalizePackageName(identity.EcosystemPyPI, meta.Info.Name)
+		if err != nil {
+			return nil, err
+		}
 		pkg := identity.PackageIdentity{Ecosystem: identity.EcosystemPyPI, RawName: meta.Info.Name, NormalizedName: parts.NormalizedName, Name: parts.Name, RegistryURL: c.BaseURL}
 		kind := identity.ArtifactKind(ArtifactKind(f.PackageType))
 		art := identity.ArtifactIdentity{Kind: kind, Filename: f.Filename, DownloadURL: f.URL, Digests: map[string]string{"sha256": local["sha256"]}, ObservedAt: time.Now().UTC()}
-		if uri, err := storage.ArtifactRawURI(pkg, identity.NormalizeVersion(identity.EcosystemPyPI, version), art, local["sha256"]); err == nil {
-			storageURI = uri
-			if c.Store != nil && verification.Status == Verified {
-				if _, err := c.Store.Write(uri, body); err != nil {
-					return nil, err
-				}
+		uri, err := storage.ArtifactRawURI(pkg, identity.NormalizeVersion(identity.EcosystemPyPI, version), art, local["sha256"])
+		if err != nil {
+			return nil, err
+		}
+		storageURI = uri
+		if c.Store != nil && verification.Status == Verified {
+			if _, err := c.Store.Write(uri, body); err != nil {
+				return nil, err
 			}
 		}
 		out = append(out, Artifact{Project: meta.Info.Name, Version: version, Filename: f.Filename, Kind: ArtifactKind(f.PackageType), URL: f.URL, Yanked: f.Yanked, YankedReason: f.YankedReason, UploadedAt: uploaded, RegistryHashes: registry, LocalHashes: local, Verification: verification, StorageURI: storageURI})
 	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("pypi version %q has no supported artifacts", version)
+	}
 	return out, nil
+}
+
+func decodeBoundedJSON(r io.Reader, maxBytes int64, v any) error {
+	b, err := io.ReadAll(io.LimitReader(r, maxBytes+1))
+	if err != nil {
+		return err
+	}
+	if int64(len(b)) > maxBytes {
+		return fmt.Errorf("metadata exceeds max bytes")
+	}
+	dec := json.NewDecoder(bytes.NewReader(b))
+	if err := dec.Decode(v); err != nil {
+		return err
+	}
+	var extra any
+	if err := dec.Decode(&extra); err != io.EOF {
+		if err == nil {
+			return fmt.Errorf("metadata contains trailing JSON")
+		}
+		return err
+	}
+	return nil
 }

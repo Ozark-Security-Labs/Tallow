@@ -51,3 +51,46 @@ func TestObserveMissingVersion(t *testing.T) {
 		t.Fatal("want missing version error")
 	}
 }
+
+func TestFetchMetadataRejectsOversizeBody(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"name":"pkg","versions":{"1.0.0":{"dist":{}}}}`))
+	}))
+	defer srv.Close()
+	client := NewClient(srv.URL, srv.Client())
+	client.MaxDownloadBytes = 8
+	if _, err := client.FetchMetadata(context.Background(), "pkg"); err == nil {
+		t.Fatal("want oversize metadata error")
+	}
+}
+
+func TestFetchMetadataRejectsTrailingJSON(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"name":"pkg","versions":{}} {}`))
+	}))
+	defer srv.Close()
+	if _, err := NewClient(srv.URL, srv.Client()).FetchMetadata(context.Background(), "pkg"); err == nil {
+		t.Fatal("want trailing JSON error")
+	}
+}
+
+func TestObservePropagatesStorageURIErrors(t *testing.T) {
+	body := []byte("fixture tarball bytes")
+	sha := sha512.Sum512(body)
+	var base string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/pkg":
+			fmt.Fprintf(w, `{"name":"pkg","versions":{"1.0.0":{"name":"pkg","version":"1.0.0","dist":{"tarball":"%s/files/bad..tgz","integrity":"sha512-%s"}}}}`, base, base64.StdEncoding.EncodeToString(sha[:]))
+		case "/files/bad..tgz":
+			_, _ = w.Write(body)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	base = srv.URL
+	if _, err := NewClient(srv.URL, srv.Client()).Observe(context.Background(), "pkg", "1.0.0"); err == nil {
+		t.Fatal("want storage URI error")
+	}
+}
