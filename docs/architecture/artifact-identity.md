@@ -54,3 +54,5 @@ Do not transition `hash_mismatch` to `verified` for the same bytes. A later corr
 ## Implemented artifact identity
 
 Foundation supports `npm_tgz`, `pypi_sdist`, and `pypi_wheel`; same-version mutations are represented by a changed immutable digest for the same pre-download key.
+
+- #32 Artifact identity is implemented in internal/identity with pre-download and immutable keys.
