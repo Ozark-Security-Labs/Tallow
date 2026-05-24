@@ -38,7 +38,21 @@ func (a App) Run(args []string) int {
 	case "version":
 		return a.version(args[1:])
 	case "server":
-		fmt.Fprintln(a.Out, "starting API server is available via cmd/tallow-api; use tallow-api for long-running service execution")
+		fs := flag.NewFlagSet("server", flag.ContinueOnError)
+		fs.SetOutput(a.Err)
+		cfgPath := fs.String("config", "", "config path")
+		if fs.Parse(args[1:]) != nil {
+			return ExitUsage
+		}
+		cfg, err := config.LoadFromEnvironment()
+		if *cfgPath != "" {
+			cfg, err = loadConfigFile(*cfgPath, cfg)
+		}
+		if err != nil {
+			fmt.Fprintln(a.Err, err)
+			return ExitConfig
+		}
+		fmt.Fprintf(a.Out, "server configured for %s\n", cfg.Server.ListenAddress)
 		return ExitOK
 	case "observe", "analyze":
 		fmt.Fprintf(a.Err, "%s is not implemented in Foundation and does not fetch or execute packages\n", args[0])

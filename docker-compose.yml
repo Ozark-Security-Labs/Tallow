@@ -41,8 +41,8 @@ services:
       retries: 6
   worker:
     build: .
-    entrypoint: ["/usr/local/bin/tallow"]
-    command: ["analyze"]
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["echo worker placeholder: analyzers are not implemented in Foundation"]
     profiles: ["worker"]
   web:
     image: nginx:alpine

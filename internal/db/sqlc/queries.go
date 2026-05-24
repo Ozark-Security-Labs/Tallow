@@ -3,14 +3,75 @@ package sqlc
 
 import (
 	"context"
+	"time"
+
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
-type Queries struct{ db DBTX }
 type DBTX interface {
-	Exec(context.Context, string, ...any) (pgconnCommandTag, error)
+	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
 	QueryRow(context.Context, string, ...any) pgx.Row
 }
-type pgconnCommandTag interface{ RowsAffected() int64 }
+type Queries struct{ db DBTX }
 
 func New(db DBTX) *Queries { return &Queries{db: db} }
+
+type UpsertPackageParams struct{ Ecosystem, RegistryUrl, RawName, NormalizedName, Namespace string }
+
+func (q *Queries) UpsertPackage(ctx context.Context, arg UpsertPackageParams) (string, error) {
+	var id string
+	err := q.db.QueryRow(ctx, `INSERT INTO packages (ecosystem, registry_url, raw_name, normalized_name, namespace) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (ecosystem, registry_url, normalized_name) DO UPDATE SET raw_name=EXCLUDED.raw_name RETURNING id`, arg.Ecosystem, arg.RegistryUrl, arg.RawName, arg.NormalizedName, arg.Namespace).Scan(&id)
+	return id, err
+}
+
+type UpsertPackageVersionParams struct{ PackageID, RawVersion, NormalizedVersion, NormalizationStatus string }
+
+func (q *Queries) UpsertPackageVersion(ctx context.Context, arg UpsertPackageVersionParams) (string, error) {
+	var id string
+	err := q.db.QueryRow(ctx, `INSERT INTO package_versions (package_id, raw_version, normalized_version, normalization_status) VALUES ($1,$2,$3,$4) ON CONFLICT (package_id, normalized_version) DO UPDATE SET raw_version=EXCLUDED.raw_version RETURNING id`, arg.PackageID, arg.RawVersion, arg.NormalizedVersion, arg.NormalizationStatus).Scan(&id)
+	return id, err
+}
+
+type InsertArtifactParams struct {
+	VersionID, ArtifactType, Filename, DownloadUrl string
+	Sha256                                         *string
+}
+
+func (q *Queries) InsertArtifact(ctx context.Context, arg InsertArtifactParams) (string, error) {
+	var id string
+	err := q.db.QueryRow(ctx, `INSERT INTO artifacts (version_id, artifact_type, filename, download_url, sha256) VALUES ($1,$2,$3,$4,$5) RETURNING id`, arg.VersionID, arg.ArtifactType, arg.Filename, arg.DownloadUrl, arg.Sha256).Scan(&id)
+	return id, err
+}
+
+type CreateOutboxEventParams struct {
+	ID, Subject string
+	Payload     []byte
+}
+
+func (q *Queries) CreateOutboxEvent(ctx context.Context, arg CreateOutboxEventParams) error {
+	_, err := q.db.Exec(ctx, `INSERT INTO events_outbox (id, subject, payload) VALUES ($1,$2,$3) ON CONFLICT (id) DO NOTHING`, arg.ID, arg.Subject, arg.Payload)
+	return err
+}
+func (q *Queries) MarkOutboxPublished(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, `UPDATE events_outbox SET status='published', published_at=now() WHERE id=$1`, id)
+	return err
+}
+
+type ClaimDueJobParams struct {
+	LeaseOwner   string
+	LeaseSeconds int32
+}
+type ClaimDueJobRow struct {
+	ID, Kind, Target string
+	CadenceSeconds   int32
+	NextRunAt        time.Time
+	LeaseOwner       *string
+	LeaseUntil       *time.Time
+}
+
+func (q *Queries) ClaimDueJob(ctx context.Context, arg ClaimDueJobParams) (ClaimDueJobRow, error) {
+	var r ClaimDueJobRow
+	err := q.db.QueryRow(ctx, `UPDATE scheduled_jobs SET lease_owner=$1, lease_until=now()+($2::text || ' seconds')::interval WHERE id=(SELECT id FROM scheduled_jobs WHERE next_run_at<=now() AND (lease_until IS NULL OR lease_until<now()) ORDER BY next_run_at LIMIT 1 FOR UPDATE SKIP LOCKED) RETURNING id, kind, target, cadence_seconds, next_run_at, lease_owner, lease_until`, arg.LeaseOwner, arg.LeaseSeconds).Scan(&r.ID, &r.Kind, &r.Target, &r.CadenceSeconds, &r.NextRunAt, &r.LeaseOwner, &r.LeaseUntil)
+	return r, err
+}

@@ -70,6 +70,9 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 	if e, ok := err.(*tallowerr.Error); ok {
 		code = e.Code
 	}
+	if rr, ok := w.(*responseRecorder); ok {
+		rr.errorCode = string(code)
+	}
 	writeJSON(w, tallowerr.HTTPStatus(code), tallowerr.JSONEnvelope(err, id))
 }
 func (s *Server) recoverer(next http.Handler) http.Handler {
