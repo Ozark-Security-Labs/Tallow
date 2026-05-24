@@ -102,16 +102,19 @@ func (c Client) validateArtifactURL(raw string) error {
 	if err != nil {
 		return err
 	}
-	allowed := append([]string{base.Hostname()}, c.AllowedArtifactHosts...)
+	if base.Scheme == "https" && u.Scheme != "https" {
+		return fmt.Errorf("artifact url must use https")
+	}
+	allowed := append([]string{base.Host}, c.AllowedArtifactHosts...)
 	if strings.EqualFold(base.Hostname(), "pypi.org") {
 		allowed = append(allowed, "files.pythonhosted.org")
 	}
 	for _, h := range allowed {
-		if strings.EqualFold(u.Hostname(), h) {
+		if strings.EqualFold(u.Host, h) || strings.EqualFold(u.Hostname(), h) {
 			return nil
 		}
 	}
-	return fmt.Errorf("artifact url host %s not allowed", u.Hostname())
+	return fmt.Errorf("artifact url host %s not allowed", u.Host)
 }
 
 func (c Client) Observe(ctx context.Context, project, version string) ([]Artifact, error) {

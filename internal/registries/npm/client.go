@@ -67,7 +67,9 @@ func (c Client) Download(ctx context.Context, rawurl string) ([]byte, error) {
 		return nil, err
 	}
 	req.Header.Set("Accept-Encoding", "identity")
-	resp, err := c.HTTPClient.Do(req)
+	client := *c.HTTPClient
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error { return c.validateArtifactURL(req.URL.String()) }
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -104,8 +106,11 @@ func (c Client) validateArtifactURL(raw string) error {
 	if err != nil {
 		return err
 	}
-	if !strings.EqualFold(u.Hostname(), base.Hostname()) {
-		return fmt.Errorf("artifact url host %s not allowed", u.Hostname())
+	if base.Scheme == "https" && u.Scheme != "https" {
+		return fmt.Errorf("artifact url must use https")
+	}
+	if !strings.EqualFold(u.Host, base.Host) {
+		return fmt.Errorf("artifact url host %s not allowed", u.Host)
 	}
 	return nil
 }
