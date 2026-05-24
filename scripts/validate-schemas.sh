@@ -27,6 +27,7 @@ schema_map = {
     'envelope': root / 'events' / 'envelope.v1.schema.json',
     'artifact-observed': root / 'events' / 'artifact-observed.v1.schema.json',
     'evidence-ref': root / 'evidence' / 'evidence-ref.v1.schema.json',
+    'unpack-manifest': root / 'unpack-manifest.schema.json',
 }
 validators = {}
 for name, path in schema_map.items():
@@ -36,12 +37,15 @@ for name, path in schema_map.items():
 errors = []
 def fixture_kind(path: pathlib.Path):
     name = path.name
+    if name == 'unpack-manifest.golden.json':
+        return 'unpack-manifest'
     for prefix in sorted(schema_map, key=len, reverse=True):
         if name.startswith(prefix):
             return prefix
     return None
 
-for p in sorted(root.glob('testdata/**/*.json')):
+extra_fixtures = [pathlib.Path('testdata/snapshots/unpack-manifest.golden.json')]
+for p in sorted(list(root.glob('testdata/**/*.json')) + [x for x in extra_fixtures if x.exists()]):
     kind = fixture_kind(p)
     if kind is None:
         errors.append(f'{p}: no schema mapping for fixture')
@@ -58,5 +62,5 @@ for p in sorted(root.glob('testdata/**/*.json')):
 if errors:
     print('\n'.join(errors), file=sys.stderr)
     sys.exit(1)
-print('Validated Foundation schemas and valid/invalid fixtures.')
+print('Validated schemas and valid/invalid fixtures.')
 PY

@@ -1,0 +1,31 @@
+{
+  "artifact_id": "artifact-golden",
+  "policy_version": "safe-unpack-v1",
+  "entries": [
+    {
+      "path": "a.txt",
+      "type": "file",
+      "size": 2,
+      "mode": 420,
+      "sha256": "87428fc522803d31065e7bce3cf03fe475096631e5e07bbd7a0fde60c4cf25c7",
+      "line_count": 1
+    },
+    {
+      "path": "b.txt",
+      "type": "file",
+      "size": 2,
+      "mode": 420,
+      "sha256": "0263829989b6fd954f72baaf2fc64bc2e2f01d692d4de72986ea808f6e99813f",
+      "line_count": 1
+    }
+  ],
+  "rejected_entries": null,
+  "totals": {
+    "files": 2,
+    "directories": 0,
+    "rejected": 0,
+    "total_bytes": 4,
+    "truncated_by_policy": false
+  },
+  "truncated": false
+}
