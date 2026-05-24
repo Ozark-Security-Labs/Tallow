@@ -12,15 +12,17 @@ import (
 )
 
 type Client struct {
-	BaseURL    string
-	HTTPClient *http.Client
+	BaseURL              string
+	HTTPClient           *http.Client
+	MaxDownloadBytes     int64
+	AllowedArtifactHosts []string
 }
 
 func NewClient(baseURL string, hc *http.Client) Client {
 	if hc == nil {
-		hc = http.DefaultClient
+		hc = &http.Client{Timeout: 30 * time.Second}
 	}
-	return Client{BaseURL: strings.TrimRight(baseURL, "/"), HTTPClient: hc}
+	return Client{BaseURL: strings.TrimRight(baseURL, "/"), HTTPClient: hc, MaxDownloadBytes: 256 << 20}
 }
 
 func (c Client) FetchMetadata(ctx context.Context, project string) (Metadata, error) {
@@ -29,6 +31,8 @@ func (c Client) FetchMetadata(ctx context.Context, project string) (Metadata, er
 	if err != nil {
 		return Metadata{}, err
 	}
+	req.Header.Set("Accept-Encoding", "identity")
+	req.Header.Set("Accept-Encoding", "identity")
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return Metadata{}, err
@@ -45,6 +49,9 @@ func (c Client) FetchMetadata(ctx context.Context, project string) (Metadata, er
 }
 
 func (c Client) Download(ctx context.Context, rawurl string) ([]byte, error) {
+	if err := c.validateArtifactURL(rawurl); err != nil {
+		return nil, err
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawurl, nil)
 	if err != nil {
 		return nil, err
@@ -57,7 +64,51 @@ func (c Client) Download(ctx context.Context, rawurl string) ([]byte, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("pypi artifact status %d", resp.StatusCode)
 	}
-	return io.ReadAll(resp.Body)
+	if resp.ContentLength > c.maxBytes() {
+		return nil, fmt.Errorf("pypi artifact exceeds max bytes")
+	}
+	b, err := io.ReadAll(io.LimitReader(resp.Body, c.maxBytes()+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(b)) > c.maxBytes() {
+		return nil, fmt.Errorf("pypi artifact exceeds max bytes")
+	}
+	return b, nil
+}
+
+func (c Client) maxBytes() int64 {
+	if c.MaxDownloadBytes <= 0 {
+		return 256 << 20
+	}
+	return c.MaxDownloadBytes
+}
+
+func (c Client) validateArtifactURL(raw string) error {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return err
+	}
+	if u.Scheme != "https" && u.Scheme != "http" {
+		return fmt.Errorf("unsupported artifact url scheme")
+	}
+	if u.User != nil {
+		return fmt.Errorf("artifact url userinfo forbidden")
+	}
+	base, err := url.Parse(c.BaseURL)
+	if err != nil {
+		return err
+	}
+	allowed := append([]string{base.Hostname()}, c.AllowedArtifactHosts...)
+	if strings.EqualFold(base.Hostname(), "pypi.org") {
+		allowed = append(allowed, "files.pythonhosted.org")
+	}
+	for _, h := range allowed {
+		if strings.EqualFold(u.Hostname(), h) {
+			return nil
+		}
+	}
+	return fmt.Errorf("artifact url host %s not allowed", u.Hostname())
 }
 
 func (c Client) Observe(ctx context.Context, project, version string) ([]Artifact, error) {
