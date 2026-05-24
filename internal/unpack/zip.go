@@ -23,18 +23,18 @@ func readZip(artifactID string, zr *zip.Reader, policy Policy) (Manifest, error)
 	var total int64
 	seen := 0
 	for _, f := range zr.File {
-		name, code, ok := normalizeArchivePath(f.Name)
-		if !ok {
-			m.addEntry(Entry{Path: f.Name, Type: "unknown", Size: int64(f.UncompressedSize64), Mode: int64(f.Mode()), Rejected: code})
-			continue
-		}
 		if seen >= policy.MaxFiles {
-			m.addEntry(Entry{Path: name, Size: int64(f.UncompressedSize64), Mode: int64(f.Mode()), Rejected: RejectMaxFiles})
+			m.addEntry(Entry{Path: f.Name, Size: int64(f.UncompressedSize64), Mode: int64(f.Mode()), Rejected: RejectMaxFiles})
 			m.Truncated = true
 			m.Totals.TruncatedByPolicy = true
 			continue
 		}
 		seen++
+		name, code, ok := normalizeArchivePath(f.Name)
+		if !ok {
+			m.addEntry(Entry{Path: f.Name, Type: "unknown", Size: int64(f.UncompressedSize64), Mode: int64(f.Mode()), Rejected: code})
+			continue
+		}
 		mode := f.Mode()
 		if unsafeMode(int64(mode)) {
 			m.addEntry(Entry{Path: name, Type: "file", Size: int64(f.UncompressedSize64), Mode: int64(mode), Rejected: RejectUnsafeMode})

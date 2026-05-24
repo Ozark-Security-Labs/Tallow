@@ -42,7 +42,7 @@ func (c Client) FetchMetadata(ctx context.Context, project string) (Metadata, er
 		return Metadata{}, fmt.Errorf("pypi metadata status %d", resp.StatusCode)
 	}
 	var meta Metadata
-	if err := json.NewDecoder(resp.Body).Decode(&meta); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, c.maxBytes()+1)).Decode(&meta); err != nil {
 		return Metadata{}, err
 	}
 	return meta, nil
@@ -56,7 +56,10 @@ func (c Client) Download(ctx context.Context, rawurl string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.HTTPClient.Do(req)
+	req.Header.Set("Accept-Encoding", "identity")
+	client := *c.HTTPClient
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error { return c.validateArtifactURL(req.URL.String()) }
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}

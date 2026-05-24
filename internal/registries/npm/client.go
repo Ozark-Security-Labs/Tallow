@@ -41,7 +41,9 @@ func (c Client) FetchMetadata(ctx context.Context, name string) (Metadata, error
 		return Metadata{}, err
 	}
 	req.Header.Set("Accept-Encoding", "identity")
-	resp, err := c.HTTPClient.Do(req)
+	client := *c.HTTPClient
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error { return c.validateArtifactURL(req.URL.String()) }
+	resp, err := client.Do(req)
 	if err != nil {
 		return Metadata{}, err
 	}

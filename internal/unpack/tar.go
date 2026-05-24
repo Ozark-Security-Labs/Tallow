@@ -34,18 +34,18 @@ func readTar(artifactID string, tr *tar.Reader, policy Policy) (Manifest, error)
 			m.Totals.TruncatedByPolicy = true
 			break
 		}
-		name, code, ok := normalizeArchivePath(h.Name)
-		if !ok {
-			m.addEntry(Entry{Path: h.Name, Type: "unknown", Size: h.Size, Mode: int64(h.Mode), Rejected: code})
-			continue
-		}
 		if seen >= policy.MaxFiles {
-			m.addEntry(Entry{Path: name, Size: h.Size, Mode: int64(h.Mode), Rejected: RejectMaxFiles})
+			m.addEntry(Entry{Path: h.Name, Size: h.Size, Mode: int64(h.Mode), Rejected: RejectMaxFiles})
 			m.Truncated = true
 			m.Totals.TruncatedByPolicy = true
 			continue
 		}
 		seen++
+		name, code, ok := normalizeArchivePath(h.Name)
+		if !ok {
+			m.addEntry(Entry{Path: h.Name, Type: "unknown", Size: h.Size, Mode: int64(h.Mode), Rejected: code})
+			continue
+		}
 		switch h.Typeflag {
 		case tar.TypeDir:
 			if unsafeMode(h.Mode) {
