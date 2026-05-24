@@ -6,9 +6,32 @@ on:
 permissions:
   contents: read
 jobs:
-  repo-smoke:
+  go-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate docs exist
-        run: test -f README.md && test -f AGENTS.md && test -f docs/architecture/overview.md
+      - uses: actions/setup-go@v5
+        with: { go-version: '1.23' }
+      - run: go test ./...
+  schema-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make schema-validate
+  generate-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: '1.23' }
+      - run: make generate-check
+  compose-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose config
+  security-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: test -f docs/security/threat-model.md && test -f docs/security/safe-unpack.md && test -f docs/security/auth.md && test -f docs/security/llm-usage.md
