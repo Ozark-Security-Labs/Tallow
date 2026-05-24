@@ -1,84 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 220" role="img" aria-label="Tallow">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 200" role="img" aria-label="Tallow">
   <title>Tallow</title>
   <desc>Tallow: self-hosted tripwire for malicious dependency releases</desc>
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#070b14"/>
-      <stop offset="0.48" stop-color="#101827"/>
-      <stop offset="1" stop-color="#1b140f"/>
-    </linearGradient>
-    <radialGradient id="glow" cx="50%" cy="48%" r="55%">
-      <stop offset="0" stop-color="#facc15" stop-opacity="0.95"/>
-      <stop offset="0.22" stop-color="#f59e0b" stop-opacity="0.42"/>
-      <stop offset="0.58" stop-color="#92400e" stop-opacity="0.10"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
-    </radialGradient>
-    <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%">
-      <feGaussianBlur stdDeviation="8" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-    <pattern id="ledger" width="28" height="28" patternUnits="userSpaceOnUse">
-      <path d="M 28 0 L 0 0 0 28" fill="none" stroke="#263244" stroke-width="0.8" opacity="0.34"/>
-    </pattern>
-  </defs>
-
-  <rect width="720" height="220" rx="14" fill="url(#bg)"/>
-  <rect x="12" y="12" width="696" height="196" rx="10" fill="url(#ledger)" opacity="0.72"/>
-  <path d="M38 168 C130 132 176 178 254 144 C332 110 398 154 472 126 C550 96 604 122 680 78" fill="none" stroke="#334155" stroke-width="1.4" opacity="0.5"/>
-
-  <g transform="translate(508 28)">
-    <circle cx="72" cy="78" r="82" fill="url(#glow)" opacity="0.92"/>
-    <g filter="url(#softGlow)">
-      <path d="M72 32 C93 57 88 82 73 97 C58 82 49 63 72 32Z" fill="#f97316"/>
-      <path d="M73 43 C84 61 82 77 73 88 C64 76 61 61 73 43Z" fill="#fde68a"/>
-    </g>
-    <path d="M72 92 C72 111 70 126 62 142" fill="none" stroke="#f8fafc" stroke-width="2" stroke-linecap="round" opacity="0.82"/>
-    <path d="M47 104 C61 96 84 96 98 104 L91 174 C88 188 56 188 53 174 Z" fill="#f5deb3" opacity="0.94"/>
-    <path d="M47 104 C61 113 84 113 98 104" fill="none" stroke="#fff7ed" stroke-width="3" opacity="0.7"/>
-    <path d="M56 130 C67 136 79 125 91 132" fill="none" stroke="#b45309" stroke-width="2" opacity="0.38"/>
-  </g>
-
-  <g stroke-linecap="round" stroke-linejoin="round">
-    <g opacity="0.92">
-      <line x1="438" y1="66" x2="486" y2="82" stroke="#64748b" stroke-width="1.8"/>
-      <line x1="438" y1="118" x2="486" y2="102" stroke="#64748b" stroke-width="1.8"/>
-      <line x1="386" y1="92" x2="438" y2="66" stroke="#64748b" stroke-width="1.8"/>
-      <line x1="386" y1="92" x2="438" y2="118" stroke="#64748b" stroke-width="1.8"/>
-      <line x1="438" y1="66" x2="438" y2="118" stroke="#475569" stroke-width="1.4" opacity="0.75"/>
-    </g>
-    <g fill="#111827" stroke="#94a3b8" stroke-width="1.8">
-      <path d="M371 80 h30 l10 12 -10 12 h-30 l-10 -12z"/>
-      <path d="M423 54 h30 l10 12 -10 12 h-30 l-10 -12z"/>
-      <path d="M423 106 h30 l10 12 -10 12 h-30 l-10 -12z"/>
-      <path d="M477 72 h30 l10 12 -10 12 h-30 l-10 -12z"/>
-      <path d="M477 92 h30 l10 12 -10 12 h-30 l-10 -12z"/>
-    </g>
-    <g fill="#fbbf24">
-      <circle cx="386" cy="92" r="3"/>
-      <circle cx="438" cy="66" r="3"/>
-      <circle cx="438" cy="118" r="3"/>
-      <circle cx="492" cy="84" r="3"/>
-      <circle cx="492" cy="104" r="3"/>
-    </g>
-  </g>
-
+  <rect width="720" height="200" rx="12" fill="#0b1220"/>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
-    <text x="48" y="94" font-size="72" font-weight="800" letter-spacing="1" fill="#f8fafc">Tal<tspan fill="#fbbf24">low</tspan></text>
-    <text x="51" y="128" font-size="18" fill="#cbd5e1">self-hosted tripwire for malicious dependency releases</text>
-    <text x="51" y="160" font-size="13" fill="#94a3b8">Ozark Security Labs • release surveillance • evidence ledger</text>
+    <text x="48" y="108" font-size="72" font-weight="700" fill="#e2e8f0">Tal</text>
+    <text x="178" y="108" font-size="72" font-weight="700" fill="#38bdf8">low</text>
+    <text x="48" y="148" font-size="18" fill="#94a3b8">self-hosted tripwire for malicious dependency releases</text>
   </g>
-
-  <g transform="translate(50 174)" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">
-    <rect x="0" y="0" width="86" height="24" rx="12" fill="#111827" stroke="#334155"/>
-    <text x="15" y="16" fill="#93c5fd">Go agents</text>
-    <rect x="98" y="0" width="96" height="24" rx="12" fill="#111827" stroke="#334155"/>
-    <text x="113" y="16" fill="#bfdbfe">Python rules</text>
-    <rect x="206" y="0" width="78" height="24" rx="12" fill="#111827" stroke="#334155"/>
-    <text x="226" y="16" fill="#7dd3fc">NATS</text>
-    <rect x="296" y="0" width="104" height="24" rx="12" fill="#111827" stroke="#334155"/>
-    <text x="315" y="16" fill="#c4b5fd">PostgreSQL</text>
+  <g transform="translate(648, 60)">
+    <circle r="10" fill="#22c55e"/>
+    <circle r="10" cy="28" fill="#f59e0b"/>
+    <circle r="10" cy="56" fill="#ef4444"/>
   </g>
 </svg>
