@@ -63,3 +63,5 @@ Package names are untrusted display text. Escape them in logs, SQL, HTML, shell 
 Code uses `normalized_name` for canonical package names. npm names are ASCII-lowercased and preserve `@scope/name`; PyPI names follow PEP 503 lowercase and collapse `[-_.]+` to `-`. Raw versions are always preserved; unparsed PyPI local/epoch forms may be stored with warning status.
 
 - #33 NormalizePackageName supports npm and PyPI with strict ASCII/path rejection.
+
+- #34 Version normalization preserves raw_version and records warning/rejected status.
