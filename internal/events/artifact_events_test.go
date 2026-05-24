@@ -29,3 +29,7 @@ func TestArtifactEventsRejectMissingFields(t *testing.T) {
 		t.Fatal("want validation error")
 	}
 }
+
+func TestArtifactObservationEvents(t *testing.T) {
+	TestArtifactEventsEnvelopeAndSubjects(t)
+}
