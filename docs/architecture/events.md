@@ -47,3 +47,7 @@ Tallow uses NATS JetStream as the durable workflow spine. Events use versioned J
 ## Delivery assumptions
 
 JetStream is at-least-once. Consumers must be idempotent where practical. Event payloads should reference database IDs/artifact IDs rather than embedding large package content.
+
+## Request IDs
+
+HTTP and event flows use `X-Request-ID`; event traces include originating `request_id` when available.
