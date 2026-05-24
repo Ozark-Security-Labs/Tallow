@@ -50,3 +50,7 @@ Allowed transitions:
 - `hash_mismatch|failed -> quarantined`
 
 Do not transition `hash_mismatch` to `verified` for the same bytes. A later corrected registry claim creates a new verification record, not a rewrite of history.
+
+## Implemented artifact identity
+
+Foundation supports `npm_tgz`, `pypi_sdist`, and `pypi_wheel`; same-version mutations are represented by a changed immutable digest for the same pre-download key.
