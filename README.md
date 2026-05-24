@@ -212,6 +212,7 @@ jobs:
 - [docs/CONFIGURATION.md](docs/CONFIGURATION.md) — configuration reference.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — collectors, NATS subjects, analyzers, and storage model.
 - [docs/development/implementation-sequence.md](docs/development/implementation-sequence.md) — canonical coding-agent implementation order.
+- [docs/development/plans/README.md](docs/development/plans/README.md) — full milestone implementation plans for coding agents.
 - [docs/development/testing-strategy.md](docs/development/testing-strategy.md) — required tests, fixtures, determinism gates, and release checks.
 - [docs/architecture/package-identity.md](docs/architecture/package-identity.md) — canonical package coordinates and normalization.
 - [docs/architecture/artifact-identity.md](docs/architecture/artifact-identity.md) — artifact identity, variants, and mutation semantics.

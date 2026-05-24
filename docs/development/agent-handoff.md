@@ -31,3 +31,7 @@ This document gives implementation agents enough context to begin work without r
 - Keep event payloads small and reference stored artifacts/evidence.
 - Add fixtures for registry/analyzer edge cases.
 - Update docs with any public contract change.
+
+## Milestone implementation plans
+
+Full implementation plans live in `docs/development/plans/README.md`. Coding agents should follow those plans in order and treat each task as an implementation unit with its own tests and verification gates.
