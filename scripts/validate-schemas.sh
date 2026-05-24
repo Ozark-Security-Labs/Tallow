@@ -18,13 +18,13 @@ for p in root.glob('testdata/**/*.json'):
     expect_invalid='.invalid.' in name or name.endswith('.invalid.json')
     failed=False
     text=json.dumps(data)
-    if 'unknown-major' in name and not str(data.get('version','')).startswith('2.'):
+    if 'unknown-major' in name and str(data.get('version','')).startswith('2.'):
         failed=True
-    if 'missing-type' in name and data.get('type'):
+    if 'missing-type' in name and not data.get('type'):
         failed=True
-    if 'absolute-path' in name and not str(data.get('path','')).startswith('/'):
+    if 'absolute-path' in name and str(data.get('path','')).startswith('/'):
         failed=True
-    if 'missing-source' in name and data.get('source'):
+    if 'missing-source' in name and not data.get('source'):
         failed=True
     if expect_invalid and not failed:
         errors.append(f"invalid fixture unexpectedly passed policy checks: {p}")

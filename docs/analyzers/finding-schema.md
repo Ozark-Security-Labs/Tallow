@@ -44,3 +44,7 @@ Analyzer `severity_hint` is advisory. Go scoring and policy compute canonical se
 ## Validation
 
 Findings with missing evidence, unknown severity, unknown category, overlong snippets, or non-normalized paths must be rejected before persistence.
+
+## Evidence references
+
+Analyzer finding output uses bounded `EvidenceRef` objects sorted deterministically. Absolute paths, traversal segments, and unredacted excerpt ambiguity are rejected.

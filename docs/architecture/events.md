@@ -51,3 +51,7 @@ JetStream is at-least-once. Consumers must be idempotent where practical. Event 
 ## Request IDs
 
 HTTP and event flows use `X-Request-ID`; event traces include originating `request_id` when available.
+
+## Foundation event contracts
+
+Subjects follow `<domain>.<entity>.<action>.v<major>`, for example `artifact.package.observed.v1`. Envelopes use major version `1.x` and carry `trace.request_id`. Artifact observation events reference storage/evidence and never embed raw artifact bytes.
