@@ -211,11 +211,19 @@ jobs:
 - [docs/INSTALL.md](docs/INSTALL.md) — installation and deployment options.
 - [docs/CONFIGURATION.md](docs/CONFIGURATION.md) — configuration reference.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — collectors, NATS subjects, analyzers, and storage model.
+- [docs/development/implementation-sequence.md](docs/development/implementation-sequence.md) — canonical coding-agent implementation order.
+- [docs/development/testing-strategy.md](docs/development/testing-strategy.md) — required tests, fixtures, determinism gates, and release checks.
+- [docs/architecture/package-identity.md](docs/architecture/package-identity.md) — canonical package coordinates and normalization.
+- [docs/architecture/artifact-identity.md](docs/architecture/artifact-identity.md) — artifact identity, variants, and mutation semantics.
+- [docs/architecture/hash-verification.md](docs/architecture/hash-verification.md) — registry hash validation and local observation policy.
+- [docs/architecture/artifact-snapshots.md](docs/architecture/artifact-snapshots.md) — safe unpack manifests and deterministic diffs.
+- [docs/analyzers/finding-schema.md](docs/analyzers/finding-schema.md) — deterministic finding fields, severity, confidence, and evidence references.
+- [docs/analyzers/rule-authoring.md](docs/analyzers/rule-authoring.md) — writing built-in and future adapter-backed analyzer rules.
+- [docs/integrations/adapters.md](docs/integrations/adapters.md) — registry, SCM, notification, and future adapter contracts.
 - [docs/SIGNALS.md](docs/SIGNALS.md) — release signals and scoring rationale.
 - [docs/CLI.md](docs/CLI.md) — command reference.
 - [docs/OPERATIONS.md](docs/OPERATIONS.md) — running Tallow in production.
 - [docs/SECURITY.md](docs/SECURITY.md) — threat model, hardening, and disclosure.
-- [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) — development workflow.
 
 ## Security model
 
