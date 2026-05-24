@@ -12,15 +12,37 @@ import (
 )
 
 const insertArtifact = `-- name: InsertArtifact :one
-INSERT INTO artifacts (version_id, artifact_type, filename, download_url, sha256) VALUES ($1,$2,$3,$4,$5) RETURNING id
+INSERT INTO artifacts (
+  version_id,
+  artifact_type,
+  filename,
+  download_url,
+  sha256,
+  registry_digests_json,
+  local_digests_json,
+  verification_status,
+  storage_uri,
+  size_bytes,
+  media_type,
+  first_seen_at,
+  last_seen_at
+) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id
 `
 
 type InsertArtifactParams struct {
-	VersionID    pgtype.UUID
-	ArtifactType string
-	Filename     string
-	DownloadUrl  string
-	Sha256       pgtype.Text
+	VersionID           pgtype.UUID
+	ArtifactType        string
+	Filename            string
+	DownloadUrl         string
+	Sha256              pgtype.Text
+	RegistryDigestsJson string
+	LocalDigestsJson    string
+	VerificationStatus  string
+	StorageUri          string
+	SizeBytes           int64
+	MediaType           string
+	FirstSeenAt         pgtype.Timestamptz
+	LastSeenAt          pgtype.Timestamptz
 }
 
 func (q *Queries) InsertArtifact(ctx context.Context, arg InsertArtifactParams) (pgtype.UUID, error) {
@@ -30,6 +52,14 @@ func (q *Queries) InsertArtifact(ctx context.Context, arg InsertArtifactParams) 
 		arg.Filename,
 		arg.DownloadUrl,
 		arg.Sha256,
+		arg.RegistryDigestsJson,
+		arg.LocalDigestsJson,
+		arg.VerificationStatus,
+		arg.StorageUri,
+		arg.SizeBytes,
+		arg.MediaType,
+		arg.FirstSeenAt,
+		arg.LastSeenAt,
 	)
 	var id pgtype.UUID
 	err := row.Scan(&id)
