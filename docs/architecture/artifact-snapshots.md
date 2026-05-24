@@ -54,3 +54,12 @@ Diff by normalized path and file sha256:
 - `type_changed`: path exists in both but type differs.
 
 Do not diff generated timestamps or archive ordering. Findings should cite snapshot IDs and paths, not temporary extraction paths.
+
+## Implementation notes
+
+The snapshot writer converts deterministic unpack manifests and artifact metadata
+into byte-stable JSON documents containing artifact identity, manifest URI,
+metadata, file inventory digest, sorted files, and evidence references. The diff
+writer compares snapshots by normalized path/type/size/hash only and emits stable
+added, removed, modified, and metadata-delta sections without semantic guessing
+or raw blob embedding.
