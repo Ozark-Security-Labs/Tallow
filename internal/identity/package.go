@@ -133,7 +133,7 @@ func (a ArtifactIdentity) Validate() error {
 		return tallowerr.New(tallowerr.CodeValidation, "unsafe filename")
 	}
 	u, err := url.Parse(a.DownloadURL)
-	if err != nil || u.Scheme == "" || u.Host == "" || u.User != nil {
+	if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") || u.User != nil {
 		return tallowerr.New(tallowerr.CodeValidation, "unsafe download url")
 	}
 	if a.ObservedAt.IsZero() {

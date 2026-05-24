@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/Ozark-Security-Labs/Tallow/internal/config"
 	"github.com/Ozark-Security-Labs/Tallow/internal/metrics"
 	"github.com/Ozark-Security-Labs/Tallow/internal/requestid"
@@ -52,7 +53,11 @@ func (s *Server) ready(w http.ResponseWriter, r *http.Request) {
 	for name, check := range s.Checks {
 		if err := check(r.Context()); err != nil {
 			s.Metrics.Readiness.WithLabelValues(name, "failed").Inc()
-			writeError(w, r, tallowerr.Wrap(tallowerr.CodeDatabaseUnavailable, "readiness check failed", err))
+			var terr *tallowerr.Error
+			if !errors.As(err, &terr) {
+				err = tallowerr.Wrap(tallowerr.CodeDatabaseUnavailable, "readiness check failed", err)
+			}
+			writeError(w, r, err)
 			return
 		}
 		s.Metrics.Readiness.WithLabelValues(name, "ok").Inc()
