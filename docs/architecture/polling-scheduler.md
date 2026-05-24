@@ -51,3 +51,7 @@ Adapter output must be upserted by natural keys. Re-polling the same package mus
 ## Metrics
 
 Expose counts and latencies for polls due, leases acquired, adapter errors, rate limits, versions discovered, artifacts discovered, and outbox publish failures.
+
+## Implemented lease model
+
+Scheduled jobs use `kind`, `target`, `cadence_seconds`, `next_run_at`, `lease_owner`, and `lease_until`. The SQL claim query uses row locking with `FOR UPDATE SKIP LOCKED`; release only succeeds for the matching lease owner.
