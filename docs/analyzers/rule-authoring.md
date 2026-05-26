@@ -14,6 +14,17 @@ Each rule declares:
 - `inputs`: `snapshot`, `diff`, `metadata`, `hash_verification`, or combinations.
 - `limits`: max file bytes, path globs, text/binary policy.
 
+Rule IDs use a lowercase dot-separated namespace with at least three segments:
+
+```text
+<ecosystem-or-domain>.<category>.<signal_name>
+```
+
+Examples: `npm.lifecycle.install_script`, `js.secrets.env_token_access`,
+`artifact.binary.unexpected`. Use lowercase letters, digits, and underscores
+inside segments. Never rename or repurpose an existing `rule_id`; create a new
+ID and retire the old one if semantics change.
+
 ## Implementation rules
 
 - Do not execute package code.
