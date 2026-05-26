@@ -6,4 +6,6 @@ const (
 	SubjectArtifactHashMismatch = "tallow.artifact.hash.mismatch.v1"
 	SubjectArtifactChanged      = "tallow.artifact.changed.v1"
 	SubjectAnalysisRequested    = "tallow.analysis.requested.v1"
+	SubjectAnalysisCompleted    = "tallow.analysis.completed.v1"
+	SubjectAnalysisFailed       = "tallow.analysis.failed.v1"
 )

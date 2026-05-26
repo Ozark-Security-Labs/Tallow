@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -22,17 +24,43 @@ func (f *fakeExecutor) Run(_ context.Context, input []byte) (RunResult, error) {
 }
 
 type fakeRecorder struct {
-	runs     []AnalyzerRunRecord
-	findings []Finding
+	runs        []AnalyzerRunRecord
+	findings    []Finding
+	runErr      error
+	findingsErr error
 }
 
 func (f *fakeRecorder) RecordRun(_ context.Context, run AnalyzerRunRecord) error {
+	if f.runErr != nil {
+		return f.runErr
+	}
 	f.runs = append(f.runs, run)
 	return nil
 }
 
 func (f *fakeRecorder) RecordFindings(_ context.Context, _ string, findings []Finding) error {
+	if f.findingsErr != nil {
+		return f.findingsErr
+	}
 	f.findings = append(f.findings, findings...)
+	return nil
+}
+
+type publishedEvent struct {
+	subject  string
+	envelope events.Envelope
+}
+
+type fakePublisher struct {
+	events []publishedEvent
+	err    error
+}
+
+func (f *fakePublisher) Publish(_ context.Context, subject string, envelope events.Envelope) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.events = append(f.events, publishedEvent{subject: subject, envelope: envelope})
 	return nil
 }
 
@@ -113,7 +141,10 @@ func TestOrchestratorRecordsSuccessAndFindings(t *testing.T) {
 		Duration:   time.Second,
 	}}
 	recorder := &fakeRecorder{}
-	err := (Orchestrator{Executor: executor, Recorder: recorder}).Run(context.Background(), input)
+	publisher := &fakePublisher{}
+	err := (Orchestrator{Executor: executor, Recorder: recorder, Publisher: publisher}).Run(
+		context.Background(), input,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,6 +153,9 @@ func TestOrchestratorRecordsSuccessAndFindings(t *testing.T) {
 	}
 	if recorder.runs[0].AnalyzerID != "builtin.rules" || len(recorder.findings) != 1 {
 		t.Fatalf("run/findings not recorded: %#v %#v", recorder.runs, recorder.findings)
+	}
+	if len(publisher.events) != 1 || publisher.events[0].subject != events.SubjectAnalysisCompleted {
+		t.Fatalf("completion event not published: %#v", publisher.events)
 	}
 }
 
@@ -137,6 +171,9 @@ func TestOrchestratorInvalidOutputDoesNotCrashLoop(t *testing.T) {
 	}
 	if len(recorder.runs[0].ErrorJSON) == 0 {
 		t.Fatal("expected validation error json")
+	}
+	if len(recorder.runs[0].OutputJSON) != 0 {
+		t.Fatal("invalid analyzer output must not be persisted as output_json")
 	}
 }
 
@@ -165,20 +202,52 @@ func TestOrchestratorExecutorFailureAndTimeoutDoNotCrashLoop(t *testing.T) {
 	}
 }
 
+func TestOrchestratorPropagatesRecorderErrors(t *testing.T) {
+	recorder := &fakeRecorder{findingsErr: errors.New("write failed")}
+	executor := &fakeExecutor{result: RunResult{Stdout: outputJSON("job_1", []Finding{sampleAnalyzerFinding()})}}
+	err := (Orchestrator{Executor: executor, Recorder: recorder}).Run(context.Background(), baseInput())
+	if err == nil || !strings.Contains(err.Error(), "write failed") {
+		t.Fatalf("expected recorder error, got %v", err)
+	}
+}
+
+func TestOrchestratorRejectsMismatchedOutputJobID(t *testing.T) {
+	recorder := &fakeRecorder{}
+	publisher := &fakePublisher{}
+	executor := &fakeExecutor{result: RunResult{Stdout: outputJSON("other_job", nil)}}
+	err := (Orchestrator{Executor: executor, Recorder: recorder, Publisher: publisher}).Run(
+		context.Background(), baseInput(),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recorder.runs) != 1 || recorder.runs[0].Status != "failed" {
+		t.Fatalf("runs: %#v", recorder.runs)
+	}
+	if len(recorder.runs[0].OutputJSON) != 0 {
+		t.Fatal("mismatched analyzer output must not be persisted as output_json")
+	}
+	if len(publisher.events) != 1 || publisher.events[0].subject != events.SubjectAnalysisFailed {
+		t.Fatalf("failure event not published: %#v", publisher.events)
+	}
+}
+
 func TestHandleEnvelopeConsumesArtifactEvent(t *testing.T) {
+	snapshotBase := t.TempDir()
+	snapshotRoot := filepath.Join(snapshotBase, "snapshots", "art_1")
 	event := events.ArtifactEvent{
 		Ecosystem:    "npm",
 		Package:      "pkg",
 		Version:      "1.0.0",
 		ArtifactID:   "art_1",
 		ArtifactKind: "tarball",
-		StorageURI:   "fs://snapshots/art_1",
+		StorageURI:   "snapshots/art_1",
 		ObservedAt:   time.Date(2026, 5, 26, 12, 0, 0, 0, time.UTC),
 	}
 	data, _ := json.Marshal(event)
 	executor := &fakeExecutor{result: RunResult{Stdout: outputJSON("analysis:art_1", nil)}}
 	recorder := &fakeRecorder{}
-	err := (Orchestrator{Executor: executor, Recorder: recorder}).HandleEnvelope(
+	err := (Orchestrator{Executor: executor, Recorder: recorder, SnapshotRootDir: snapshotBase}).HandleEnvelope(
 		context.Background(),
 		events.Envelope{
 			ID:         "evt_1",
@@ -203,8 +272,36 @@ func TestHandleEnvelopeConsumesArtifactEvent(t *testing.T) {
 	if input.SnapshotRefs == nil || input.SnapshotRefs.To == nil || input.SnapshotRefs.To.Root == "" {
 		t.Fatalf("snapshot refs missing: %#v", input)
 	}
+	if input.SnapshotRefs.To.Root != snapshotRoot {
+		t.Fatalf("unexpected snapshot root: %#v", input.SnapshotRefs.To)
+	}
 	if len(recorder.runs) != 1 {
 		t.Fatalf("runs: %#v", recorder.runs)
+	}
+}
+
+func TestHandleEnvelopeRejectsStorageURIAsSnapshotRoot(t *testing.T) {
+	event := events.ArtifactEvent{
+		Ecosystem:    "npm",
+		Package:      "pkg",
+		Version:      "1.0.0",
+		ArtifactID:   "art_1",
+		ArtifactKind: "tarball",
+		StorageURI:   "fs://artifacts/raw/pkg",
+		ObservedAt:   time.Date(2026, 5, 26, 12, 0, 0, 0, time.UTC),
+	}
+	data, _ := json.Marshal(event)
+	err := (Orchestrator{Executor: &fakeExecutor{}, SnapshotRootDir: t.TempDir()}).HandleEnvelope(
+		context.Background(), events.Envelope{Type: "artifact.downloaded", Data: data},
+	)
+	if err == nil {
+		t.Fatal("expected non-local snapshot root error")
+	}
+}
+
+func TestLocalSnapshotEntryRejectsRootEscape(t *testing.T) {
+	if _, err := LocalSnapshotEntry("art_1", "../outside", t.TempDir()); err == nil {
+		t.Fatal("expected root escape error")
 	}
 }
 

@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/Ozark-Security-Labs/Tallow/internal/events"
@@ -14,6 +16,23 @@ import (
 type RunRecorder interface {
 	RecordRun(context.Context, AnalyzerRunRecord) error
 	RecordFindings(context.Context, string, []Finding) error
+}
+
+type EventPublisher interface {
+	Publish(context.Context, string, events.Envelope) error
+}
+
+type SnapshotRootResolver interface {
+	ResolveSnapshotRoot(context.Context, events.ArtifactEvent) (SnapshotEntry, error)
+}
+
+type SnapshotRootResolverFunc func(context.Context, events.ArtifactEvent) (SnapshotEntry, error)
+
+func (f SnapshotRootResolverFunc) ResolveSnapshotRoot(
+	ctx context.Context,
+	event events.ArtifactEvent,
+) (SnapshotEntry, error) {
+	return f(ctx, event)
 }
 
 type AnalyzerRunRecord struct {
@@ -32,9 +51,12 @@ type AnalyzerRunRecord struct {
 }
 
 type Orchestrator struct {
-	Executor Executor
-	Recorder RunRecorder
-	Now      func() time.Time
+	Executor         Executor
+	Recorder         RunRecorder
+	Publisher        EventPublisher
+	SnapshotResolver SnapshotRootResolver
+	SnapshotRootDir  string
+	Now              func() time.Time
 }
 
 func (o Orchestrator) HandleEnvelope(ctx context.Context, envelope events.Envelope) error {
@@ -43,7 +65,7 @@ func (o Orchestrator) HandleEnvelope(ctx context.Context, envelope events.Envelo
 	}
 	var event events.ArtifactEvent
 	if err := json.Unmarshal(envelope.Data, &event); err != nil || event.ArtifactID == "" {
-		input, inputErr := inputFromArtifactObserved(envelope.Data)
+		input, inputErr := o.inputFromArtifactObserved(ctx, envelope.Data)
 		if inputErr != nil {
 			return fmt.Errorf("prepare analyzer input: %w", inputErr)
 		}
@@ -52,10 +74,10 @@ func (o Orchestrator) HandleEnvelope(ctx context.Context, envelope events.Envelo
 	if err := event.Validate(); err != nil {
 		return fmt.Errorf("prepare analyzer input: %w", err)
 	}
-	if event.StorageURI == "" {
-		return fmt.Errorf("prepare analyzer input: artifact event missing snapshot root")
+	input, err := o.inputFromArtifactEvent(ctx, event)
+	if err != nil {
+		return fmt.Errorf("prepare analyzer input: %w", err)
 	}
-	input := InputFromArtifactEvent(event)
 	return o.Run(ctx, input)
 }
 
@@ -86,41 +108,55 @@ func (o Orchestrator) Run(ctx context.Context, input AnalyzerInput) error {
 	if record.FinishedAt.IsZero() {
 		record.FinishedAt = o.now()
 	}
+	eventCode := ""
+	eventMessage := ""
+	var findings []Finding
 	if result.TimedOut {
 		record.Status = "failed"
+		eventCode = "timeout"
+		eventMessage = "analyzer timed out"
 		record.ErrorJSON = errorJSON("timeout", "analyzer timed out")
-		o.record(ctx, record, nil)
-		return nil
-	}
-	if runErr != nil {
+	} else if runErr != nil {
+		eventCode = "executor_failed"
+		eventMessage = runErr.Error()
 		record.ErrorJSON = errorJSON("executor_failed", runErr.Error())
-		o.record(ctx, record, nil)
-		return nil
+	} else {
+		output, err := ValidateOutputJSON(result.Stdout)
+		if err != nil {
+			eventCode = "invalid_output"
+			eventMessage = err.Error()
+			record.ErrorJSON = errorJSON("invalid_output", err.Error())
+		} else if output.JobID != input.JobID {
+			eventCode = "job_mismatch"
+			eventMessage = "analyzer output job_id does not match input job_id"
+			record.ErrorJSON = errorJSON(eventCode, eventMessage)
+		} else {
+			record.AnalyzerID = output.Analyzer.ID
+			record.AnalyzerVersion = output.Analyzer.Version
+			record.RulesetVersion = output.Analyzer.RulesetVersion
+			record.Status = output.Status
+			record.OutputJSON = result.Stdout
+			findings = output.Findings
+			if output.Status == "failed" {
+				eventCode, eventMessage = analyzerFailure(output.Errors)
+				record.ErrorJSON = errorJSON(eventCode, eventMessage)
+			}
+		}
 	}
-	output, err := ValidateOutputJSON(result.Stdout)
-	if err != nil {
-		record.ErrorJSON = errorJSON("invalid_output", err.Error())
-		record.OutputJSON = result.Stdout
-		o.record(ctx, record, nil)
-		return nil
+	if err := o.record(ctx, record, findings); err != nil {
+		return err
 	}
-	record.AnalyzerID = output.Analyzer.ID
-	record.AnalyzerVersion = output.Analyzer.Version
-	record.RulesetVersion = output.Analyzer.RulesetVersion
-	record.Status = output.Status
-	record.OutputJSON = result.Stdout
-	o.record(ctx, record, output.Findings)
-	return nil
+	return o.publishAnalysisEvent(ctx, record, len(findings), eventCode, eventMessage)
 }
 
-func (o Orchestrator) record(ctx context.Context, record AnalyzerRunRecord, findings []Finding) {
+func (o Orchestrator) record(ctx context.Context, record AnalyzerRunRecord, findings []Finding) error {
 	if o.Recorder == nil {
-		return
+		return nil
 	}
 	if err := o.Recorder.RecordRun(ctx, record); err != nil {
-		return
+		return err
 	}
-	_ = o.Recorder.RecordFindings(ctx, record.ID, findings)
+	return o.Recorder.RecordFindings(ctx, record.ID, findings)
 }
 
 func (o Orchestrator) now() time.Time {
@@ -130,11 +166,22 @@ func (o Orchestrator) now() time.Time {
 	return time.Now().UTC()
 }
 
-func InputFromArtifactEvent(event events.ArtifactEvent) AnalyzerInput {
+func (o Orchestrator) inputFromArtifactEvent(
+	ctx context.Context,
+	event events.ArtifactEvent,
+) (AnalyzerInput, error) {
+	snapshot, err := o.resolveSnapshotRoot(ctx, event)
+	if err != nil {
+		return AnalyzerInput{}, err
+	}
+	return InputFromArtifactEvent(event, snapshot), nil
+}
+
+func InputFromArtifactEvent(event events.ArtifactEvent, snapshot SnapshotEntry) AnalyzerInput {
 	jobID := "analysis:" + event.ArtifactID
 	version := event.Version
 	artifactID := event.ArtifactID
-	snapshotID := event.ArtifactID
+	snapshotID := snapshot.SnapshotID
 	return AnalyzerInput{
 		ContractVersion: ContractVersion,
 		JobID:           jobID,
@@ -152,14 +199,17 @@ func InputFromArtifactEvent(event events.ArtifactEvent) AnalyzerInput {
 			SnapshotPath: event.StorageURI,
 		}},
 		SnapshotRefs: &SnapshotRefs{To: &SnapshotEntry{
-			SnapshotID:   snapshotID,
-			Root:         event.StorageURI,
-			ManifestPath: "manifest.json",
+			SnapshotID:   snapshot.SnapshotID,
+			Root:         snapshot.Root,
+			ManifestPath: snapshot.ManifestPath,
 		}},
 	}
 }
 
-func inputFromArtifactObserved(data []byte) (AnalyzerInput, error) {
+func (o Orchestrator) inputFromArtifactObserved(
+	ctx context.Context,
+	data []byte,
+) (AnalyzerInput, error) {
 	var observed events.ArtifactObserved
 	if err := json.Unmarshal(data, &observed); err != nil {
 		return AnalyzerInput{}, err
@@ -193,31 +243,105 @@ func inputFromArtifactObserved(data []byte) (AnalyzerInput, error) {
 	if ecosystem == "" || packageName == "" || version == "" || artifactID == "" || observed.StorageRef == "" {
 		return AnalyzerInput{}, fmt.Errorf("artifact observed event missing analyzer fields")
 	}
-	artifactIDCopy := artifactID
-	versionCopy := version
-	snapshotID := artifactID
-	return AnalyzerInput{
-		ContractVersion: ContractVersion,
-		JobID:           "analysis:" + artifactID,
-		AnalysisType:    "snapshot",
-		Subject: Subject{
-			Ecosystem:   ecosystem,
-			PackageName: packageName,
-			Version:     &versionCopy,
-			ArtifactID:  &artifactIDCopy,
-			SnapshotID:  &snapshotID,
-		},
-		Artifacts: &ArtifactRefs{To: &ArtifactEntry{
-			ArtifactID:   artifactID,
-			Filename:     kind,
-			SnapshotPath: observed.StorageRef,
-		}},
-		SnapshotRefs: &SnapshotRefs{To: &SnapshotEntry{
-			SnapshotID:   snapshotID,
-			Root:         observed.StorageRef,
-			ManifestPath: "manifest.json",
-		}},
+	return o.inputFromArtifactEvent(ctx, events.ArtifactEvent{
+		Ecosystem:    ecosystem,
+		Package:      packageName,
+		Version:      version,
+		ArtifactID:   artifactID,
+		ArtifactKind: kind,
+		StorageURI:   observed.StorageRef,
+		ObservedAt:   observed.ObservedAt,
+	})
+}
+
+func (o Orchestrator) resolveSnapshotRoot(
+	ctx context.Context,
+	event events.ArtifactEvent,
+) (SnapshotEntry, error) {
+	if o.SnapshotResolver != nil {
+		return o.SnapshotResolver.ResolveSnapshotRoot(ctx, event)
+	}
+	return LocalSnapshotEntry(event.ArtifactID, event.StorageURI, o.SnapshotRootDir)
+}
+
+func LocalSnapshotEntry(artifactID, rawRoot, allowedRoot string) (SnapshotEntry, error) {
+	if artifactID == "" || rawRoot == "" {
+		return SnapshotEntry{}, fmt.Errorf("artifact event missing snapshot root")
+	}
+	if strings.Contains(rawRoot, "://") {
+		return SnapshotEntry{}, fmt.Errorf("snapshot root must be a local filesystem path")
+	}
+	if strings.TrimSpace(allowedRoot) == "" {
+		return SnapshotEntry{}, fmt.Errorf("snapshot root base required")
+	}
+	base, err := filepath.Abs(allowedRoot)
+	if err != nil {
+		return SnapshotEntry{}, err
+	}
+	candidate := rawRoot
+	if !filepath.IsAbs(candidate) {
+		candidate = filepath.Join(base, candidate)
+	}
+	candidate, err = filepath.Abs(candidate)
+	if err != nil {
+		return SnapshotEntry{}, err
+	}
+	rel, err := filepath.Rel(base, candidate)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+		return SnapshotEntry{}, fmt.Errorf("snapshot root escapes configured base")
+	}
+	return SnapshotEntry{
+		SnapshotID:   artifactID,
+		Root:         candidate,
+		ManifestPath: filepath.Join(candidate, "manifest.json"),
 	}, nil
+}
+
+func (o Orchestrator) publishAnalysisEvent(
+	ctx context.Context,
+	record AnalyzerRunRecord,
+	findingsEmitted int,
+	errorCode string,
+	errorMessage string,
+) error {
+	if o.Publisher == nil {
+		return nil
+	}
+	eventType := "analysis.completed"
+	subject := events.SubjectAnalysisCompleted
+	if record.Status != "ok" {
+		eventType = "analysis.failed"
+		subject = events.SubjectAnalysisFailed
+		if errorCode == "" {
+			errorCode = "analyzer_failed"
+		}
+		if errorMessage == "" {
+			errorMessage = "analyzer reported failed status"
+		}
+	}
+	envelope, err := events.NewAnalysisEnvelope(eventType, events.AnalysisEvent{
+		JobID:           record.JobID,
+		RunID:           record.ID,
+		Status:          record.Status,
+		AnalyzerID:      record.AnalyzerID,
+		AnalyzerVersion: record.AnalyzerVersion,
+		RulesetVersion:  record.RulesetVersion,
+		FindingsEmitted: findingsEmitted,
+		ErrorCode:       errorCode,
+		ErrorMessage:    errorMessage,
+		CompletedAt:     record.FinishedAt,
+	})
+	if err != nil {
+		return err
+	}
+	return o.Publisher.Publish(ctx, subject, envelope)
+}
+
+func analyzerFailure(errors []AnalyzerError) (string, string) {
+	if len(errors) == 0 {
+		return "analyzer_failed", "analyzer reported failed status"
+	}
+	return errors[0].Code, errors[0].Message
 }
 
 func runID(jobID string) string {

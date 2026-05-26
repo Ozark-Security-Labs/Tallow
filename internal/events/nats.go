@@ -84,6 +84,12 @@ func validateEnvelopeData(e Envelope) error {
 			return err
 		}
 		return a.Validate()
+	case "analysis.completed", "analysis.failed":
+		var a AnalysisEvent
+		if err := json.Unmarshal(e.Data, &a); err != nil {
+			return err
+		}
+		return a.Validate(e.Type)
 	default:
 		return nil
 	}
