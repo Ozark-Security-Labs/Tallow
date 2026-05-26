@@ -14,6 +14,7 @@ from tallow_analyzer_sdk.constants import (
     ANALYZER_ID,
     ANALYZER_VERSION,
     CONTRACT_VERSION,
+    DETERMINISTIC_FINDING_CREATED_AT,
     RULESET_VERSION,
 )
 from tallow_analyzer_sdk.context import AnalysisContext
@@ -83,9 +84,8 @@ def run_analyzer(payload: dict) -> dict:
     for rule in enabled:
         try:
             drafts = list(rule.evaluate(context))
-            created_at = context.clock().replace(microsecond=0).isoformat().replace("+00:00", "Z")
             for draft in drafts:
-                findings.append(build_finding(draft, created_at=created_at))
+                findings.append(build_finding(draft, created_at=DETERMINISTIC_FINDING_CREATED_AT))
             if drafts:
                 files_scanned += 1
         except Exception as exc:  # noqa: BLE001 - convert to deterministic error record

@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from rules.registry import build_registry
-from tallow_analyzer_sdk.canonical_json import canonical_dumps, strip_runtime_fields
+from tallow_analyzer_sdk.canonical_json import canonical_dumps
 from tallow_analyzers.cli import run_analyzer
 
 FIXTURES = Path(__file__).resolve().parents[2] / "testdata" / "analyzer-fixtures"
@@ -57,6 +57,7 @@ def test_positive_fixtures_emit_expected_rule(fixture_path: str, rule_id: str):
 def test_integration_output_is_deterministic():
     root = FIXTURES / "npm/lifecycle_suspicious/snapshot"
     payload = _snapshot_input(root, "npm/lifecycle_suspicious/snapshot")
-    first = strip_runtime_fields(run_analyzer(payload))
-    second = strip_runtime_fields(run_analyzer(payload))
+    first = run_analyzer(payload)
+    second = run_analyzer(payload)
     assert canonical_dumps(first) == canonical_dumps(second)
+    assert first["findings"][0]["created_at"] == "1970-01-01T00:00:00Z"

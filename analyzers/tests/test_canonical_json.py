@@ -32,4 +32,4 @@ def test_strip_runtime_fields():
         "metrics": {},
     }
     cleaned = strip_runtime_fields(payload)
-    assert "created_at" not in cleaned["findings"][0]
+    assert cleaned == payload

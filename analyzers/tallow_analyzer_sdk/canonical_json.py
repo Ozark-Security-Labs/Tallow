@@ -9,7 +9,7 @@ from typing import Any
 
 from tallow_analyzer_sdk.constants import SEVERITY_RANK
 
-RUNTIME_OUTPUT_FIELDS = {"created_at"}
+RUNTIME_OUTPUT_FIELDS: set[str] = set()
 RUNTIME_METRIC_FIELDS = set()
 
 
