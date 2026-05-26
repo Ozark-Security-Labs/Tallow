@@ -7,7 +7,7 @@ import re
 from collections.abc import Iterable
 
 from tallow_analyzer_sdk.context import AnalysisContext
-from tallow_analyzer_sdk.evidence import metadata_evidence
+from tallow_analyzer_sdk.evidence import file_evidence
 from tallow_analyzer_sdk.finding import FindingDraft
 from tallow_analyzer_sdk.rules import RuleMetadata
 
@@ -35,13 +35,18 @@ class HighEntropyBlobRule:
 
     def evaluate(self, context: AnalysisContext) -> Iterable[FindingDraft]:
         walker = context.walker("to")
+        previous_hashes = _previous_hashes(context)
         findings: list[FindingDraft] = []
         for match in walker.iter_files(["**/*"]):
             if _should_ignore(match.relative_path):
                 continue
             text = walker.read_text(match.relative_path)
+            if previous_hashes.get(match.relative_path) == _content_hash(text):
+                continue
             for window in _entropy_windows(text):
-                if window["entropy"] < 4.5 or len(window["value"]) < 64:
+                min_len = int(context.options.get("high_entropy_min_length", 64))
+                threshold = float(context.options.get("high_entropy_threshold", 4.5))
+                if window["entropy"] < threshold or len(window["value"]) < min_len:
                     continue
                 findings.append(
                     FindingDraft(
@@ -53,13 +58,16 @@ class HighEntropyBlobRule:
                             f"around line {window['line']}."
                         ),
                         evidence=[
-                            metadata_evidence(
-                                f"{match.relative_path}:line:{window['line']}",
-                                window["value_hash"],
+                            file_evidence(
+                                match.relative_path,
                                 artifact_id=context.artifact_id() or "unknown",
+                                snapshot_id=context.snapshot_id(),
+                                start_line=window["line"],
+                                end_line=window["line"],
                                 description=(
                                     f"Entropy {window['entropy']:.2f} over "
-                                    f"{len(window['value'])} chars"
+                                    f"{len(window['value'])} chars; "
+                                    f"value_sha256={window['value_hash']}"
                                 ),
                             )
                         ],
@@ -96,6 +104,24 @@ def _entropy_windows(text: str) -> list[dict]:
             }
         )
     return results
+
+
+def _previous_hashes(context: AnalysisContext) -> dict[str, str]:
+    if "from" not in context.snapshot_roots:
+        return {}
+    walker = context.walker("from")
+    hashes: dict[str, str] = {}
+    for match in walker.iter_files(["**/*"]):
+        if _should_ignore(match.relative_path):
+            continue
+        hashes[match.relative_path] = _content_hash(walker.read_text(match.relative_path))
+    return hashes
+
+
+def _content_hash(text: str) -> str:
+    from tallow_analyzer_sdk.redaction import hash_sensitive_value
+
+    return hash_sensitive_value(text)
 
 
 def _shannon_entropy(value: str) -> float:
