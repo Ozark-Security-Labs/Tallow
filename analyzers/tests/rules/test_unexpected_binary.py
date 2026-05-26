@@ -4,20 +4,27 @@ from rules.unexpected_binary import UnexpectedBinaryRule
 from tallow_analyzer_sdk.context import AnalysisContext
 
 
-def _run(root: Path, options: dict | None = None):
+def _run(root: Path, options: dict | None = None, from_root: Path | None = None):
+    refs = {
+        "to": {
+            "snapshot_id": "snap_pkg",
+            "root": str(root),
+            "manifest_path": str(root / "manifest.json"),
+        }
+    }
+    if from_root is not None:
+        refs["from"] = {
+            "snapshot_id": "snap_old",
+            "root": str(from_root),
+            "manifest_path": str(from_root / "manifest.json"),
+        }
     payload = {
         "contract_version": "v1",
         "job_id": "job_binary",
-        "analysis_type": "snapshot",
+        "analysis_type": "snapshot_diff" if from_root else "snapshot",
         "subject": {"ecosystem": "npm", "package_name": "pkg", "version": "1.0.0"},
         "artifacts": {"to": {"artifact_id": "art_pkg"}},
-        "snapshot_refs": {
-            "to": {
-                "snapshot_id": "snap_pkg",
-                "root": str(root),
-                "manifest_path": str(root / "manifest.json"),
-            }
-        },
+        "snapshot_refs": refs,
         "options": options or {},
     }
     return list(UnexpectedBinaryRule().evaluate(AnalysisContext.from_input(payload)))
@@ -41,3 +48,16 @@ def test_allowed_binary_path_is_ignored(tmp_path: Path):
     binary.parent.mkdir()
     binary.write_bytes(b"MZ" + b"synthetic")
     assert _run(tmp_path, {"allowed_binary_paths": ["bin/native"]}) == []
+
+
+def test_diff_mode_only_emits_new_binaries(tmp_path: Path):
+    old = tmp_path / "old"
+    new = tmp_path / "new"
+    for root in (old, new):
+        root.mkdir()
+        (root / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+        (root / "bin").mkdir()
+        (root / "bin" / "existing").write_bytes(b"MZ" + b"synthetic")
+    (new / "bin" / "added").write_bytes(b"\x7fELF" + b"synthetic")
+    findings = _run(new, from_root=old)
+    assert [finding.evidence[0]["path"] for finding in findings] == ["bin/added"]

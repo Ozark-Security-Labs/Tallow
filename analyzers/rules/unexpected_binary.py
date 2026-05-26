@@ -30,8 +30,11 @@ class UnexpectedBinaryRule:
         if context.allow_binary_packages:
             return []
         walker = context.walker("to")
+        previous_paths = _previous_paths(context)
         findings: list[FindingDraft] = []
         for match in walker.iter_files(include_binary=True):
+            if previous_paths and match.relative_path in previous_paths:
+                continue
             if match.relative_path in context.allowed_binary_paths:
                 continue
             data = walker.read_bytes(match.relative_path, max_bytes=16)
@@ -71,3 +74,9 @@ def _detect_magic(data: bytes) -> str | None:
         if data.startswith(magic):
             return name
     return None
+
+
+def _previous_paths(context: AnalysisContext) -> set[str]:
+    if "from" not in context.snapshot_roots:
+        return set()
+    return {match.relative_path for match in context.walker("from").iter_files(include_binary=True)}
