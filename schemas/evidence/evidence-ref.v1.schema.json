@@ -28,5 +28,8 @@
     "excerpt": {"type": "string"},
     "excerpt_redacted": {"type": "boolean"},
     "description": {"type": "string"}
+  },
+  "dependentRequired": {
+    "excerpt": ["excerpt_redacted"]
   }
 }

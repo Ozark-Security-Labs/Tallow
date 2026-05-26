@@ -393,6 +393,14 @@ func TestValidateOutputRejectsSchemaViolations(t *testing.T) {
 				return f
 			},
 		},
+		{
+			name: "excerpt without redaction status",
+			mutate: func(f Finding) Finding {
+				f.Evidence[0].Excerpt = "snippet"
+				f.Evidence[0].ExcerptRedacted = nil
+				return f
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			finding := tc.mutate(sampleAnalyzerFinding())

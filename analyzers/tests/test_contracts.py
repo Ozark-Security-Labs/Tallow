@@ -50,3 +50,10 @@ def test_output_missing_evidence_fails():
     payload["findings"][0]["evidence"] = []
     with pytest.raises(ValidationError):
         validate_analyzer_output(payload)
+
+
+def test_output_excerpt_requires_redaction_status():
+    payload = json.loads((EXAMPLES / "analyzer-output.findings.npm.json").read_text())
+    payload["findings"][0]["evidence"][0].pop("excerpt_redacted")
+    with pytest.raises(ValidationError):
+        validate_analyzer_output(payload)

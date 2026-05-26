@@ -13,6 +13,13 @@ _TOKEN_PATTERN = re.compile(
 )
 _BEARER_PATTERN = re.compile(r"(?i)(bearer\s+)([A-Za-z0-9._\-+/=]{8,})")
 _URL_QUERY_PATTERN = re.compile(r"(\?)([^#\s]+)")
+_STANDALONE_SECRET_PATTERN = re.compile(
+    r"\b("
+    r"gh[pousr]_[A-Za-z0-9_]{20,}"
+    r"|npm_[A-Za-z0-9]{20,}"
+    r"|AKIA[0-9A-Z]{16}"
+    r")\b"
+)
 
 
 def _redaction_tag(value: str) -> str:
@@ -38,6 +45,13 @@ def redact_text(text: str, *, max_len: int = MAX_EXCERPT_LEN) -> tuple[str, bool
         return f"{match.group(1)}{_redaction_tag(match.group(2))}"
 
     output = _BEARER_PATTERN.sub(bearer_repl, output)
+
+    def standalone_repl(match: re.Match[str]) -> str:
+        nonlocal redacted
+        redacted = True
+        return _redaction_tag(match.group(1))
+
+    output = _STANDALONE_SECRET_PATTERN.sub(standalone_repl, output)
 
     def query_repl(match: re.Match[str]) -> str:
         nonlocal redacted
