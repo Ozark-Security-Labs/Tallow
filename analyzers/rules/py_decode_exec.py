@@ -48,7 +48,11 @@ class PyDecodeExecRule:
             for node in ast.walk(tree):
                 if not isinstance(node, ast.Call):
                     continue
-                if not _is_exec_call(node.func) and not _is_import_call(node.func):
+                if (
+                    not _is_exec_call(node.func)
+                    and not _is_import_call(node.func)
+                    and not _is_function_type_call(node.func)
+                ):
                     continue
                 if not any(
                     _contains_decoder(arg) or _contains_decoded_name(arg, decoded_names)
@@ -90,6 +94,12 @@ def _is_exec_call(node: ast.AST) -> bool:
 
 def _is_import_call(node: ast.AST) -> bool:
     return isinstance(node, ast.Name) and node.id in IMPORTS
+
+
+def _is_function_type_call(node: ast.AST) -> bool:
+    if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
+        return node.value.id == "types" and node.attr == "FunctionType"
+    return isinstance(node, ast.Name) and node.id == "FunctionType"
 
 
 def _decoder_assignments(tree: ast.AST) -> set[str]:

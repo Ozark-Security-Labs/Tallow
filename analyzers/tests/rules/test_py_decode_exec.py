@@ -40,6 +40,16 @@ def test_detects_decode_variable_import_sink(tmp_path: Path):
     assert findings[0].confidence == "medium"
 
 
+def test_detects_marshal_loads_function_type_sink(tmp_path: Path):
+    _write(
+        tmp_path,
+        "import marshal, types\ncode = marshal.loads(b'tallow_test_code')\n"
+        "types.FunctionType(code, globals())\n",
+    )
+    findings = _run(tmp_path)
+    assert findings[0].confidence == "high"
+
+
 def test_benign_encoded_data_does_not_emit(tmp_path: Path):
     _write(tmp_path, "import base64\ndata = base64.b64decode('ZGF0YQ==')\nprint(data)\n")
     assert _run(tmp_path) == []
