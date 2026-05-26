@@ -30,7 +30,7 @@ class HighEntropyBlobRule:
         ecosystems=("npm", "pypi", "*"),
         default_severity_hint="medium",
         default_confidence="medium",
-        inputs=("snapshot",),
+        inputs=("snapshot", "snapshot_diff"),
         tags=("entropy", "obfuscation"),
     )
 

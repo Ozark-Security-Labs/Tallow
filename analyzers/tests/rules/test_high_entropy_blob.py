@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from rules.high_entropy_blob import HighEntropyBlobRule
+from rules.registry import build_registry
 from tallow_analyzer_sdk.context import AnalysisContext
 
 HIGH_ENTROPY = bytes([*range(33, 127), *range(128, 256)]) * 3
@@ -59,6 +60,23 @@ def test_unchanged_entropy_blob_is_ignored(tmp_path: Path):
     _write(old, "src/payload.txt", HIGH_ENTROPY)
     _write(new, "src/payload.txt", HIGH_ENTROPY)
     assert _run(new, old) == []
+
+
+def test_detects_new_entropy_blob_in_diff_mode(tmp_path: Path):
+    old = tmp_path / "old"
+    new = tmp_path / "new"
+    _write(old, "src/benign.txt", "hello")
+    _write(new, "src/benign.txt", "hello")
+    _write(new, "src/payload.txt", HIGH_ENTROPY)
+    findings = _run(new, old)
+    assert [finding.evidence[0]["path"] for finding in findings] == ["src/payload.txt"]
+
+
+def test_registry_enables_entropy_rule_for_diff_jobs():
+    rule_ids = {
+        rule.metadata.rule_id for rule in build_registry().enabled_for("npm", "snapshot_diff")
+    }
+    assert "artifact.entropy.high_blob" in rule_ids
 
 
 def test_lockfile_and_minified_benign_are_ignored(tmp_path: Path):
