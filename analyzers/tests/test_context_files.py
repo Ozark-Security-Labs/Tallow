@@ -1,6 +1,8 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
+
 from tallow_analyzer_sdk.context import AnalysisContext
 from tallow_analyzer_sdk.files import SnapshotWalker
 
@@ -40,6 +42,18 @@ def test_oversized_file_skipped(tmp_path: Path):
     _context(root)
     walker = SnapshotWalker(root=root, max_file_bytes=16)
     assert walker.iter_files() == []
+
+
+def test_read_helpers_reject_root_escape(tmp_path: Path):
+    root = tmp_path / "snap"
+    root.mkdir()
+    outside = tmp_path / "secret.txt"
+    outside.write_text("not fixture data", encoding="utf-8")
+    walker = SnapshotWalker(root=root, max_file_bytes=4096)
+    with pytest.raises(ValueError, match="escapes root"):
+        walker.read_text("../secret.txt")
+    with pytest.raises(ValueError, match="escapes root"):
+        walker.read_bytes("../secret.txt")
 
 
 def test_finding_builder_emits_valid_schema():

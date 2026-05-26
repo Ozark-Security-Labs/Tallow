@@ -51,15 +51,21 @@ class SnapshotWalker:
         return sorted(matches, key=lambda item: item.relative_path)
 
     def read_text(self, relative_path: str) -> str:
-        path = self.root / relative_path
+        path = self._safe_path(relative_path)
         data = path.read_bytes()[: self.max_file_bytes]
         return data.decode("utf-8", errors="replace")
 
     def read_bytes(self, relative_path: str, max_bytes: int | None = None) -> bytes:
         limit = max_bytes or self.max_file_bytes
-        path = self.root / relative_path
+        path = self._safe_path(relative_path)
         with path.open("rb") as handle:
             return handle.read(limit)
+
+    def _safe_path(self, relative_path: str) -> Path:
+        candidate = (self.root / relative_path).resolve()
+        if candidate != self.root and self.root not in candidate.parents:
+            raise ValueError("snapshot path escapes root")
+        return candidate
 
     @staticmethod
     def line_span_for_offset(text: str, start: int, end: int) -> tuple[int, int]:
