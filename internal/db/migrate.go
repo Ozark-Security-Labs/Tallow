@@ -40,7 +40,7 @@ func run(dsn, suffix string, steps int) error {
 		if err != nil {
 			return err
 		}
-		for _, stmt := range strings.Split(string(b), ";\n") {
+		for _, stmt := range splitSQLStatements(string(b)) {
 			if strings.TrimSpace(stmt) == "" {
 				continue
 			}
@@ -50,4 +50,62 @@ func run(dsn, suffix string, steps int) error {
 		}
 	}
 	return nil
+}
+
+func splitSQLStatements(sql string) []string {
+	var statements []string
+	var current strings.Builder
+	inSingleQuote := false
+	dollarTag := ""
+	for i := 0; i < len(sql); i++ {
+		if dollarTag != "" {
+			if strings.HasPrefix(sql[i:], dollarTag) {
+				current.WriteString(dollarTag)
+				i += len(dollarTag) - 1
+				dollarTag = ""
+				continue
+			}
+			current.WriteByte(sql[i])
+			continue
+		}
+		if !inSingleQuote && sql[i] == '$' {
+			if tag, ok := readDollarTag(sql[i:]); ok {
+				current.WriteString(tag)
+				i += len(tag) - 1
+				dollarTag = tag
+				continue
+			}
+		}
+		if sql[i] == '\'' {
+			inSingleQuote = !inSingleQuote
+		}
+		if sql[i] == ';' && !inSingleQuote {
+			statements = append(statements, current.String())
+			current.Reset()
+			continue
+		}
+		current.WriteByte(sql[i])
+	}
+	if strings.TrimSpace(current.String()) != "" {
+		statements = append(statements, current.String())
+	}
+	return statements
+}
+
+func readDollarTag(sql string) (string, bool) {
+	if len(sql) < 2 || sql[0] != '$' {
+		return "", false
+	}
+	for i := 1; i < len(sql); i++ {
+		if sql[i] == '$' {
+			return sql[:i+1], true
+		}
+		if (sql[i] < 'A' || sql[i] > 'Z') &&
+			(sql[i] < 'a' || sql[i] > 'z') &&
+			(sql[i] < '0' || sql[i] > '9') &&
+			sql[i] != '_' {
+			return "", false
+		}
+	}
+	return "", false
 }

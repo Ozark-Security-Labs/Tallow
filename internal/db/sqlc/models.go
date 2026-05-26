@@ -8,6 +8,21 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AnalyzerRun struct {
+	ID              string
+	JobID           string
+	AnalyzerID      string
+	AnalyzerVersion string
+	RulesetVersion  string
+	Status          string
+	StartedAt       pgtype.Timestamptz
+	FinishedAt      pgtype.Timestamptz
+	DurationMs      pgtype.Int8
+	InputJson       []byte
+	OutputJson      []byte
+	ErrorJson       []byte
+}
+
 type Artifact struct {
 	ID                  pgtype.UUID
 	VersionID           pgtype.UUID
@@ -50,27 +65,29 @@ type EventsOutbox struct {
 	PublishedAt   pgtype.Timestamptz
 }
 
-type EvidenceRef struct {
-	ID              pgtype.UUID
-	FindingID       pgtype.UUID
-	ArtifactID      string
-	Path            string
-	StartLine       pgtype.Int4
-	EndLine         pgtype.Int4
-	StartByte       pgtype.Int8
-	EndByte         pgtype.Int8
-	Hash            pgtype.Text
-	ExcerptRedacted bool
-}
-
 type Finding struct {
-	ID         pgtype.UUID
-	StableID   string
-	ArtifactID pgtype.UUID
-	Severity   string
-	Confidence string
-	Title      string
-	CreatedAt  pgtype.Timestamptz
+	ID              string
+	RunID           string
+	RuleID          string
+	RuleVersion     string
+	AnalyzerID      string
+	AnalyzerVersion string
+	Ecosystem       string
+	PackageName     string
+	Version         pgtype.Text
+	ArtifactID      pgtype.Text
+	SnapshotID      pgtype.Text
+	Category        string
+	SeverityHint    string
+	Confidence      string
+	Title           string
+	Summary         string
+	SubjectJson     []byte
+	EvidenceJson    []byte
+	Tags            []string
+	Status          string
+	CreatedAt       pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
 }
 
 type Package struct {
