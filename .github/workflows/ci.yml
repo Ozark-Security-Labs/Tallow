@@ -27,6 +27,14 @@ jobs:
         with: { go-version: '1.25' }
       - run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
       - run: make generate-check
+  analyzer-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv run --project analyzers pytest
+      - run: uv run --project analyzers ruff check
+      - run: TALLOW_ANALYZER_NETWORK_OFF=1 uv run --project analyzers pytest
   compose-config:
     runs-on: ubuntu-latest
     steps:

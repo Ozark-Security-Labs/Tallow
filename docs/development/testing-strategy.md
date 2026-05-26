@@ -51,6 +51,7 @@ Natural keys:
 
 - Run analyzers: `uv run --project analyzers pytest`
 - Lint analyzers: `uv run --project analyzers ruff check`
+- Run analyzer tests with outbound network blocked: `TALLOW_ANALYZER_NETWORK_OFF=1 uv run --project analyzers pytest`
 - Type-check when configured: `uv run --project analyzers mypy .`
 
 ## Web commands
