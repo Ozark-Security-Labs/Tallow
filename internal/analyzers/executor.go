@@ -105,7 +105,7 @@ func mergeAllowedEnv(values map[string]string, env []string) {
 }
 
 func allowedAnalyzerEnv(key string) bool {
-	return key == "PATH" || key == "PYTHONPATH" || strings.HasPrefix(key, "TALLOW_")
+	return key == "PATH" || key == "PYTHONPATH" || strings.HasPrefix(key, "TALLOW_ANALYZER_")
 }
 
 type limitedBuffer struct {

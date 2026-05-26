@@ -41,7 +41,8 @@ func TestCommandExecutorSanitizesOverrideEnvironment(t *testing.T) {
 			"PATH=/bin:/usr/bin",
 			"HOME=/tmp/secret-home",
 			"AWS_SECRET_ACCESS_KEY=do-not-inherit",
-			"TALLOW_CUSTOM=allowed",
+			"TALLOW_POSTGRES_DSN=postgres://secret",
+			"TALLOW_ANALYZER_CUSTOM=allowed",
 		},
 	}
 	result, err := executor.Run(context.Background(), nil)
@@ -49,12 +50,12 @@ func TestCommandExecutorSanitizesOverrideEnvironment(t *testing.T) {
 		t.Fatal(err)
 	}
 	stdout := string(result.Stdout)
-	for _, disallowed := range []string{"HOME=", "AWS_SECRET_ACCESS_KEY"} {
+	for _, disallowed := range []string{"HOME=", "AWS_SECRET_ACCESS_KEY", "TALLOW_POSTGRES_DSN"} {
 		if strings.Contains(stdout, disallowed) {
 			t.Fatalf("executor env contained %s: %s", disallowed, stdout)
 		}
 	}
-	for _, required := range []string{"PATH=/bin:/usr/bin", "TALLOW_CUSTOM=allowed", "TALLOW_ANALYZER_NETWORK_OFF=1"} {
+	for _, required := range []string{"PATH=/bin:/usr/bin", "TALLOW_ANALYZER_CUSTOM=allowed", "TALLOW_ANALYZER_NETWORK_OFF=1"} {
 		if !strings.Contains(stdout, required) {
 			t.Fatalf("executor env missing %s: %s", required, stdout)
 		}
