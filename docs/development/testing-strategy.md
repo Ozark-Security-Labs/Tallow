@@ -52,6 +52,7 @@ Natural keys:
 - Run analyzers: `uv run --project analyzers pytest`
 - Lint analyzers: `uv run --project analyzers ruff check`
 - Run analyzer tests with outbound network blocked: `TALLOW_ANALYZER_NETWORK_OFF=1 uv run --project analyzers pytest`
+- Test fixture safety linter behavior: `uv run --project analyzers pytest scripts/tests`
 - Lint analyzer fixtures for size, secrets, and executable bits: `python scripts/lint_fixtures.py testdata/analyzer-fixtures analyzers/tests/fixtures`
 - Type-check when configured: `uv run --project analyzers mypy .`
 
