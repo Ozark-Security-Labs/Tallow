@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import math
 import re
 from collections.abc import Iterable
@@ -40,14 +41,29 @@ class HighEntropyBlobRule:
         for match in walker.iter_files(["**/*"]):
             if _should_ignore(match.relative_path):
                 continue
-            text = walker.read_text(match.relative_path)
-            if previous_hashes.get(match.relative_path) == _content_hash(text):
+            data = walker.read_bytes(match.relative_path)
+            if previous_hashes.get(match.relative_path) == _content_hash(data):
                 continue
-            for window in _entropy_windows(text):
-                min_len = int(context.options.get("high_entropy_min_length", 64))
-                threshold = float(context.options.get("high_entropy_threshold", 4.5))
-                if window["entropy"] < threshold or len(window["value"]) < min_len:
+            min_len = int(context.options.get("high_entropy_min_length", 512))
+            threshold = float(context.options.get("high_entropy_threshold", 7.2))
+            for window in _entropy_windows(data, min_len=min_len):
+                if window["entropy"] < threshold or window["length"] < min_len:
                     continue
+                evidence = file_evidence(
+                    match.relative_path,
+                    artifact_id=context.artifact_id() or "unknown",
+                    snapshot_id=context.snapshot_id(),
+                    start_line=window["line"],
+                    end_line=window["line"],
+                    start_byte=window["start_byte"],
+                    end_byte=window["end_byte"],
+                    description=(
+                        f"Entropy {window['entropy']:.3f} over {window['length']} bytes; "
+                        f"sha256={window['value_hash']}"
+                    ),
+                )
+                evidence["sha256"] = window["value_hash"]
+                evidence["hash"] = window["value_hash"]
                 findings.append(
                     FindingDraft(
                         rule=self.metadata,
@@ -57,20 +73,7 @@ class HighEntropyBlobRule:
                             f"High-entropy blob detected in {match.relative_path} "
                             f"around line {window['line']}."
                         ),
-                        evidence=[
-                            file_evidence(
-                                match.relative_path,
-                                artifact_id=context.artifact_id() or "unknown",
-                                snapshot_id=context.snapshot_id(),
-                                start_line=window["line"],
-                                end_line=window["line"],
-                                description=(
-                                    f"Entropy {window['entropy']:.2f} over "
-                                    f"{len(window['value'])} chars; "
-                                    f"value_sha256={window['value_hash']}"
-                                ),
-                            )
-                        ],
+                        evidence=[evidence],
                         confidence="medium",
                     )
                 )
@@ -86,21 +89,21 @@ def _should_ignore(path: str) -> bool:
     return any(path.endswith(suffix) for suffix in IGNORE_SUFFIXES)
 
 
-def _entropy_windows(text: str) -> list[dict]:
+def _entropy_windows(data: bytes, *, min_len: int) -> list[dict]:
     results: list[dict] = []
-    pattern = re.compile(r"[A-Za-z0-9+/=]{64,}")
-    for match in pattern.finditer(text):
+    pattern = re.compile(rb"\S{%d,}" % min_len)
+    for match in pattern.finditer(data):
         value = match.group(0)
         entropy = _shannon_entropy(value)
-        line = text.count("\n", 0, match.start()) + 1
-        from tallow_analyzer_sdk.redaction import hash_sensitive_value
-
+        line = data.count(b"\n", 0, match.start()) + 1
         results.append(
             {
-                "value": value,
-                "value_hash": hash_sensitive_value(value),
+                "length": len(value),
+                "value_hash": _content_hash(value),
                 "entropy": entropy,
                 "line": line,
+                "start_byte": match.start(),
+                "end_byte": match.end(),
             }
         )
     return results
@@ -114,17 +117,15 @@ def _previous_hashes(context: AnalysisContext) -> dict[str, str]:
     for match in walker.iter_files(["**/*"]):
         if _should_ignore(match.relative_path):
             continue
-        hashes[match.relative_path] = _content_hash(walker.read_text(match.relative_path))
+        hashes[match.relative_path] = _content_hash(walker.read_bytes(match.relative_path))
     return hashes
 
 
-def _content_hash(text: str) -> str:
-    from tallow_analyzer_sdk.redaction import hash_sensitive_value
-
-    return hash_sensitive_value(text)
+def _content_hash(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
 
 
-def _shannon_entropy(value: str) -> float:
+def _shannon_entropy(value: bytes) -> float:
     if not value:
         return 0.0
     counts: dict[str, int] = {}

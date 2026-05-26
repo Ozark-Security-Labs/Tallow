@@ -3,7 +3,7 @@ from pathlib import Path
 from rules.high_entropy_blob import HighEntropyBlobRule
 from tallow_analyzer_sdk.context import AnalysisContext
 
-HIGH_ENTROPY = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" * 2
+HIGH_ENTROPY = bytes([*range(33, 127), *range(128, 256)]) * 3
 
 
 def _run(to_root: Path, from_root: Path | None = None):
@@ -31,10 +31,13 @@ def _run(to_root: Path, from_root: Path | None = None):
     return list(HighEntropyBlobRule().evaluate(AnalysisContext.from_input(payload)))
 
 
-def _write(root: Path, relative: str, text: str) -> None:
+def _write(root: Path, relative: str, data: bytes | str) -> None:
     path = root / relative
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
+    if isinstance(data, bytes):
+        path.write_bytes(data)
+    else:
+        path.write_text(data, encoding="utf-8")
     (root / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
 
 
@@ -43,8 +46,11 @@ def test_detects_new_high_entropy_blob_without_full_value(tmp_path: Path):
     finding = _run(tmp_path)[0]
     evidence = finding.evidence[0]
     assert evidence["path"] == "src/payload.txt"
+    assert evidence["start_byte"] == 0
+    assert evidence["end_byte"] == len(HIGH_ENTROPY)
+    assert len(evidence["sha256"]) == 64
     assert "Entropy" in evidence["description"]
-    assert HIGH_ENTROPY not in str(evidence)
+    assert str(HIGH_ENTROPY) not in str(evidence)
 
 
 def test_unchanged_entropy_blob_is_ignored(tmp_path: Path):
