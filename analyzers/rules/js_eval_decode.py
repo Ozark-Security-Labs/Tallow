@@ -15,6 +15,8 @@ PATTERNS = (
     re.compile(r"eval\s*\(\s*atob\s*\(", re.I),
     re.compile(r"Function\s*\(\s*atob\s*\(", re.I),
     re.compile(r"eval\s*\(\s*Buffer\.from\s*\([^)]*,\s*['\"]base64['\"]\)", re.I),
+    re.compile(r"Function\s*\(\s*Buffer\.from\s*\([^)]*,\s*['\"]base64['\"]\)", re.I),
+    re.compile(r"new\s+Function\s*\(.*(?:atob|base64)", re.I),
     re.compile(r"setTimeout\s*\(\s*atob\s*\(", re.I),
 )
 
