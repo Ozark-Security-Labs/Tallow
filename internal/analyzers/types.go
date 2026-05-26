@@ -31,10 +31,10 @@ type Subject struct {
 
 type ArtifactEntry struct {
 	ArtifactID   string `json:"artifact_id"`
-	SHA256       string `json:"sha256,omitempty"`
+	SHA256       string `json:"sha256"`
 	Filename     string `json:"filename"`
 	SizeBytes    int64  `json:"size_bytes"`
-	SnapshotPath string `json:"snapshot_path,omitempty"`
+	SnapshotPath string `json:"snapshot_path"`
 }
 
 type ArtifactRefs struct {

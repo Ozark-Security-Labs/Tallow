@@ -34,6 +34,10 @@ def test_incomplete_input_contract_fails():
     payload["artifacts"]["to"].pop("filename")
     with pytest.raises(ValidationError):
         validate_analyzer_input(payload)
+    payload = json.loads((EXAMPLES / "analyzer-input.snapshot-diff.npm.json").read_text())
+    payload["artifacts"]["to"].pop("sha256")
+    with pytest.raises(ValidationError):
+        validate_analyzer_input(payload)
 
 
 def test_valid_example_output():

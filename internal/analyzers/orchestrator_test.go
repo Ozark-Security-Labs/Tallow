@@ -82,6 +82,7 @@ func baseInput() AnalyzerInput {
 		},
 		Artifacts: &ArtifactRefs{To: &ArtifactEntry{
 			ArtifactID:   artifactID,
+			SHA256:       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 			Filename:     "pkg.tgz",
 			SizeBytes:    1,
 			SnapshotPath: "snapshots/art_1",
@@ -260,6 +261,7 @@ func TestHandleEnvelopeConsumesArtifactEvent(t *testing.T) {
 		ArtifactID:   "art_1",
 		ArtifactKind: "tarball",
 		StorageURI:   "snapshots/art_1",
+		LocalHashes:  map[string]string{"sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
 		ObservedAt:   time.Date(2026, 5, 26, 12, 0, 0, 0, time.UTC),
 	}
 	data, _ := json.Marshal(event)
@@ -306,6 +308,7 @@ func TestHandleEnvelopeRejectsStorageURIAsSnapshotRoot(t *testing.T) {
 		ArtifactID:   "art_1",
 		ArtifactKind: "tarball",
 		StorageURI:   "fs://artifacts/raw/pkg",
+		LocalHashes:  map[string]string{"sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
 		ObservedAt:   time.Date(2026, 5, 26, 12, 0, 0, 0, time.UTC),
 	}
 	data, _ := json.Marshal(event)

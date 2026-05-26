@@ -102,7 +102,7 @@
     },
     "artifactEntry": {
       "type": "object",
-      "required": ["artifact_id", "filename", "size_bytes"],
+      "required": ["artifact_id", "sha256", "filename", "size_bytes", "snapshot_path"],
       "properties": {
         "artifact_id": {
           "type": "string",
