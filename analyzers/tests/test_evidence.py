@@ -14,6 +14,11 @@ def test_reject_absolute_path():
         normalize_evidence_path("/etc/passwd")
 
 
+def test_reject_windows_absolute_path():
+    with pytest.raises(PathValidationError):
+        normalize_evidence_path("C:\\Users\\operator\\token.txt")
+
+
 def test_reject_traversal():
     with pytest.raises(PathValidationError):
         normalize_evidence_path("../secret")
@@ -21,6 +26,17 @@ def test_reject_traversal():
 
 def test_normalize_windows_separators():
     assert normalize_evidence_path(".\\package\\file.js") == "package/file.js"
+
+
+def test_file_evidence_supports_byte_ranges():
+    evidence = file_evidence(
+        "package/file.js",
+        artifact_id="a",
+        start_byte=4,
+        end_byte=10,
+    )
+    assert evidence["start_byte"] == 4
+    assert evidence["end_byte"] == 10
 
 
 def test_line_range_validation():
