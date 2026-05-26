@@ -352,6 +352,19 @@ func TestValidateOutputRejectsFindingWithoutEvidence(t *testing.T) {
 	}
 }
 
+func TestFindingSubjectPreservesPackageIDInJSON(t *testing.T) {
+	packageID := "pkg_1"
+	finding := sampleAnalyzerFinding()
+	finding.Subject.PackageID = &packageID
+	data, err := json.Marshal(finding.Subject)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), `"package_id":"pkg_1"`) {
+		t.Fatalf("package_id missing from subject json: %s", data)
+	}
+}
+
 func TestValidateOutputRejectsSchemaViolations(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
