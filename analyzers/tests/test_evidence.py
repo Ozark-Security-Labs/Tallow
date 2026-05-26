@@ -54,6 +54,17 @@ def test_snippet_redaction_and_bound():
     assert len(evidence["excerpt"]) <= 240
 
 
+def test_snippet_redacts_bearer_and_single_quoted_tokens():
+    evidence = file_evidence(
+        "package.json",
+        artifact_id="a",
+        snippet="authorization: Bearer abcdefghijklmnop; token='supersecretvalue'",
+    )
+    assert evidence["excerpt_redacted"] is True
+    assert "abcdefghijklmnop" not in evidence["excerpt"]
+    assert "supersecretvalue" not in evidence["excerpt"]
+
+
 def test_metadata_hashes_secret_like_values():
     evidence = metadata_evidence("npm_token", "super-secret-token-value", artifact_id="a")
     assert evidence["hash"] != "super-secret-token-value"

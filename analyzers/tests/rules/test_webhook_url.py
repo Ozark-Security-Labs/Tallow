@@ -33,6 +33,20 @@ def test_detects_and_redacts_webhook_query(tmp_path: Path):
     assert "?<redacted>" in evidence["excerpt"]
 
 
+def test_redacts_path_embedded_webhook_tokens(tmp_path: Path):
+    (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+    (tmp_path / "index.ts").write_text(
+        "fetch('https://hooks.slack.com/services/T00000000/B00000000/FAKESECRET')\n"
+        "fetch('https://api.telegram.org/bot123456:FAKESECRET/sendMessage')\n",
+        encoding="utf-8",
+    )
+    excerpts = [finding.evidence[0]["excerpt"] for finding in _run(tmp_path)]
+    assert excerpts
+    assert "FAKESECRET" not in str(excerpts)
+    assert "bot<redacted>" in str(excerpts)
+    assert "<redacted>" in str(excerpts)
+
+
 def test_readme_context_is_ignored(tmp_path: Path):
     (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
     (tmp_path / "README.md").write_text("https://discord.com/api/webhooks/1/fake")

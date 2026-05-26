@@ -44,7 +44,7 @@ class WebhookUrlRule:
                     continue
                 confidence = (
                     "medium"
-                    if match.relative_path.endswith((".js", ".py", ".sh", ".json"))
+                    if match.relative_path.endswith((".js", ".ts", ".py", ".sh", ".json"))
                     else "low"
                 )
                 if confidence == "low":
