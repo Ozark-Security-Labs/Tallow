@@ -16,6 +16,7 @@ DECODERS = {
     ("marshal", "loads"),
 }
 EXECS = {"eval", "exec"}
+IMPORTS = {"__import__"}
 
 
 class PyDecodeExecRule:
@@ -43,13 +44,18 @@ class PyDecodeExecRule:
                 tree = ast.parse(text, filename=match.relative_path)
             except SyntaxError:
                 continue
+            decoded_names = _decoder_assignments(tree)
             for node in ast.walk(tree):
                 if not isinstance(node, ast.Call):
                     continue
-                if not _is_exec_call(node.func):
+                if not _is_exec_call(node.func) and not _is_import_call(node.func):
                     continue
-                if not any(_contains_decoder(arg) for arg in node.args):
+                if not any(
+                    _contains_decoder(arg) or _contains_decoded_name(arg, decoded_names)
+                    for arg in node.args
+                ):
                     continue
+                confidence = "medium" if _is_import_call(node.func) else "high"
                 findings.append(
                     FindingDraft(
                         rule=self.metadata,
@@ -70,6 +76,7 @@ class PyDecodeExecRule:
                                 description="Decode/decompress chain flows to execution sink",
                             )
                         ],
+                        confidence=confidence,
                     )
                 )
                 if len(findings) >= context.max_findings_per_rule:
@@ -81,6 +88,23 @@ def _is_exec_call(node: ast.AST) -> bool:
     return isinstance(node, ast.Name) and node.id in EXECS
 
 
+def _is_import_call(node: ast.AST) -> bool:
+    return isinstance(node, ast.Name) and node.id in IMPORTS
+
+
+def _decoder_assignments(tree: ast.AST) -> set[str]:
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign):
+            continue
+        if not _contains_decoder(node.value):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Name):
+                names.add(target.id)
+    return names
+
+
 def _contains_decoder(node: ast.AST) -> bool:
     if isinstance(node, ast.Call):
         target = _call_target(node.func)
@@ -90,6 +114,12 @@ def _contains_decoder(node: ast.AST) -> bool:
         if _contains_decoder(child):
             return True
     return False
+
+
+def _contains_decoded_name(node: ast.AST, decoded_names: set[str]) -> bool:
+    if isinstance(node, ast.Name) and node.id in decoded_names:
+        return True
+    return any(_contains_decoded_name(child, decoded_names) for child in ast.iter_child_nodes(node))
 
 
 def _call_target(node: ast.AST) -> tuple[str, str] | str:
