@@ -22,6 +22,12 @@ Optional top-level fields:
 - `hash_verification`: hash mismatch context for `hash_verification` jobs.
 - `options`: analyzer execution options.
 
+Supported `options` fields include `enabled_rules`, `disabled_rules`,
+`max_file_bytes`, `max_findings_per_rule`, `allow_binary_packages`,
+`allowed_binary_paths`, `high_entropy_min_length`, `high_entropy_threshold`,
+and `fail_fast`. `allowed_binary_paths` contains exact snapshot-relative POSIX
+paths for native binaries a package is expected to ship.
+
 Example:
 
 ```json

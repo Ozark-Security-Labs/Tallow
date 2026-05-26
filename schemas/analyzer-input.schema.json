@@ -190,6 +190,21 @@
         "allow_binary_packages": {
           "type": "boolean"
         },
+        "allowed_binary_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "high_entropy_min_length": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "high_entropy_threshold": {
+          "type": "number",
+          "minimum": 0
+        },
         "fail_fast": {
           "type": "boolean"
         }

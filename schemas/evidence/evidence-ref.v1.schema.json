@@ -22,6 +22,9 @@
     "start_byte": {"type": "integer", "minimum": 0},
     "end_byte": {"type": "integer", "minimum": 0},
     "hash": {"type": "string"},
+    "magic": {"type": "string"},
+    "size_bytes": {"type": "integer", "minimum": 0},
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
     "excerpt": {"type": "string"},
     "excerpt_redacted": {"type": "boolean"},
     "description": {"type": "string"}

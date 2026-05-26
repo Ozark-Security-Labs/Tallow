@@ -53,6 +53,11 @@ class AnalysisContext:
         return bool(self.options.get("allow_binary_packages", False))
 
     @property
+    def allowed_binary_paths(self) -> set[str]:
+        values = self.options.get("allowed_binary_paths") or []
+        return {str(value).replace("\\", "/") for value in values if str(value).strip()}
+
+    @property
     def fail_fast(self) -> bool:
         return bool(self.options.get("fail_fast", False))
 

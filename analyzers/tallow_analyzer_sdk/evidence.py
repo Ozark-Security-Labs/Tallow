@@ -129,6 +129,9 @@ def binary_evidence(
         snapshot_id=snapshot_id,
         path=path,
         hash=sha256,
+        magic=magic,
+        size_bytes=size_bytes,
+        sha256=sha256,
         description=description or f"unexpected binary ({magic}, {size_bytes} bytes)",
     )
 

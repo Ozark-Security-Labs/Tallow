@@ -32,6 +32,8 @@ class UnexpectedBinaryRule:
         walker = context.walker("to")
         findings: list[FindingDraft] = []
         for match in walker.iter_files(include_binary=True):
+            if match.relative_path in context.allowed_binary_paths:
+                continue
             data = walker.read_bytes(match.relative_path, max_bytes=16)
             magic = _detect_magic(data)
             if magic is None:
