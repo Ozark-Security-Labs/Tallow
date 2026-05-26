@@ -13,7 +13,8 @@ FIXTURE_ROOT = Path(__file__).resolve().parent / "fixtures" / "snapshots" / "sim
 
 def _input_with_fixture_root() -> dict:
     payload = json.loads(EXAMPLE_INPUT.read_text())
-    payload["options"] = {"enabled_rules": [], "max_file_bytes": 4096}
+    payload["options"]["enabled_rules"] = []
+    payload["options"]["max_file_bytes"] = 4096
     payload["snapshot_refs"]["to"]["root"] = str(FIXTURE_ROOT)
     payload["snapshot_refs"]["to"]["manifest_path"] = str(FIXTURE_ROOT / "manifest.json")
     return payload
@@ -30,6 +31,24 @@ def test_valid_empty_fixture_produces_ok_status():
     output = run_analyzer(_input_with_fixture_root())
     assert output["status"] == "ok"
     assert output["findings"] == []
+
+
+def test_hash_verification_input_does_not_run_snapshot_rules():
+    payload = json.loads(EXAMPLE_INPUT.read_text())
+    payload["job_id"] = "job_hash"
+    payload["analysis_type"] = "hash_verification"
+    payload.pop("snapshot_refs")
+    payload["artifacts"] = {"to": payload["artifacts"]["to"]}
+    payload["hash_verification"] = {
+        "artifact_id": payload["artifacts"]["to"]["artifact_id"],
+        "expected_sha256": "a" * 64,
+        "observed_sha256": "b" * 64,
+        "source": "registry",
+    }
+    output = run_analyzer(payload)
+    assert output["status"] == "ok"
+    assert output["metrics"]["rules_evaluated"] == 0
+    assert output["errors"] == []
 
 
 def test_invalid_input_exits_non_zero(tmp_path: Path):

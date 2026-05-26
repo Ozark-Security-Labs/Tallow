@@ -110,15 +110,35 @@ def test_ecosystem_filtering():
     registry = RuleRegistry()
     registry.register(DummyRule("npm.rule.test", ecosystems=("npm",)))
     registry.register(DummyRule("pypi.rule.test", ecosystems=("pypi",)))
-    enabled = registry.enabled_for("npm")
+    enabled = registry.enabled_for("npm", "snapshot")
     assert [rule.metadata.rule_id for rule in enabled] == ["npm.rule.test"]
+
+
+def test_input_type_filtering():
+    registry = RuleRegistry()
+    registry.register(DummyRule("npm.rule.snapshot"))
+    hash_rule = DummyRule("npm.rule.hash")
+    hash_rule.metadata = RuleMetadata(
+        rule_id="npm.rule.hash",
+        version="1.0.0",
+        name="hash",
+        description="dummy",
+        category="hash",
+        ecosystems=("npm",),
+        default_severity_hint="medium",
+        default_confidence="high",
+        inputs=("hash_verification",),
+    )
+    registry.register(hash_rule)
+    enabled = registry.enabled_for("npm", "hash_verification")
+    assert [rule.metadata.rule_id for rule in enabled] == ["npm.rule.hash"]
 
 
 def test_enabled_disabled_options():
     registry = RuleRegistry()
     registry.register(DummyRule("npm.rule.a"))
     registry.register(DummyRule("npm.rule.b"))
-    enabled = registry.enabled_for("npm", enabled_rules=["npm.rule.a"])
+    enabled = registry.enabled_for("npm", "snapshot", enabled_rules=["npm.rule.a"])
     assert [rule.metadata.rule_id for rule in enabled] == ["npm.rule.a"]
-    disabled = registry.enabled_for("npm", disabled_rules=["npm.rule.a"])
+    disabled = registry.enabled_for("npm", "snapshot", disabled_rules=["npm.rule.a"])
     assert [rule.metadata.rule_id for rule in disabled] == ["npm.rule.b"]

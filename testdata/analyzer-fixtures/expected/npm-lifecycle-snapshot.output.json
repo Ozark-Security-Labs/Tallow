@@ -1,0 +1,60 @@
+{
+  "analyzer": {
+    "id": "builtin.rules",
+    "ruleset_version": "2026.05.26",
+    "version": "0.1.0"
+  },
+  "contract_version": "v1",
+  "errors": [],
+  "findings": [
+    {
+      "analyzer_id": "builtin.rules",
+      "analyzer_version": "0.1.0",
+      "category": "script",
+      "confidence": "high",
+      "created_at": "1970-01-01T00:00:00Z",
+      "evidence": [
+        {
+          "artifact_id": "art_npm_lifecycle",
+          "description": "Lifecycle script key postinstall present in package.json",
+          "end_line": 5,
+          "excerpt": "\"postinstall\": \"node ./scripts/postinstall.js\"",
+          "excerpt_redacted": false,
+          "kind": "file",
+          "path": "package/package.json",
+          "snapshot_id": "snap_npm_lifecycle",
+          "start_line": 5
+        }
+      ],
+      "id": "fin_v1_871bcb850cfa270b36cd5b03b8556f16",
+      "rule_id": "npm.lifecycle.install_script",
+      "rule_version": "1.0.0",
+      "schema_version": "v1",
+      "severity_hint": "medium",
+      "subject": {
+        "artifact_id": "art_npm_lifecycle",
+        "ecosystem": "npm",
+        "package_name": "fixture",
+        "snapshot_id": "snap_npm_lifecycle",
+        "to_artifact_id": "art_npm_lifecycle",
+        "version": "1.0.0"
+      },
+      "summary": "package.json defines lifecycle script key postinstall.",
+      "tags": [
+        "lifecycle",
+        "postinstall"
+      ],
+      "title": "npm lifecycle script present: postinstall"
+    }
+  ],
+  "job_id": "job_fixture_npm_lifecycle",
+  "metrics": {
+    "files_scanned": 1,
+    "files_skipped_binary": 0,
+    "files_skipped_size": 0,
+    "findings_emitted": 1,
+    "rules_evaluated": 1,
+    "rules_failed": 0
+  },
+  "status": "ok"
+}

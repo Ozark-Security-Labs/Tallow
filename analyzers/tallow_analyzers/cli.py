@@ -74,6 +74,7 @@ def run_analyzer(payload: dict) -> dict:
     options = payload.get("options") or {}
     enabled = registry.enabled_for(
         context.ecosystem,
+        payload["analysis_type"],
         enabled_rules=options.get("enabled_rules"),
         disabled_rules=options.get("disabled_rules"),
     )
@@ -108,7 +109,7 @@ def run_analyzer(payload: dict) -> dict:
             "version": ANALYZER_VERSION,
             "ruleset_version": RULESET_VERSION,
         },
-        "status": "failed" if errors and context.fail_fast else "ok",
+        "status": "failed" if errors else "ok",
         "findings": findings,
         "errors": errors,
         "metrics": {

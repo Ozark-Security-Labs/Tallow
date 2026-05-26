@@ -29,6 +29,7 @@ class RuleMetadata:
 _RULE_ID_PATTERN = re.compile(r"^[a-z0-9]+(?:\.[a-z0-9_]+)+$")
 _VALID_SEVERITIES = {"info", "low", "medium", "high", "critical"}
 _VALID_CONFIDENCE = {"low", "medium", "high"}
+_VALID_INPUTS = {"snapshot", "snapshot_diff", "hash_verification"}
 
 
 def validate_rule_metadata(metadata: RuleMetadata) -> None:
@@ -42,6 +43,10 @@ def validate_rule_metadata(metadata: RuleMetadata) -> None:
         raise ValueError(f"rule {metadata.rule_id} has invalid severity hint")
     if metadata.default_confidence not in _VALID_CONFIDENCE:
         raise ValueError(f"rule {metadata.rule_id} has invalid confidence")
+    if not metadata.inputs or any(
+        input_type not in _VALID_INPUTS for input_type in metadata.inputs
+    ):
+        raise ValueError(f"rule {metadata.rule_id} has invalid inputs")
 
 
 class Rule(Protocol):
@@ -67,6 +72,7 @@ class RuleRegistry:
     def enabled_for(
         self,
         ecosystem: str,
+        analysis_type: str,
         enabled_rules: list[str] | None = None,
         disabled_rules: list[str] | None = None,
     ) -> list[Rule]:
@@ -75,6 +81,8 @@ class RuleRegistry:
         selected: list[Rule] = []
         for rule in self.all():
             if ecosystem not in rule.metadata.ecosystems and "*" not in rule.metadata.ecosystems:
+                continue
+            if analysis_type not in rule.metadata.inputs:
                 continue
             if enabled and rule.metadata.rule_id not in enabled:
                 continue

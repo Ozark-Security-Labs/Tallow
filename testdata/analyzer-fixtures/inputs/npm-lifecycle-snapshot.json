@@ -1,0 +1,39 @@
+{
+  "contract_version": "v1",
+  "job_id": "job_fixture_npm_lifecycle",
+  "analysis_type": "snapshot",
+  "subject": {
+    "ecosystem": "npm",
+    "package_name": "fixture",
+    "version": "1.0.0",
+    "artifact_id": "art_npm_lifecycle",
+    "snapshot_id": "snap_npm_lifecycle"
+  },
+  "artifacts": {
+    "to": {
+      "artifact_id": "art_npm_lifecycle",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "filename": "fixture-1.0.0.tgz",
+      "size_bytes": 1024,
+      "snapshot_path": "npm/lifecycle_suspicious/snapshot"
+    }
+  },
+  "snapshot_refs": {
+    "to": {
+      "snapshot_id": "snap_npm_lifecycle",
+      "root": "__FIXTURE_ROOT__/npm/lifecycle_suspicious/snapshot",
+      "manifest_path": "__FIXTURE_ROOT__/npm/lifecycle_suspicious/snapshot/manifest.json"
+    }
+  },
+  "options": {
+    "enabled_rules": ["npm.lifecycle.install_script"],
+    "disabled_rules": [],
+    "max_file_bytes": 65536,
+    "max_findings_per_rule": 100,
+    "allow_binary_packages": [],
+    "allowed_binary_paths": [],
+    "high_entropy_min_length": 512,
+    "high_entropy_threshold": 7.2,
+    "fail_fast": false
+  }
+}
