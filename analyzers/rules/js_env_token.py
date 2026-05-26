@@ -22,6 +22,11 @@ CREDENTIAL_PATH_PATTERNS = (
     re.compile(r"id_rsa"),
     re.compile(r"known_hosts"),
 )
+READ_PATTERNS = (
+    "readfilesync",
+    "readfile",
+    "createReadStream",
+)
 
 
 class JsEnvTokenRule:
@@ -48,11 +53,12 @@ class JsEnvTokenRule:
                 continue
             text = walker.read_text(match.relative_path)
             for line_no, line in enumerate(text.splitlines(), start=1):
-                if line.strip().startswith("//"):
+                code_line = _strip_js_strings_for_env(line)
+                if not code_line.strip() or code_line.strip().startswith("//"):
                     continue
                 env_match = None
                 for pattern in ENV_PATTERNS:
-                    env_match = pattern.search(line)
+                    env_match = pattern.search(code_line)
                     if env_match:
                         key = env_match.group(1)
                         if not _token_like(key):
@@ -63,6 +69,8 @@ class JsEnvTokenRule:
                     (p.search(line) for p in CREDENTIAL_PATH_PATTERNS if p.search(line)),
                     None,
                 )
+                if cred_match and not _looks_like_path_read(line):
+                    cred_match = None
                 if not env_match and not cred_match:
                     continue
                 summary = (
@@ -99,3 +107,30 @@ def _token_like(key: str) -> bool:
     upper = key.upper()
     markers = ("TOKEN", "SECRET", "KEY", "AWS_", "NPM_TOKEN", "GITHUB_TOKEN", "CI_JOB_TOKEN")
     return any(token in upper for token in markers)
+
+
+def _strip_js_strings_for_env(line: str) -> str:
+    output: list[str] = []
+    quote: str | None = None
+    escaped = False
+    for char in line:
+        if quote:
+            if escaped:
+                escaped = False
+                continue
+            if char == "\\":
+                escaped = True
+                continue
+            if char == quote:
+                quote = None
+            continue
+        if char in {'"', "'", "`"}:
+            quote = char
+            continue
+        output.append(char)
+    return "".join(output).split("//", 1)[0]
+
+
+def _looks_like_path_read(line: str) -> bool:
+    lowered = line.lower()
+    return any(pattern.lower() in lowered for pattern in READ_PATTERNS)
