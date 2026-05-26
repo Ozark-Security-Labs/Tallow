@@ -45,6 +45,9 @@
     "max_file_bytes": 1048576,
     "max_findings_per_rule": 100,
     "allow_binary_packages": [],
+    "allowed_binary_paths": [],
+    "high_entropy_min_length": 512,
+    "high_entropy_threshold": 7.2,
     "fail_fast": false
   }
 }

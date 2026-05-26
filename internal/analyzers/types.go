@@ -32,8 +32,8 @@ type Subject struct {
 type ArtifactEntry struct {
 	ArtifactID   string `json:"artifact_id"`
 	SHA256       string `json:"sha256,omitempty"`
-	Filename     string `json:"filename,omitempty"`
-	SizeBytes    int64  `json:"size_bytes,omitempty"`
+	Filename     string `json:"filename"`
+	SizeBytes    int64  `json:"size_bytes"`
 	SnapshotPath string `json:"snapshot_path,omitempty"`
 }
 
@@ -61,15 +61,15 @@ type HashVerification struct {
 }
 
 type Options struct {
-	EnabledRules         []string `json:"enabled_rules,omitempty"`
-	DisabledRules        []string `json:"disabled_rules,omitempty"`
-	MaxFileBytes         int64    `json:"max_file_bytes,omitempty"`
-	MaxFindingsPerRule   int      `json:"max_findings_per_rule,omitempty"`
-	AllowBinaryPackages  []string `json:"allow_binary_packages,omitempty"`
-	AllowedBinaryPaths   []string `json:"allowed_binary_paths,omitempty"`
-	HighEntropyMinLen    int      `json:"high_entropy_min_length,omitempty"`
-	HighEntropyThreshold float64  `json:"high_entropy_threshold,omitempty"`
-	FailFast             *bool    `json:"fail_fast,omitempty"`
+	EnabledRules         []string `json:"enabled_rules"`
+	DisabledRules        []string `json:"disabled_rules"`
+	MaxFileBytes         int64    `json:"max_file_bytes"`
+	MaxFindingsPerRule   int      `json:"max_findings_per_rule"`
+	AllowBinaryPackages  []string `json:"allow_binary_packages"`
+	AllowedBinaryPaths   []string `json:"allowed_binary_paths"`
+	HighEntropyMinLen    int      `json:"high_entropy_min_length"`
+	HighEntropyThreshold float64  `json:"high_entropy_threshold"`
+	FailFast             *bool    `json:"fail_fast"`
 }
 
 type AnalyzerOutput struct {
