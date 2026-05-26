@@ -54,3 +54,8 @@ def test_rule_or_path_change_changes_id():
     base = build_finding_id("v1", "rule.a", _subject(), _evidence("a"))
     assert base != build_finding_id("v1", "rule.b", _subject(), _evidence("a"))
     assert base != build_finding_id("v1", "rule.a", _subject(), _evidence("b"))
+
+
+def test_evidence_hash_change_changes_id():
+    base = build_finding_id("v1", "rule.a", _subject(), _evidence("a", hash="abc"))
+    assert base != build_finding_id("v1", "rule.a", _subject(), _evidence("a", hash="def"))
