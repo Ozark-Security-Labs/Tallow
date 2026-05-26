@@ -4,17 +4,26 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"os"
 	"os/exec"
 	"time"
 )
+
+const defaultMaxAnalyzerOutputBytes = 4 * 1024 * 1024
+
+var ErrOutputLimitExceeded = errors.New("analyzer output exceeded limit")
 
 type Executor interface {
 	Run(context.Context, []byte) (RunResult, error)
 }
 
 type CommandExecutor struct {
-	Command []string
-	Timeout time.Duration
+	Command        []string
+	Timeout        time.Duration
+	Env            []string
+	WorkDir        string
+	MaxOutputBytes int64
 }
 
 func (e CommandExecutor) Run(ctx context.Context, input []byte) (RunResult, error) {
@@ -28,11 +37,19 @@ func (e CommandExecutor) Run(ctx context.Context, input []byte) (RunResult, erro
 		defer cancel()
 	}
 	cmd := exec.CommandContext(ctx, e.Command[0], e.Command[1:]...)
+	cmd.Env = e.sanitizedEnv()
+	if e.WorkDir != "" {
+		cmd.Dir = e.WorkDir
+	}
 	cmd.Stdin = bytes.NewReader(input)
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	maxOutput := e.MaxOutputBytes
+	if maxOutput <= 0 {
+		maxOutput = defaultMaxAnalyzerOutputBytes
+	}
+	stdout := &limitedBuffer{limit: maxOutput}
+	stderr := &limitedBuffer{limit: maxOutput}
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 	err := cmd.Run()
 	finished := time.Now().UTC()
 	result := RunResult{
@@ -43,6 +60,9 @@ func (e CommandExecutor) Run(ctx context.Context, input []byte) (RunResult, erro
 		StartedAt:  started,
 		FinishedAt: finished,
 	}
+	if stdout.Truncated() || stderr.Truncated() {
+		err = fmt.Errorf("%w: max %d bytes per stream", ErrOutputLimitExceeded, maxOutput)
+	}
 	if exitErr := new(exec.ExitError); errors.As(err, &exitErr) {
 		result.ExitCode = exitErr.ExitCode()
 	} else if err != nil {
@@ -52,3 +72,44 @@ func (e CommandExecutor) Run(ctx context.Context, input []byte) (RunResult, erro
 	}
 	return result, err
 }
+
+func (e CommandExecutor) sanitizedEnv() []string {
+	if e.Env != nil {
+		return append([]string(nil), e.Env...)
+	}
+	env := []string{"TALLOW_ANALYZER_NETWORK_OFF=1"}
+	for _, key := range []string{"PATH", "HOME", "TMPDIR", "LANG", "LC_ALL", "UV_CACHE_DIR"} {
+		if value, ok := os.LookupEnv(key); ok && value != "" {
+			env = append(env, key+"="+value)
+		}
+	}
+	return env
+}
+
+type limitedBuffer struct {
+	buf       bytes.Buffer
+	limit     int64
+	truncated bool
+}
+
+func (b *limitedBuffer) Write(p []byte) (int, error) {
+	if b.limit <= 0 {
+		return len(p), nil
+	}
+	remaining := b.limit - int64(b.buf.Len())
+	if remaining <= 0 {
+		b.truncated = true
+		return len(p), nil
+	}
+	if int64(len(p)) > remaining {
+		_, _ = b.buf.Write(p[:remaining])
+		b.truncated = true
+		return len(p), nil
+	}
+	_, _ = b.buf.Write(p)
+	return len(p), nil
+}
+
+func (b *limitedBuffer) Bytes() []byte { return b.buf.Bytes() }
+
+func (b *limitedBuffer) Truncated() bool { return b.truncated }

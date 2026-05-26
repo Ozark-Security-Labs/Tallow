@@ -49,6 +49,12 @@ func (o Orchestrator) HandleEnvelope(ctx context.Context, envelope events.Envelo
 		}
 		return o.Run(ctx, input)
 	}
+	if err := event.Validate(); err != nil {
+		return fmt.Errorf("prepare analyzer input: %w", err)
+	}
+	if event.StorageURI == "" {
+		return fmt.Errorf("prepare analyzer input: artifact event missing snapshot root")
+	}
 	input := InputFromArtifactEvent(event)
 	return o.Run(ctx, input)
 }
@@ -80,6 +86,12 @@ func (o Orchestrator) Run(ctx context.Context, input AnalyzerInput) error {
 	if record.FinishedAt.IsZero() {
 		record.FinishedAt = o.now()
 	}
+	if result.TimedOut {
+		record.Status = "failed"
+		record.ErrorJSON = errorJSON("timeout", "analyzer timed out")
+		o.record(ctx, record, nil)
+		return nil
+	}
 	if runErr != nil {
 		record.ErrorJSON = errorJSON("executor_failed", runErr.Error())
 		o.record(ctx, record, nil)
@@ -97,10 +109,6 @@ func (o Orchestrator) Run(ctx context.Context, input AnalyzerInput) error {
 	record.RulesetVersion = output.Analyzer.RulesetVersion
 	record.Status = output.Status
 	record.OutputJSON = result.Stdout
-	if result.TimedOut {
-		record.Status = "failed"
-		record.ErrorJSON = errorJSON("timeout", "analyzer timed out")
-	}
 	o.record(ctx, record, output.Findings)
 	return nil
 }
@@ -126,6 +134,7 @@ func InputFromArtifactEvent(event events.ArtifactEvent) AnalyzerInput {
 	jobID := "analysis:" + event.ArtifactID
 	version := event.Version
 	artifactID := event.ArtifactID
+	snapshotID := event.ArtifactID
 	return AnalyzerInput{
 		ContractVersion: ContractVersion,
 		JobID:           jobID,
@@ -135,10 +144,17 @@ func InputFromArtifactEvent(event events.ArtifactEvent) AnalyzerInput {
 			PackageName: event.Package,
 			Version:     &version,
 			ArtifactID:  &artifactID,
+			SnapshotID:  &snapshotID,
 		},
 		Artifacts: &ArtifactRefs{To: &ArtifactEntry{
 			ArtifactID:   event.ArtifactID,
+			Filename:     event.ArtifactKind,
 			SnapshotPath: event.StorageURI,
+		}},
+		SnapshotRefs: &SnapshotRefs{To: &SnapshotEntry{
+			SnapshotID:   snapshotID,
+			Root:         event.StorageURI,
+			ManifestPath: "manifest.json",
 		}},
 	}
 }
@@ -148,22 +164,38 @@ func inputFromArtifactObserved(data []byte) (AnalyzerInput, error) {
 	if err := json.Unmarshal(data, &observed); err != nil {
 		return AnalyzerInput{}, err
 	}
-	packageName, _ := observed.Package.(map[string]any)["name"].(string)
+	if err := observed.Validate(); err != nil {
+		return AnalyzerInput{}, err
+	}
+	packageObj, ok := observed.Package.(map[string]any)
+	if !ok {
+		return AnalyzerInput{}, fmt.Errorf("artifact observed event package must be object")
+	}
+	versionObj, ok := observed.Version.(map[string]any)
+	if !ok {
+		return AnalyzerInput{}, fmt.Errorf("artifact observed event version must be object")
+	}
+	artifactObj, ok := observed.Artifact.(map[string]any)
+	if !ok {
+		return AnalyzerInput{}, fmt.Errorf("artifact observed event artifact must be object")
+	}
+	packageName, _ := packageObj["name"].(string)
 	if packageName == "" {
-		packageName, _ = observed.Package.(map[string]any)["raw_name"].(string)
+		packageName, _ = packageObj["raw_name"].(string)
 	}
-	ecosystem, _ := observed.Package.(map[string]any)["ecosystem"].(string)
-	version, _ := observed.Version.(map[string]any)["raw_version"].(string)
-	artifactID, _ := observed.Artifact.(map[string]any)["id"].(string)
-	kind, _ := observed.Artifact.(map[string]any)["kind"].(string)
+	ecosystem, _ := packageObj["ecosystem"].(string)
+	version, _ := versionObj["raw_version"].(string)
+	artifactID, _ := artifactObj["id"].(string)
+	kind, _ := artifactObj["kind"].(string)
 	if artifactID == "" {
-		artifactID, _ = observed.Artifact.(map[string]any)["artifact_id"].(string)
+		artifactID, _ = artifactObj["artifact_id"].(string)
 	}
-	if ecosystem == "" || packageName == "" || version == "" || artifactID == "" {
+	if ecosystem == "" || packageName == "" || version == "" || artifactID == "" || observed.StorageRef == "" {
 		return AnalyzerInput{}, fmt.Errorf("artifact observed event missing analyzer fields")
 	}
 	artifactIDCopy := artifactID
 	versionCopy := version
+	snapshotID := artifactID
 	return AnalyzerInput{
 		ContractVersion: ContractVersion,
 		JobID:           "analysis:" + artifactID,
@@ -173,11 +205,17 @@ func inputFromArtifactObserved(data []byte) (AnalyzerInput, error) {
 			PackageName: packageName,
 			Version:     &versionCopy,
 			ArtifactID:  &artifactIDCopy,
+			SnapshotID:  &snapshotID,
 		},
 		Artifacts: &ArtifactRefs{To: &ArtifactEntry{
 			ArtifactID:   artifactID,
 			Filename:     kind,
 			SnapshotPath: observed.StorageRef,
+		}},
+		SnapshotRefs: &SnapshotRefs{To: &SnapshotEntry{
+			SnapshotID:   snapshotID,
+			Root:         observed.StorageRef,
+			ManifestPath: "manifest.json",
 		}},
 	}, nil
 }

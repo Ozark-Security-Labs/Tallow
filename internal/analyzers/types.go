@@ -120,27 +120,28 @@ type FindingSubject struct {
 }
 
 type FindingEvidence struct {
-	Kind            string `json:"kind"`
-	ArtifactID      string `json:"artifact_id,omitempty"`
-	SnapshotID      string `json:"snapshot_id,omitempty"`
-	Path            string `json:"path,omitempty"`
-	StartLine       *int   `json:"start_line,omitempty"`
-	EndLine         *int   `json:"end_line,omitempty"`
-	StartByte       *int64 `json:"start_byte,omitempty"`
-	EndByte         *int64 `json:"end_byte,omitempty"`
-	Excerpt         string `json:"excerpt,omitempty"`
-	ExcerptRedacted *bool  `json:"excerpt_redacted,omitempty"`
-	Description     string `json:"description,omitempty"`
-	Key             string `json:"key,omitempty"`
-	Value           string `json:"value,omitempty"`
-	Algorithm       string `json:"algorithm,omitempty"`
-	Observed        string `json:"observed,omitempty"`
-	Claimed         string `json:"claimed,omitempty"`
-	Magic           string `json:"magic,omitempty"`
-	SizeBytes       *int64 `json:"size_bytes,omitempty"`
-	SHA256          string `json:"sha256,omitempty"`
-	ValueHash       string `json:"value_hash,omitempty"`
-	Extra           json.RawMessage
+	Kind            string          `json:"kind"`
+	ArtifactID      string          `json:"artifact_id,omitempty"`
+	SnapshotID      string          `json:"snapshot_id,omitempty"`
+	Path            string          `json:"path,omitempty"`
+	StartLine       *int            `json:"start_line,omitempty"`
+	EndLine         *int            `json:"end_line,omitempty"`
+	StartByte       *int64          `json:"start_byte,omitempty"`
+	EndByte         *int64          `json:"end_byte,omitempty"`
+	Excerpt         string          `json:"excerpt,omitempty"`
+	ExcerptRedacted *bool           `json:"excerpt_redacted,omitempty"`
+	Description     string          `json:"description,omitempty"`
+	Key             string          `json:"key,omitempty"`
+	Value           string          `json:"value,omitempty"`
+	Algorithm       string          `json:"algorithm,omitempty"`
+	Observed        string          `json:"observed,omitempty"`
+	Claimed         string          `json:"claimed,omitempty"`
+	Hash            string          `json:"hash,omitempty"`
+	Magic           string          `json:"magic,omitempty"`
+	SizeBytes       *int64          `json:"size_bytes,omitempty"`
+	SHA256          string          `json:"sha256,omitempty"`
+	ValueHash       string          `json:"value_hash,omitempty"`
+	Extra           json.RawMessage `json:"-"`
 }
 
 type AnalyzerError struct {

@@ -53,6 +53,9 @@ func baseInput() AnalyzerInput {
 }
 
 func outputJSON(jobID string, findings []Finding) []byte {
+	if findings == nil {
+		findings = []Finding{}
+	}
 	payload := AnalyzerOutput{
 		ContractVersion: ContractVersion,
 		JobID:           jobID,
@@ -197,6 +200,9 @@ func TestHandleEnvelopeConsumesArtifactEvent(t *testing.T) {
 	if input.JobID != "analysis:art_1" || input.Subject.PackageName != "pkg" {
 		t.Fatalf("unexpected input: %#v", input)
 	}
+	if input.SnapshotRefs == nil || input.SnapshotRefs.To == nil || input.SnapshotRefs.To.Root == "" {
+		t.Fatalf("snapshot refs missing: %#v", input)
+	}
 	if len(recorder.runs) != 1 {
 		t.Fatalf("runs: %#v", recorder.runs)
 	}
@@ -207,5 +213,88 @@ func TestValidateOutputRejectsFindingWithoutEvidence(t *testing.T) {
 	finding.Evidence = nil
 	if _, err := ValidateOutputJSON(outputJSON("job_1", []Finding{finding})); err == nil {
 		t.Fatal("expected validation error")
+	}
+}
+
+func TestValidateOutputRejectsSchemaViolations(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		mutate func(Finding) Finding
+	}{
+		{
+			name: "unsafe path",
+			mutate: func(f Finding) Finding {
+				f.Evidence[0].Path = "../secret"
+				return f
+			},
+		},
+		{
+			name: "invalid severity",
+			mutate: func(f Finding) Finding {
+				f.SeverityHint = "urgent"
+				return f
+			},
+		},
+		{
+			name: "overlong excerpt",
+			mutate: func(f Finding) Finding {
+				redacted := true
+				f.Evidence[0].Excerpt = string(make([]byte, 241))
+				f.Evidence[0].ExcerptRedacted = &redacted
+				return f
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			finding := tc.mutate(sampleAnalyzerFinding())
+			if _, err := ValidateOutputJSON(outputJSON("job_1", []Finding{finding})); err == nil {
+				t.Fatal("expected schema validation error")
+			}
+		})
+	}
+}
+
+func TestValidateOutputRejectsAdditionalProperties(t *testing.T) {
+	payload := map[string]any{}
+	if err := json.Unmarshal(outputJSON("job_1", nil), &payload); err != nil {
+		t.Fatal(err)
+	}
+	payload["unexpected"] = true
+	data, _ := json.Marshal(payload)
+	if _, err := ValidateOutputJSON(data); err == nil {
+		t.Fatal("expected schema validation error")
+	}
+}
+
+func TestValidateOutputRejectsAdditionalEvidenceProperties(t *testing.T) {
+	payload := map[string]any{}
+	if err := json.Unmarshal(outputJSON("job_1", []Finding{sampleAnalyzerFinding()}), &payload); err != nil {
+		t.Fatal(err)
+	}
+	findings := payload["findings"].([]any)
+	evidence := findings[0].(map[string]any)["evidence"].([]any)
+	evidence[0].(map[string]any)["unexpected"] = true
+	data, _ := json.Marshal(payload)
+	if _, err := ValidateOutputJSON(data); err == nil {
+		t.Fatal("expected schema validation error")
+	}
+}
+
+func TestHandleEnvelopeRejectsMalformedArtifactObserved(t *testing.T) {
+	data := []byte(`{
+		"package": "not-object",
+		"version": {"raw_version": "1.0.0"},
+		"artifact": {"id": "art_1", "kind": "tarball"},
+		"registry_hashes": {"sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+		"source": "registry",
+		"observed_at": "2026-05-26T12:00:00Z",
+		"storage_ref": "/tmp/snapshot"
+	}`)
+	err := (Orchestrator{Executor: &fakeExecutor{}}).HandleEnvelope(
+		context.Background(),
+		events.Envelope{Type: "artifact.observed", Data: data},
+	)
+	if err == nil {
+		t.Fatal("expected malformed observed event error")
 	}
 }
