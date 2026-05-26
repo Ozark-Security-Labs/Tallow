@@ -50,8 +50,8 @@ func (r SQLRecorder) RecordFindings(ctx context.Context, runID string, findings 
 			AnalyzerVersion: finding.AnalyzerVersion,
 			Ecosystem:       finding.Subject.Ecosystem,
 			PackageName:     finding.Subject.PackageName,
-			Version:         textPtr(finding.Subject.Version),
-			ArtifactID:      textPtr(finding.Subject.ArtifactID),
+			Version:         textPtr(firstStringPtr(finding.Subject.Version, finding.Subject.ToVersion)),
+			ArtifactID:      textPtr(firstStringPtr(finding.Subject.ArtifactID, finding.Subject.ToArtifactID)),
 			SnapshotID:      textPtr(finding.Subject.SnapshotID),
 			Category:        finding.Category,
 			SeverityHint:    finding.SeverityHint,
@@ -66,6 +66,15 @@ func (r SQLRecorder) RecordFindings(ctx context.Context, runID string, findings 
 		})
 		if err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func firstStringPtr(values ...*string) *string {
+	for _, value := range values {
+		if value != nil && *value != "" {
+			return value
 		}
 	}
 	return nil

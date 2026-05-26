@@ -25,7 +25,7 @@ class AnalysisContext:
 
     @classmethod
     def from_input(cls, payload: dict, repo_root: Path | None = None) -> AnalysisContext:
-        subject = payload["subject"]
+        subject = _finding_subject(payload)
         snapshot_refs = payload.get("snapshot_refs") or {}
         roots: dict[str, Path] = {}
         for side in ("from", "to"):
@@ -96,3 +96,23 @@ class AnalysisContext:
             max_file_bytes=self.max_file_bytes,
             include_binary=self.package_binary_allowed,
         )
+
+
+def _finding_subject(payload: dict) -> dict:
+    subject = dict(payload["subject"])
+    artifacts = payload.get("artifacts") or {}
+    snapshot_refs = payload.get("snapshot_refs") or {}
+    from_artifact = artifacts.get("from") or {}
+    to_artifact = artifacts.get("to") or {}
+    to_snapshot = snapshot_refs.get("to") or {}
+    if from_artifact.get("artifact_id"):
+        subject.setdefault("from_artifact_id", from_artifact["artifact_id"])
+    if to_artifact.get("artifact_id"):
+        subject.setdefault("to_artifact_id", to_artifact["artifact_id"])
+        if subject.get("artifact_id") is None:
+            subject["artifact_id"] = to_artifact["artifact_id"]
+    if to_snapshot.get("snapshot_id") and subject.get("snapshot_id") is None:
+        subject["snapshot_id"] = to_snapshot["snapshot_id"]
+    if subject.get("version") is None and subject.get("to_version"):
+        subject["version"] = subject["to_version"]
+    return subject
