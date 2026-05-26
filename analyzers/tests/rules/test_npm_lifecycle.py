@@ -26,6 +26,24 @@ def _run_fixture(name: str):
     return list(NpmLifecycleRule().evaluate(context))
 
 
+def _run_snapshot(root: Path):
+    payload = {
+        "contract_version": "v1",
+        "job_id": "job_test",
+        "analysis_type": "snapshot",
+        "subject": {"ecosystem": "npm", "package_name": "pkg", "version": "1.0.0"},
+        "artifacts": {"to": {"artifact_id": "art_pkg"}},
+        "snapshot_refs": {
+            "to": {
+                "snapshot_id": "snap_pkg",
+                "root": str(root),
+                "manifest_path": str(root / "manifest.json"),
+            }
+        },
+    }
+    return list(NpmLifecycleRule().evaluate(AnalysisContext.from_input(payload)))
+
+
 def test_no_scripts_produces_no_finding():
     assert _run_fixture("lifecycle_absent") == []
 
@@ -38,6 +56,31 @@ def test_postinstall_produces_one_finding():
     findings = _run_fixture("lifecycle_suspicious")
     assert len(findings) == 1
     assert findings[0].rule.rule_id == "npm.lifecycle.install_script"
+
+
+def test_lifecycle_keys_are_detected(tmp_path: Path):
+    package_dir = tmp_path / "package"
+    package_dir.mkdir()
+    (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+    (package_dir / "package.json").write_text(
+        """
+        {
+          "name": "lifecycle-all",
+          "scripts": {
+            "preinstall": "node pre.js",
+            "install": "node install.js",
+            "postinstall": "node post.js",
+            "prepare": "node prepare.js"
+          }
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    findings = _run_snapshot(tmp_path)
+    keys = {finding.tags[-1] for finding in findings}
+    assert keys == {"preinstall", "install", "postinstall", "prepare"}
+    assert all(finding.rule.rule_id == "npm.lifecycle.install_script" for finding in findings)
 
 
 def test_deterministic_output():
