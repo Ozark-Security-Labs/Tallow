@@ -20,7 +20,10 @@ SECRET_PATTERNS = (
     re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
     re.compile(r"\bgh[pousr]_[A-Za-z0-9_]{20,}\b"),
     re.compile(r"\bnpm_[A-Za-z0-9]{20,}\b"),
-    re.compile(r"(?i)(?:token|secret|password|api[_-]?key)\s*[:=]\s*['\"]?[A-Za-z0-9._\-/+=]{12,}"),
+    re.compile(
+        r"(?i)(?:token|secret|password|api[_-]?key)\s*[:=]\s*['\"]?"
+        r"(?!process\.env\b)[A-Za-z0-9._\-/+=]{12,}"
+    ),
 )
 
 FAKE_MARKERS = (
@@ -30,7 +33,6 @@ FAKE_MARKERS = (
     "tallow_test_",
     "000000",
     "not-a-real-secret",
-    "process.env",
 )
 
 SKIP_DIRS = {".git", ".venv", "__pycache__", ".pytest_cache", ".ruff_cache"}

@@ -31,6 +31,23 @@ def test_allows_fake_secret_marker(tmp_path: Path):
     assert lint_fixtures.lint_root(tmp_path) == []
 
 
+def test_process_env_does_not_mask_realistic_secret(tmp_path: Path):
+    fixture = tmp_path / "env.js"
+    fixture.write_text(
+        "console.log(process.env.NODE_ENV); token=ghp_abcdefghijklmnopqrstuvwxyz",
+        encoding="utf-8",
+    )
+    errors = lint_fixtures.lint_root(tmp_path)
+    assert errors == [f"{fixture}: real-looking secret requires fake marker or allowlist"]
+
+
+def test_process_env_reference_alone_is_not_a_secret(tmp_path: Path):
+    (tmp_path / "env.js").write_text(
+        "const token = process.env.NPM_TOKEN;", encoding="utf-8"
+    )
+    assert lint_fixtures.lint_root(tmp_path) == []
+
+
 def test_rejects_executable_bit_without_allowlist(tmp_path: Path):
     fixture = tmp_path / "script.sh"
     fixture.write_text("#!/bin/sh\necho synthetic fixture\n", encoding="utf-8")
