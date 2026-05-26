@@ -106,7 +106,9 @@ func TestListFindingsFiltersAndPagination(t *testing.T) {
 	s := findingSrv([]FindingRecord{newer, older})
 
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/v1/findings?ecosystem=npm&package=pkg&limit=1", nil)
+	req := httptest.NewRequest(
+		"GET", "/v1/findings?ecosystem=npm&package=pkg&severity_hint=medium&limit=1", nil,
+	)
 	s.Handler.ServeHTTP(w, req)
 	if w.Code != 200 {
 		t.Fatalf("%d %s", w.Code, w.Body.String())
@@ -115,6 +117,9 @@ func TestListFindingsFiltersAndPagination(t *testing.T) {
 		t.Fatal(w.Body.String())
 	}
 	if !strings.Contains(w.Body.String(), "next_cursor") {
+		t.Fatal(w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), `"evidence_count":1`) || strings.Contains(w.Body.String(), `"evidence":`) {
 		t.Fatal(w.Body.String())
 	}
 }

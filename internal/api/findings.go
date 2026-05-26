@@ -41,6 +41,30 @@ type FindingRecord struct {
 	UpdatedAt       time.Time       `json:"updated_at"`
 }
 
+type FindingSummary struct {
+	ID              string    `json:"id"`
+	RunID           string    `json:"run_id"`
+	RuleID          string    `json:"rule_id"`
+	RuleVersion     string    `json:"rule_version"`
+	AnalyzerID      string    `json:"analyzer_id"`
+	AnalyzerVersion string    `json:"analyzer_version"`
+	Ecosystem       string    `json:"ecosystem"`
+	PackageName     string    `json:"package_name"`
+	Version         string    `json:"version,omitempty"`
+	ArtifactID      string    `json:"artifact_id,omitempty"`
+	SnapshotID      string    `json:"snapshot_id,omitempty"`
+	Category        string    `json:"category"`
+	SeverityHint    string    `json:"severity_hint"`
+	Confidence      string    `json:"confidence"`
+	Title           string    `json:"title"`
+	Summary         string    `json:"summary"`
+	EvidenceCount   int       `json:"evidence_count"`
+	Tags            []string  `json:"tags"`
+	Status          string    `json:"status"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
 type FindingFilters struct {
 	Ecosystem       string
 	PackageName     string
@@ -75,8 +99,8 @@ func (EmptyFindingStore) ListFindings(context.Context, FindingFilters) ([]Findin
 }
 
 type findingListResponse struct {
-	Items      []FindingRecord `json:"items"`
-	NextCursor string          `json:"next_cursor,omitempty"`
+	Items      []FindingSummary `json:"items"`
+	NextCursor string           `json:"next_cursor,omitempty"`
 }
 
 func (s *Server) listFindings(w http.ResponseWriter, r *http.Request) {
@@ -93,7 +117,7 @@ func (s *Server) listFindings(w http.ResponseWriter, r *http.Request) {
 	if items == nil {
 		items = []FindingRecord{}
 	}
-	response := findingListResponse{Items: items}
+	response := findingListResponse{Items: findingSummaries(items)}
 	if len(items) == filters.Limit && len(items) > 0 {
 		last := items[len(items)-1]
 		response.NextCursor = encodeFindingCursor(last.CreatedAt, last.ID)
@@ -140,7 +164,7 @@ func parseFindingFilters(r *http.Request) (FindingFilters, error) {
 		Ecosystem:    q.Get("ecosystem"),
 		PackageName:  q.Get("package"),
 		Version:      q.Get("version"),
-		SeverityHint: q.Get("severity"),
+		SeverityHint: q.Get("severity_hint"),
 		Confidence:   q.Get("confidence"),
 		Category:     q.Get("category"),
 		RuleID:       q.Get("rule_id"),
@@ -163,6 +187,44 @@ func parseFindingFilters(r *http.Request) (FindingFilters, error) {
 		}
 	}
 	return filters, nil
+}
+
+func findingSummaries(items []FindingRecord) []FindingSummary {
+	summaries := make([]FindingSummary, 0, len(items))
+	for _, item := range items {
+		summaries = append(summaries, FindingSummary{
+			ID:              item.ID,
+			RunID:           item.RunID,
+			RuleID:          item.RuleID,
+			RuleVersion:     item.RuleVersion,
+			AnalyzerID:      item.AnalyzerID,
+			AnalyzerVersion: item.AnalyzerVersion,
+			Ecosystem:       item.Ecosystem,
+			PackageName:     item.PackageName,
+			Version:         item.Version,
+			ArtifactID:      item.ArtifactID,
+			SnapshotID:      item.SnapshotID,
+			Category:        item.Category,
+			SeverityHint:    item.SeverityHint,
+			Confidence:      item.Confidence,
+			Title:           item.Title,
+			Summary:         item.Summary,
+			EvidenceCount:   evidenceCount(item.Evidence),
+			Tags:            item.Tags,
+			Status:          item.Status,
+			CreatedAt:       item.CreatedAt,
+			UpdatedAt:       item.UpdatedAt,
+		})
+	}
+	return summaries
+}
+
+func evidenceCount(raw json.RawMessage) int {
+	var evidence []json.RawMessage
+	if err := json.Unmarshal(raw, &evidence); err != nil {
+		return 0
+	}
+	return len(evidence)
 }
 
 func parseOptionalTime(raw string) (time.Time, error) {
