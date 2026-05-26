@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -67,6 +69,7 @@ func (f *fakePublisher) Publish(_ context.Context, subject string, envelope even
 func baseInput() AnalyzerInput {
 	version := "1.0.0"
 	artifactID := "art_1"
+	snapshotID := "snap_1"
 	return AnalyzerInput{
 		ContractVersion: ContractVersion,
 		JobID:           "job_1",
@@ -77,6 +80,18 @@ func baseInput() AnalyzerInput {
 			Version:     &version,
 			ArtifactID:  &artifactID,
 		},
+		Artifacts: &ArtifactRefs{To: &ArtifactEntry{
+			ArtifactID:   artifactID,
+			Filename:     "pkg.tgz",
+			SizeBytes:    1,
+			SnapshotPath: "snapshots/art_1",
+		}},
+		SnapshotRefs: &SnapshotRefs{To: &SnapshotEntry{
+			SnapshotID:   snapshotID,
+			Root:         "/tmp/tallow-test-snapshot",
+			ManifestPath: "/tmp/tallow-test-snapshot/manifest.json",
+		}},
+		Options: DefaultOptions(),
 	}
 }
 
@@ -235,6 +250,9 @@ func TestOrchestratorRejectsMismatchedOutputJobID(t *testing.T) {
 func TestHandleEnvelopeConsumesArtifactEvent(t *testing.T) {
 	snapshotBase := t.TempDir()
 	snapshotRoot := filepath.Join(snapshotBase, "snapshots", "art_1")
+	if err := os.MkdirAll(snapshotRoot, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	event := events.ArtifactEvent{
 		Ecosystem:    "npm",
 		Package:      "pkg",
@@ -302,6 +320,24 @@ func TestHandleEnvelopeRejectsStorageURIAsSnapshotRoot(t *testing.T) {
 func TestLocalSnapshotEntryRejectsRootEscape(t *testing.T) {
 	if _, err := LocalSnapshotEntry("art_1", "../outside", t.TempDir()); err == nil {
 		t.Fatal("expected root escape error")
+	}
+}
+
+func TestLocalSnapshotEntryRejectsSymlinkEscape(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink behavior differs on windows")
+	}
+	base := t.TempDir()
+	outside := t.TempDir()
+	link := filepath.Join(base, "snapshots", "art_1")
+	if err := os.MkdirAll(filepath.Dir(link), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, link); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LocalSnapshotEntry("art_1", "snapshots/art_1", base); err == nil {
+		t.Fatal("expected symlink escape error")
 	}
 }
 

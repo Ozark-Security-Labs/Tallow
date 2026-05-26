@@ -195,7 +195,9 @@ func InputFromArtifactEvent(event events.ArtifactEvent, snapshot SnapshotEntry) 
 		},
 		Artifacts: &ArtifactRefs{To: &ArtifactEntry{
 			ArtifactID:   event.ArtifactID,
+			SHA256:       eventSHA256(event),
 			Filename:     event.ArtifactKind,
+			SizeBytes:    0,
 			SnapshotPath: event.StorageURI,
 		}},
 		SnapshotRefs: &SnapshotRefs{To: &SnapshotEntry{
@@ -203,8 +205,34 @@ func InputFromArtifactEvent(event events.ArtifactEvent, snapshot SnapshotEntry) 
 			Root:         snapshot.Root,
 			ManifestPath: snapshot.ManifestPath,
 		}},
+		Options: DefaultOptions(),
 	}
 }
+
+func DefaultOptions() *Options {
+	return &Options{
+		EnabledRules:         []string{},
+		DisabledRules:        []string{},
+		MaxFileBytes:         1_048_576,
+		MaxFindingsPerRule:   100,
+		AllowBinaryPackages:  []string{},
+		AllowedBinaryPaths:   []string{},
+		HighEntropyMinLen:    512,
+		HighEntropyThreshold: 7.2,
+		FailFast:             boolPtr(false),
+	}
+}
+
+func eventSHA256(event events.ArtifactEvent) string {
+	for _, hashes := range []map[string]string{event.LocalHashes, event.RegistryHashes} {
+		if hashes != nil && hashes["sha256"] != "" {
+			return hashes["sha256"]
+		}
+	}
+	return ""
+}
+
+func boolPtr(value bool) *bool { return &value }
 
 func (o Orchestrator) inputFromArtifactObserved(
 	ctx context.Context,
@@ -278,6 +306,10 @@ func LocalSnapshotEntry(artifactID, rawRoot, allowedRoot string) (SnapshotEntry,
 	if err != nil {
 		return SnapshotEntry{}, err
 	}
+	base, err = filepath.EvalSymlinks(base)
+	if err != nil {
+		return SnapshotEntry{}, fmt.Errorf("resolve snapshot root base: %w", err)
+	}
 	candidate := rawRoot
 	if !filepath.IsAbs(candidate) {
 		candidate = filepath.Join(base, candidate)
@@ -285,6 +317,10 @@ func LocalSnapshotEntry(artifactID, rawRoot, allowedRoot string) (SnapshotEntry,
 	candidate, err = filepath.Abs(candidate)
 	if err != nil {
 		return SnapshotEntry{}, err
+	}
+	candidate, err = filepath.EvalSymlinks(candidate)
+	if err != nil {
+		return SnapshotEntry{}, fmt.Errorf("resolve snapshot root: %w", err)
 	}
 	rel, err := filepath.Rel(base, candidate)
 	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {

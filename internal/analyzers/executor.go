@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sort"
+	"strings"
 	"time"
 )
 
@@ -74,16 +76,36 @@ func (e CommandExecutor) Run(ctx context.Context, input []byte) (RunResult, erro
 }
 
 func (e CommandExecutor) sanitizedEnv() []string {
+	values := map[string]string{"TALLOW_ANALYZER_NETWORK_OFF": "1"}
+	mergeAllowedEnv(values, os.Environ())
 	if e.Env != nil {
-		return append([]string(nil), e.Env...)
+		mergeAllowedEnv(values, e.Env)
 	}
-	env := []string{"TALLOW_ANALYZER_NETWORK_OFF=1"}
-	for _, key := range []string{"PATH", "HOME", "TMPDIR", "LANG", "LC_ALL", "UV_CACHE_DIR"} {
-		if value, ok := os.LookupEnv(key); ok && value != "" {
-			env = append(env, key+"="+value)
-		}
+	values["TALLOW_ANALYZER_NETWORK_OFF"] = "1"
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	env := make([]string, 0, len(keys))
+	for _, key := range keys {
+		env = append(env, key+"="+values[key])
 	}
 	return env
+}
+
+func mergeAllowedEnv(values map[string]string, env []string) {
+	for _, entry := range env {
+		key, value, ok := strings.Cut(entry, "=")
+		if !ok || value == "" || !allowedAnalyzerEnv(key) {
+			continue
+		}
+		values[key] = value
+	}
+}
+
+func allowedAnalyzerEnv(key string) bool {
+	return key == "PATH" || key == "PYTHONPATH" || strings.HasPrefix(key, "TALLOW_")
 }
 
 type limitedBuffer struct {
