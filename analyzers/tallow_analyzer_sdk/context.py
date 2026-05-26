@@ -49,8 +49,18 @@ class AnalysisContext:
         return int(self.options.get("max_findings_per_rule", 100))
 
     @property
-    def allow_binary_packages(self) -> bool:
-        return bool(self.options.get("allow_binary_packages", False))
+    def allow_binary_packages(self) -> set[str]:
+        values = self.options.get("allow_binary_packages") or []
+        if isinstance(values, bool):
+            return {"*"} if values else set()
+        return {str(value).strip() for value in values if str(value).strip()}
+
+    @property
+    def package_binary_allowed(self) -> bool:
+        allowed = self.allow_binary_packages
+        package_name = str(self.subject.get("package_name") or "")
+        ecosystem_name = f"{self.ecosystem}/{package_name}"
+        return "*" in allowed or package_name in allowed or ecosystem_name in allowed
 
     @property
     def allowed_binary_paths(self) -> set[str]:
@@ -84,5 +94,5 @@ class AnalysisContext:
         return SnapshotWalker(
             root=root,
             max_file_bytes=self.max_file_bytes,
-            include_binary=self.allow_binary_packages,
+            include_binary=self.package_binary_allowed,
         )

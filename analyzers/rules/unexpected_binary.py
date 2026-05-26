@@ -27,13 +27,14 @@ class UnexpectedBinaryRule:
     )
 
     def evaluate(self, context: AnalysisContext) -> Iterable[FindingDraft]:
-        if context.allow_binary_packages:
+        is_diff = "from" in context.snapshot_roots
+        if not is_diff and context.package_binary_allowed:
             return []
         walker = context.walker("to")
         previous_paths = _previous_paths(context)
         findings: list[FindingDraft] = []
         for match in walker.iter_files(include_binary=True):
-            if previous_paths and match.relative_path in previous_paths:
+            if is_diff and match.relative_path in previous_paths:
                 continue
             if match.relative_path in context.allowed_binary_paths:
                 continue

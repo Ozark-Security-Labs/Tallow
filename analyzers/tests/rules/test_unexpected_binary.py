@@ -50,6 +50,14 @@ def test_allowed_binary_path_is_ignored(tmp_path: Path):
     assert _run(tmp_path, {"allowed_binary_paths": ["bin/native"]}) == []
 
 
+def test_allowed_binary_package_is_ignored_for_snapshot(tmp_path: Path):
+    (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+    binary = tmp_path / "bin" / "native"
+    binary.parent.mkdir()
+    binary.write_bytes(b"MZ" + b"synthetic")
+    assert _run(tmp_path, {"allow_binary_packages": ["npm/pkg"]}) == []
+
+
 def test_diff_mode_only_emits_new_binaries(tmp_path: Path):
     old = tmp_path / "old"
     new = tmp_path / "new"

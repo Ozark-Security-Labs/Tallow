@@ -20,7 +20,8 @@ Tallow starts with deterministic built-in rules. Each rule has a stable ID, evid
 - JavaScript checks use bounded source scanning instead of a full JavaScript parser in the MVP.
 - High-entropy findings report path, line, entropy, length, and a hash, not raw blob contents.
 - Documentation/prose files are skipped for webhook findings by default to reduce false positives.
-- Binary packages must be explicitly allowed with `allow_binary_packages` or `allowed_binary_paths`.
+- Binary packages must be explicitly allowed with `allow_binary_packages` entries
+  (`package` or `ecosystem/package`) or `allowed_binary_paths`.
 
 ## Future adapter types
 

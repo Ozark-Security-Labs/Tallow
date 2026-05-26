@@ -65,7 +65,7 @@ type Options struct {
 	DisabledRules        []string `json:"disabled_rules,omitempty"`
 	MaxFileBytes         int64    `json:"max_file_bytes,omitempty"`
 	MaxFindingsPerRule   int      `json:"max_findings_per_rule,omitempty"`
-	AllowBinaryPackages  *bool    `json:"allow_binary_packages,omitempty"`
+	AllowBinaryPackages  []string `json:"allow_binary_packages,omitempty"`
 	AllowedBinaryPaths   []string `json:"allowed_binary_paths,omitempty"`
 	HighEntropyMinLen    int      `json:"high_entropy_min_length,omitempty"`
 	HighEntropyThreshold float64  `json:"high_entropy_threshold,omitempty"`

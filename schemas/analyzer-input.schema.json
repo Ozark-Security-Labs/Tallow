@@ -188,7 +188,11 @@
           "minimum": 1
         },
         "allow_binary_packages": {
-          "type": "boolean"
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "allowed_binary_paths": {
           "type": "array",

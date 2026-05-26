@@ -44,7 +44,7 @@
     "disabled_rules": [],
     "max_file_bytes": 1048576,
     "max_findings_per_rule": 100,
-    "allow_binary_packages": false,
+    "allow_binary_packages": [],
     "fail_fast": false
   }
 }

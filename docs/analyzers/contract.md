@@ -25,8 +25,10 @@ Optional top-level fields:
 Supported `options` fields include `enabled_rules`, `disabled_rules`,
 `max_file_bytes`, `max_findings_per_rule`, `allow_binary_packages`,
 `allowed_binary_paths`, `high_entropy_min_length`, `high_entropy_threshold`,
-and `fail_fast`. `allowed_binary_paths` contains exact snapshot-relative POSIX
-paths for native binaries a package is expected to ship.
+and `fail_fast`. `allow_binary_packages` contains package names or
+`ecosystem/name` entries for packages expected to ship native binaries.
+`allowed_binary_paths` contains exact snapshot-relative POSIX paths for native
+binaries a package is expected to ship.
 
 Example:
 
