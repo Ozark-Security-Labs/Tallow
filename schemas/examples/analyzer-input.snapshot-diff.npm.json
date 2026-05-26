@@ -1,0 +1,50 @@
+{
+  "contract_version": "v1",
+  "job_id": "job_01JABCDEF012345678901234567",
+  "analysis_type": "snapshot_diff",
+  "subject": {
+    "ecosystem": "npm",
+    "package_name": "example-package",
+    "from_version": "1.0.0",
+    "to_version": "1.0.1",
+    "package_id": "pkg_01example",
+    "artifact_id": null,
+    "snapshot_id": null
+  },
+  "artifacts": {
+    "from": {
+      "artifact_id": "art_from_01",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "filename": "example-package-1.0.0.tgz",
+      "size_bytes": 4096,
+      "snapshot_path": "snapshots/art_from_01"
+    },
+    "to": {
+      "artifact_id": "art_to_01",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "filename": "example-package-1.0.1.tgz",
+      "size_bytes": 8192,
+      "snapshot_path": "snapshots/art_to_01"
+    }
+  },
+  "snapshot_refs": {
+    "from": {
+      "snapshot_id": "snap_from_01",
+      "root": "/data/snapshots/snap_from_01",
+      "manifest_path": "/data/snapshots/snap_from_01/manifest.json"
+    },
+    "to": {
+      "snapshot_id": "snap_to_01",
+      "root": "/data/snapshots/snap_to_01",
+      "manifest_path": "/data/snapshots/snap_to_01/manifest.json"
+    }
+  },
+  "options": {
+    "enabled_rules": ["npm.lifecycle.install_script"],
+    "disabled_rules": [],
+    "max_file_bytes": 1048576,
+    "max_findings_per_rule": 100,
+    "allow_binary_packages": false,
+    "fail_fast": false
+  }
+}
