@@ -1,0 +1,98 @@
+"""Detect Python decode/decompress chains flowing to execution sinks."""
+
+from __future__ import annotations
+
+import ast
+from collections.abc import Iterable
+
+from tallow_analyzer_sdk.context import AnalysisContext
+from tallow_analyzer_sdk.evidence import file_evidence
+from tallow_analyzer_sdk.finding import FindingDraft
+from tallow_analyzer_sdk.rules import RuleMetadata
+
+DECODERS = {
+    ("base64", "b64decode"),
+    ("zlib", "decompress"),
+    ("marshal", "loads"),
+}
+EXECS = {"eval", "exec"}
+
+
+class PyDecodeExecRule:
+    metadata = RuleMetadata(
+        rule_id="py.obfuscation.decode_exec_chain",
+        version="1.0.0",
+        name="python decode exec chain",
+        description="Detect decode or decompress chains flowing to execution sinks.",
+        category="obfuscation",
+        ecosystems=("pypi",),
+        default_severity_hint="high",
+        default_confidence="high",
+        inputs=("snapshot",),
+        tags=("obfuscation", "python"),
+    )
+
+    def evaluate(self, context: AnalysisContext) -> Iterable[FindingDraft]:
+        if context.ecosystem != "pypi":
+            return []
+        walker = context.walker("to")
+        findings: list[FindingDraft] = []
+        for match in walker.iter_files(["**/*.py"]):
+            text = walker.read_text(match.relative_path)
+            try:
+                tree = ast.parse(text, filename=match.relative_path)
+            except SyntaxError:
+                continue
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                if not _is_exec_call(node.func):
+                    continue
+                if not any(_contains_decoder(arg) for arg in node.args):
+                    continue
+                findings.append(
+                    FindingDraft(
+                        rule=self.metadata,
+                        subject=context.subject,
+                        title="python decode execution chain detected",
+                        summary=(
+                            "Decode/decompress output flows to execution sink in "
+                            f"{match.relative_path}."
+                        ),
+                        evidence=[
+                            file_evidence(
+                                match.relative_path,
+                                artifact_id=context.artifact_id() or "unknown",
+                                snapshot_id=context.snapshot_id(),
+                                start_line=getattr(node, "lineno", 1),
+                                end_line=getattr(node, "end_lineno", getattr(node, "lineno", 1)),
+                                snippet=ast.get_source_segment(text, node) or "exec/decode chain",
+                                description="Decode/decompress chain flows to execution sink",
+                            )
+                        ],
+                    )
+                )
+                if len(findings) >= context.max_findings_per_rule:
+                    return findings
+        return findings
+
+
+def _is_exec_call(node: ast.AST) -> bool:
+    return isinstance(node, ast.Name) and node.id in EXECS
+
+
+def _contains_decoder(node: ast.AST) -> bool:
+    if isinstance(node, ast.Call):
+        target = _call_target(node.func)
+        if target in DECODERS:
+            return True
+    for child in ast.iter_child_nodes(node):
+        if _contains_decoder(child):
+            return True
+    return False
+
+
+def _call_target(node: ast.AST) -> tuple[str, str] | str:
+    if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
+        return node.value.id, node.attr
+    return ""

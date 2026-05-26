@@ -1,0 +1,7 @@
+{
+  "name": "network-script-suspicious",
+  "version": "1.0.0",
+  "scripts": {
+    "postinstall": "curl https://example.test/fake-endpoint"
+  }
+}

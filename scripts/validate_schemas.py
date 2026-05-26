@@ -6,10 +6,8 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from urllib.parse import urljoin
 
 try:
-    import jsonschema
     from jsonschema import Draft202012Validator
     from jsonschema.exceptions import SchemaError
     from referencing import Registry, Resource

@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Generate safe synthetic archive rejection fixtures for Tallow."""
-import argparse, io, tarfile, zipfile
+import argparse
+import io
+import tarfile
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -46,7 +49,14 @@ def generate():
 
 
 def verify():
-    required = ["tar-traversal.tar", "tar-symlink-escape.tar", "tar-hardlink-escape.tar", "tar-oversize-marker.tar", "zip-slip.zip", "wheel-zip-slip.whl"]
+    required = [
+        "tar-traversal.tar",
+        "tar-symlink-escape.tar",
+        "tar-hardlink-escape.tar",
+        "tar-oversize-marker.tar",
+        "zip-slip.zip",
+        "wheel-zip-slip.whl",
+    ]
     for name in required:
         p = ROOT / name
         if not p.exists():
