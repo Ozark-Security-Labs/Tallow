@@ -35,7 +35,7 @@ def test_namespaced_rule_ids_are_valid(rule_id: str):
     validate_rule_metadata(DummyRule(rule_id).metadata)
 
 
-@pytest.mark.parametrize("rule_id", ["rule", "Rule.Bad.Name", "npm..bad", "npm.bad"])
+@pytest.mark.parametrize("rule_id", ["rule", "Rule.Bad.Name", "npm..bad"])
 def test_invalid_rule_ids_fail(rule_id: str):
     with pytest.raises(ValueError):
         validate_rule_metadata(DummyRule(rule_id).metadata)

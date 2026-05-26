@@ -26,7 +26,7 @@ class RuleMetadata:
     tags: tuple[str, ...] = field(default_factory=tuple)
 
 
-_RULE_ID_PATTERN = re.compile(r"^[a-z0-9]+(?:\.[a-z0-9_]+){2,}$")
+_RULE_ID_PATTERN = re.compile(r"^[a-z0-9]+(?:\.[a-z0-9_]+)+$")
 _VALID_SEVERITIES = {"info", "low", "medium", "high", "critical"}
 _VALID_CONFIDENCE = {"low", "medium", "high"}
 
