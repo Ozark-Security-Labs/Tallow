@@ -43,6 +43,29 @@ def test_evidence_order_does_not_change_id():
     assert normalized[0]["path"] <= normalized[-1]["path"]
 
 
+def test_evidence_order_with_same_start_but_different_end_does_not_change_id():
+    evidence = [
+        {
+            "kind": "file",
+            "artifact_id": "art_1",
+            "path": "package.json",
+            "start_line": 1,
+            "end_line": 3,
+        },
+        {
+            "kind": "file",
+            "artifact_id": "art_1",
+            "path": "package.json",
+            "start_line": 1,
+            "end_line": 2,
+        },
+    ]
+    first = build_finding_id("v1", "rule", _subject(), evidence)
+    second = build_finding_id("v1", "rule", _subject(), list(reversed(evidence)))
+    assert first == second
+    assert normalize_evidence_for_id(evidence)[0]["end_line"] == 2
+
+
 def test_timestamp_fields_do_not_affect_id():
     subject = _subject(created_at="2026-01-01T00:00:00Z")
     assert build_finding_id("v1", "rule", subject, _evidence()) == build_finding_id(

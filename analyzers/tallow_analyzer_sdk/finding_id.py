@@ -69,7 +69,9 @@ def normalize_evidence_for_id(evidence: list[dict]) -> list[dict]:
             item.get("kind", ""),
             item.get("path", ""),
             item.get("start_line", -1),
+            item.get("end_line", -1),
             item.get("start_byte", -1),
+            item.get("end_byte", -1),
             item.get("value_hash", ""),
         ),
     )
