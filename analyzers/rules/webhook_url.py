@@ -13,6 +13,8 @@ from tallow_analyzer_sdk.paths import is_doc_path
 from tallow_analyzer_sdk.redaction import redact_url
 from tallow_analyzer_sdk.rules import RuleMetadata
 
+URL_PATTERN = re.compile(r"https?://[^\s'\")<>]+", re.I)
+
 
 class WebhookUrlRule:
     metadata = RuleMetadata(
@@ -37,11 +39,8 @@ class WebhookUrlRule:
                 continue
             text = walker.read_text(match.relative_path)
             for line_no, line in enumerate(text.splitlines(), start=1):
-                hit = next(
-                    (pattern.search(line) for pattern in patterns if pattern.search(line)),
-                    None,
-                )
-                if not hit:
+                url = _matching_url(line, patterns)
+                if not url:
                     continue
                 confidence = (
                     "medium"
@@ -50,7 +49,7 @@ class WebhookUrlRule:
                 )
                 if confidence == "low":
                     continue
-                snippet = redact_url(hit.group(0))
+                snippet = redact_url(url)
                 findings.append(
                     FindingDraft(
                         rule=self.metadata,
@@ -74,3 +73,11 @@ class WebhookUrlRule:
                 if len(findings) >= context.max_findings_per_rule:
                     return findings
         return findings
+
+
+def _matching_url(line: str, patterns: list[re.Pattern[str]]) -> str | None:
+    for url_match in URL_PATTERN.finditer(line):
+        url = url_match.group(0)
+        if any(pattern.search(url) for pattern in patterns):
+            return url
+    return None
