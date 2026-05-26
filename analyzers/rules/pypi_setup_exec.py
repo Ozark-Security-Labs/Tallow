@@ -77,6 +77,33 @@ class PypiSetupExecRule:
                         )
                         if len(findings) >= context.max_findings_per_rule:
                             return findings
+        for match in walker.iter_files(["setup.cfg", "**/setup.cfg"]):
+            text = walker.read_text(match.relative_path)
+            for line_no, line in enumerate(text.splitlines(), start=1):
+                if not _cfg_exec_sink(line):
+                    continue
+                findings.append(
+                    FindingDraft(
+                        rule=self.metadata,
+                        subject=context.subject,
+                        title="setup.cfg execution sink detected",
+                        summary=f"Execution sink marker detected in {match.relative_path}.",
+                        evidence=[
+                            file_evidence(
+                                match.relative_path,
+                                artifact_id=context.artifact_id() or "unknown",
+                                snapshot_id=context.snapshot_id(),
+                                start_line=line_no,
+                                end_line=line_no,
+                                snippet=line.strip(),
+                                description="Execution sink marker in setup.cfg",
+                            )
+                        ],
+                        confidence="medium",
+                    )
+                )
+                if len(findings) >= context.max_findings_per_rule:
+                    return findings
         return findings
 
 
@@ -86,3 +113,11 @@ def _call_target(node: ast.AST) -> str | tuple[str, str]:
     if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
         return node.value.id, node.attr
     return ""
+
+
+def _cfg_exec_sink(line: str) -> bool:
+    lowered = line.lower()
+    return any(
+        marker in lowered
+        for marker in ("os.system", "subprocess.", "eval(", "exec(")
+    )
