@@ -56,15 +56,7 @@ class JsEnvTokenRule:
                 code_line = _strip_js_strings_for_env(line)
                 if not code_line.strip() or code_line.strip().startswith("//"):
                     continue
-                env_match = None
-                for pattern in ENV_PATTERNS:
-                    env_match = pattern.search(code_line)
-                    if env_match:
-                        key = env_match.group(1)
-                        if not _token_like(key):
-                            env_match = None
-                            continue
-                        break
+                env_match = _env_token_match(line, code_line)
                 cred_match = next(
                     (p.search(line) for p in CREDENTIAL_PATH_PATTERNS if p.search(line)),
                     None,
@@ -107,6 +99,14 @@ def _token_like(key: str) -> bool:
     upper = key.upper()
     markers = ("TOKEN", "SECRET", "KEY", "AWS_", "NPM_TOKEN", "GITHUB_TOKEN", "CI_JOB_TOKEN")
     return any(token in upper for token in markers)
+
+
+def _env_token_match(line: str, code_line: str) -> re.Match[str] | None:
+    for pattern, target in ((ENV_PATTERNS[0], code_line), (ENV_PATTERNS[1], line)):
+        match = pattern.search(target)
+        if match and _token_like(match.group(1)):
+            return match
+    return None
 
 
 def _strip_js_strings_for_env(line: str) -> str:

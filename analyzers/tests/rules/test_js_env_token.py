@@ -48,6 +48,13 @@ def test_detects_npmrc_path_read(tmp_path: Path):
     assert findings[0].confidence == "medium"
 
 
+def test_detects_bracket_process_env_token(tmp_path: Path):
+    _write(tmp_path, "src/index.js", 'fetch(process.env["GITHUB_TOKEN"]);')
+    findings = _run(tmp_path)
+    assert len(findings) == 1
+    assert findings[0].confidence == "high"
+
+
 def test_ignores_comments_and_string_literals(tmp_path: Path):
     _write(
         tmp_path,
