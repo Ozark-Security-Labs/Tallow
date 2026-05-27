@@ -77,6 +77,16 @@ def test_detects_explicit_port_webhook_urls(tmp_path: Path):
     assert "https://hooks.slack.com:443/services/<redacted>/<redacted>/<redacted>" in excerpt
 
 
+def test_spoofed_exfil_hostnames_do_not_emit(tmp_path: Path):
+    (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+    (tmp_path / "index.js").write_text(
+        "fetch('https://evilpastebin.com/raw/abcdef1234567890')\n"
+        "fetch('https://pastebin.com.evil.test/raw/abcdef1234567890')\n",
+        encoding="utf-8",
+    )
+    assert _run(tmp_path) == []
+
+
 def test_readme_context_is_ignored(tmp_path: Path):
     (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
     (tmp_path / "README.md").write_text("https://discord.com/api/webhooks/1/fake")

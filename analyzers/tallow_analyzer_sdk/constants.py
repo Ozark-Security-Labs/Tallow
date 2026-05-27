@@ -33,12 +33,12 @@ NETWORK_COMMAND_PATTERNS = (
 )
 
 WEBHOOK_URL_PATTERNS = (
-    r"discord(?:app)?\.com/api/webhooks/",
-    r"api\.telegram\.org/bot",
-    r"hooks\.slack\.com/services/",
-    r"webhook\.site/",
-    r"pastebin\.com/raw/",
-    r"gist\.githubusercontent\.com/",
+    r"^discord(?:app)?\.com/api/webhooks/",
+    r"^api\.telegram\.org/bot",
+    r"^hooks\.slack\.com/services/",
+    r"^webhook\.site/",
+    r"^pastebin\.com/raw/",
+    r"^gist\.githubusercontent\.com/",
 )
 
 EXECUTABLE_EXTENSIONS = {".js", ".mjs", ".cjs", ".ts", ".py", ".sh", ".bash", ".zsh"}
