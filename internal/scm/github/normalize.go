@@ -16,7 +16,11 @@ func NormalizeRepositoryURL(raw string) (scm.RepositoryRef, bool) {
 		return scm.RepositoryRef{}, false
 	}
 	if m := scpLike.FindStringSubmatch(raw); m != nil {
-		return ref(m[1], m[2]), true
+		name := strings.TrimSuffix(m[2], ".git")
+		if !validRepoPart(m[1]) || !validRepoPart(name) {
+			return scm.RepositoryRef{}, false
+		}
+		return ref(m[1], name), true
 	}
 	raw = strings.TrimPrefix(raw, "git+")
 	u, err := url.Parse(raw)

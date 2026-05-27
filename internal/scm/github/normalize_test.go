@@ -21,7 +21,7 @@ func TestClaimsFromPackageMetadata(t *testing.T) {
 }
 
 func TestNormalizeRepositoryURLRejectsDotSegments(t *testing.T) {
-	for _, raw := range []string{"https://github.com/../repo", "https://github.com/owner/..", "https://github.com/./repo"} {
+	for _, raw := range []string{"https://github.com/../repo", "https://github.com/owner/..", "https://github.com/./repo", "git@github.com:../repo.git", "git@github.com:owner/...git"} {
 		if _, ok := NormalizeRepositoryURL(raw); ok {
 			t.Fatalf("normalized unsafe repo URL: %s", raw)
 		}
