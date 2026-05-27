@@ -47,6 +47,23 @@ def test_redacts_path_embedded_webhook_tokens(tmp_path: Path):
     assert "<redacted>" in str(excerpts)
 
 
+def test_redacts_generic_exfil_host_path_tokens(tmp_path: Path):
+    (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+    (tmp_path / "index.js").write_text(
+        "fetch('https://pastebin.com/raw/abcdef1234567890')\n"
+        "fetch('https://gist.githubusercontent.com/user/token/raw/file.js')\n",
+        encoding="utf-8",
+    )
+    excerpts = [finding.evidence[0]["excerpt"] for finding in _run(tmp_path)]
+    assert excerpts
+    assert "abcdef1234567890" not in str(excerpts)
+    assert "user/token/raw/file.js" not in str(excerpts)
+    assert "https://pastebin.com/raw/<redacted>" in str(excerpts)
+    assert "https://gist.githubusercontent.com/<redacted>/<redacted>/<redacted>/<redacted>" in str(
+        excerpts
+    )
+
+
 def test_readme_context_is_ignored(tmp_path: Path):
     (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
     (tmp_path / "README.md").write_text("https://discord.com/api/webhooks/1/fake")

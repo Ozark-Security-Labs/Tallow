@@ -104,6 +104,23 @@ def test_snippet_redacts_webhook_url_path_tokens():
     ]
 
 
+def test_snippet_redacts_generic_exfil_url_path_tokens():
+    evidence = file_evidence(
+        "index.js",
+        artifact_id="a",
+        snippet=(
+            "fetch('https://pastebin.com/raw/abcdef1234567890'); "
+            "fetch('https://gist.githubusercontent.com/user/token/raw/file.js')"
+        ),
+    )
+    assert evidence["excerpt_redacted"] is True
+    assert "abcdef1234567890" not in evidence["excerpt"]
+    assert "user/token/raw/file.js" not in evidence["excerpt"]
+    assert "https://pastebin.com/raw/<redacted>" in evidence["excerpt"]
+    redacted_gist = "https://gist.githubusercontent.com/<redacted>/<redacted>/<redacted>/<redacted>"
+    assert redacted_gist in evidence["excerpt"]
+
+
 def test_metadata_hashes_secret_like_values():
     evidence = metadata_evidence("npm_token", "super-secret-token-value", artifact_id="a")
     assert evidence["hash"] != "super-secret-token-value"

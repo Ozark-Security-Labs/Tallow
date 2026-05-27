@@ -99,6 +99,10 @@ def _redact_url_path(host: str, path: str) -> str:
         )
     if host == "webhook.site":
         return _redact_segments_after_prefix(segments, [])
+    if host == "pastebin.com":
+        return _redact_segments_after_prefix(segments, ["raw"])
+    if host == "gist.githubusercontent.com":
+        return _redact_segments_after_prefix(segments, [])
     return path
 
 
