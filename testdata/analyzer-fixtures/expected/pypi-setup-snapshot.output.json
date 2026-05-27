@@ -17,16 +17,18 @@
         {
           "artifact_id": "art_pypi_setup",
           "description": "Execution sink ('subprocess', 'run') in setup.py",
+          "end_byte": 51,
           "end_line": 3,
           "excerpt": "subprocess.run([\"echo\", \"safe\"])",
           "excerpt_redacted": false,
           "kind": "file",
           "path": "setup.py",
           "snapshot_id": "snap_pypi_setup",
+          "start_byte": 19,
           "start_line": 3
         }
       ],
-      "id": "fin_v1_1ad3ae3b624d8cb12ced52ce798863c7",
+      "id": "fin_v1_8032f2c13f392d5c75e8b9f2146d3677",
       "rule_id": "pypi.setup.exec_call",
       "rule_version": "1.0.0",
       "schema_version": "v1",

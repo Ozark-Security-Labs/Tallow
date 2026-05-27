@@ -79,6 +79,8 @@ class PypiSetupExecRule:
                                             "end_lineno",
                                             getattr(node, "lineno", 1),
                                         ),
+                                        start_byte=_start_byte(text, node),
+                                        end_byte=_end_byte(text, node),
                                         snippet=ast.get_source_segment(text, node) or str(target),
                                         description=f"Execution sink {target} in setup.py",
                                     )
@@ -174,9 +176,58 @@ def _build_backend_value(line: str) -> str:
     stripped = line.strip()
     if not stripped.lower().startswith("build-backend") or "=" not in stripped:
         return ""
-    value = stripped.split("=", 1)[1].strip().strip('"\'')
+    value = _strip_inline_comment(stripped.split("=", 1)[1]).strip().strip('"\'')
     return value
 
 
 def _is_safe_backend(backend: str) -> bool:
     return any(backend == safe or backend.startswith(f"{safe}:") for safe in SAFE_BUILD_BACKENDS)
+
+
+def _strip_inline_comment(value: str) -> str:
+    quote: str | None = None
+    escaped = False
+    output: list[str] = []
+    for char in value:
+        if quote:
+            output.append(char)
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == quote:
+                quote = None
+            continue
+        if char in {'"', "'"}:
+            quote = char
+            output.append(char)
+            continue
+        if char == "#":
+            break
+        output.append(char)
+    return "".join(output)
+
+
+def _start_byte(text: str, node: ast.AST) -> int | None:
+    lineno = getattr(node, "lineno", None)
+    col = getattr(node, "col_offset", None)
+    if lineno is None or col is None:
+        return None
+    return _line_start_bytes(text)[lineno - 1] + col
+
+
+def _end_byte(text: str, node: ast.AST) -> int | None:
+    lineno = getattr(node, "end_lineno", None)
+    col = getattr(node, "end_col_offset", None)
+    if lineno is None or col is None:
+        return None
+    return _line_start_bytes(text)[lineno - 1] + col
+
+
+def _line_start_bytes(text: str) -> list[int]:
+    starts = [0]
+    total = 0
+    for line in text.splitlines(keepends=True):
+        total += len(line.encode("utf-8"))
+        starts.append(total)
+    return starts
