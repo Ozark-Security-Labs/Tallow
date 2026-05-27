@@ -86,6 +86,15 @@ def test_diff_mode_ignores_modified_files_with_preexisting_entropy(tmp_path: Pat
     assert _run(new, old) == []
 
 
+def test_diff_mode_detects_new_entropy_blob_in_existing_file(tmp_path: Path):
+    old = tmp_path / "old"
+    new = tmp_path / "new"
+    _write(old, "src/payload.txt", "benign text")
+    _write(new, "src/payload.txt", b"benign text\n" + HIGH_ENTROPY)
+    findings = _run(new, old)
+    assert [finding.evidence[0]["path"] for finding in findings] == ["src/payload.txt"]
+
+
 def test_snapshot_mode_does_not_use_extra_from_ref_for_diff_suppression(tmp_path: Path):
     old = tmp_path / "old"
     new = tmp_path / "new"

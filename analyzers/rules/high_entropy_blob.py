@@ -36,17 +36,17 @@ class HighEntropyBlobRule:
 
     def evaluate(self, context: AnalysisContext) -> Iterable[FindingDraft]:
         walker = context.walker("to")
-        previous_paths = _previous_paths(context)
+        min_len = int(context.options.get("high_entropy_min_length", 512))
+        threshold = float(context.options.get("high_entropy_threshold", 7.2))
+        previous_window_hashes = _previous_window_hashes(context, min_len=min_len)
         findings: list[FindingDraft] = []
         for match in walker.iter_files(["**/*"]):
             if _should_ignore(match.relative_path):
                 continue
-            if match.relative_path in previous_paths:
-                continue
             data = walker.read_bytes(match.relative_path)
-            min_len = int(context.options.get("high_entropy_min_length", 512))
-            threshold = float(context.options.get("high_entropy_threshold", 7.2))
             for window in _entropy_windows(data, min_len=min_len):
+                if window["value_hash"] in previous_window_hashes.get(match.relative_path, set()):
+                    continue
                 if window["entropy"] < threshold or window["length"] < min_len:
                     continue
                 evidence = file_evidence(
@@ -109,15 +109,19 @@ def _entropy_windows(data: bytes, *, min_len: int) -> list[dict]:
     return results
 
 
-def _previous_paths(context: AnalysisContext) -> set[str]:
+def _previous_window_hashes(context: AnalysisContext, *, min_len: int) -> dict[str, set[str]]:
     if "from" not in context.snapshot_roots:
-        return set()
+        return {}
     walker = context.walker("from")
-    return {
-        match.relative_path
-        for match in walker.iter_files(["**/*"])
-        if not _should_ignore(match.relative_path)
-    }
+    hashes: dict[str, set[str]] = {}
+    for match in walker.iter_files(["**/*"]):
+        if _should_ignore(match.relative_path):
+            continue
+        data = walker.read_bytes(match.relative_path)
+        hashes[match.relative_path] = {
+            window["value_hash"] for window in _entropy_windows(data, min_len=min_len)
+        }
+    return hashes
 
 
 def _content_hash(data: bytes) -> str:
