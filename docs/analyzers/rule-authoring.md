@@ -11,7 +11,7 @@ Each rule declares:
 - `category`.
 - `default_severity_hint`.
 - `default_confidence`.
-- `inputs`: `snapshot`, `diff`, `metadata`, `hash_verification`, or combinations.
+- `inputs`: `snapshot`, `snapshot_diff`, `hash_verification`, or combinations.
 - `limits`: max file bytes, path globs, text/binary policy.
 
 Rule IDs use a lowercase dot-separated namespace with at least two segments:
