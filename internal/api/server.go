@@ -21,6 +21,7 @@ type Server struct {
 	Checks   map[string]Check
 	Metrics  *metrics.Metrics
 	Findings FindingReader
+	Graph    GraphReader
 	Handler  http.Handler
 }
 
@@ -37,7 +38,7 @@ func NewWithFindings(
 	if logger == nil {
 		logger = slog.Default()
 	}
-	s := &Server{Config: cfg, Logger: logger, Checks: checks, Metrics: metrics.New(), Findings: findings}
+	s := &Server{Config: cfg, Logger: logger, Checks: checks, Metrics: metrics.New(), Findings: findings, Graph: EmptyGraphStore{}}
 	s.Handler = s.routes()
 	return s
 }
@@ -53,6 +54,7 @@ func (s *Server) routes() http.Handler {
 	r.Get("/readyz", s.ready)
 	r.Get("/v1/findings", s.listFindings)
 	r.Get("/v1/findings/{id}", s.getFinding)
+	r.Get("/v1/graph/affected-direct-dependencies", s.listAffectedDirectDependencies)
 	if s.Config.Metrics.Enabled {
 		r.Handle("/metrics", s.Metrics.Handler())
 	}

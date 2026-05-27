@@ -68,3 +68,8 @@ Dependent traversal walks reverse dependency edges from a suspicious or compromi
 ## Propagation
 
 Propagation starts from an intrinsic suspicious or compromised package-version finding and traverses dependents. Results are materialized as `affected_by_transitive` impacts containing source finding ID, source intrinsic status, depth, path, path fingerprint, and evidence. Propagation does not update the dependent package version's intrinsic status. Paginated APIs must apply the same deterministic ordering as traversal.
+
+
+## Stored statuses
+
+Tallow stores intrinsic package-version statuses separately from `transitive_impact_statuses`. Transitive records reference the affected direct or transitive dependent, the source package version, source finding/status ID, depth, path JSON, and `path_fingerprint`. APIs that list affected direct dependencies read derived records and must not label those dependents as `compromised_intrinsic`.

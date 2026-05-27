@@ -9,3 +9,15 @@ INSERT INTO dependency_edges (parent_package_version_id, child_package_id, child
 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
 ON CONFLICT (edge_fingerprint) DO UPDATE SET evidence_refs=EXCLUDED.evidence_refs, observed_at=now(), ingestion_run_id=EXCLUDED.ingestion_run_id
 RETURNING id;
+
+-- name: UpsertPackageVersionStatus :one
+INSERT INTO package_version_statuses (package_version_id, status, source_finding_id, evidence_refs)
+VALUES ($1,$2,$3,$4)
+ON CONFLICT (package_version_id, status, source_finding_id) DO UPDATE SET evidence_refs=EXCLUDED.evidence_refs, updated_at=now()
+RETURNING id;
+
+-- name: UpsertTransitiveImpactStatus :one
+INSERT INTO transitive_impact_statuses (affected_package_version_id, source_package_version_id, source_status_id, source_finding_id, status, depth, impact_path, path_fingerprint, evidence_refs)
+VALUES ($1,$2,$3,$4,'affected_by_transitive',$5,$6,$7,$8)
+ON CONFLICT (affected_package_version_id, source_finding_id, path_fingerprint) DO UPDATE SET impact_path=EXCLUDED.impact_path, evidence_refs=EXCLUDED.evidence_refs
+RETURNING id;
