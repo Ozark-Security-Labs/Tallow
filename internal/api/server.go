@@ -16,13 +16,14 @@ import (
 
 type Check func(context.Context) error
 type Server struct {
-	Config   config.Config
-	Logger   *slog.Logger
-	Checks   map[string]Check
-	Metrics  *metrics.Metrics
-	Findings FindingReader
-	Graph    GraphReader
-	Handler  http.Handler
+	Config       config.Config
+	Logger       *slog.Logger
+	Checks       map[string]Check
+	Metrics      *metrics.Metrics
+	Findings     FindingReader
+	Graph        GraphReader
+	Correlations CorrelationReader
+	Handler      http.Handler
 }
 
 func New(cfg config.Config, logger *slog.Logger, checks map[string]Check) *Server {
@@ -38,7 +39,7 @@ func NewWithFindings(
 	if logger == nil {
 		logger = slog.Default()
 	}
-	s := &Server{Config: cfg, Logger: logger, Checks: checks, Metrics: metrics.New(), Findings: findings, Graph: EmptyGraphStore{}}
+	s := &Server{Config: cfg, Logger: logger, Checks: checks, Metrics: metrics.New(), Findings: findings, Graph: EmptyGraphStore{}, Correlations: EmptyCorrelationStore{}}
 	s.Handler = s.routes()
 	return s
 }
@@ -55,6 +56,7 @@ func (s *Server) routes() http.Handler {
 	r.Get("/v1/findings", s.listFindings)
 	r.Get("/v1/findings/{id}", s.getFinding)
 	r.Get("/v1/graph/affected-direct-dependencies", s.listAffectedDirectDependencies)
+	r.Get("/v1/source-correlations", s.listCorrelations)
 	if s.Config.Metrics.Enabled {
 		r.Handle("/metrics", s.Metrics.Handler())
 	}
