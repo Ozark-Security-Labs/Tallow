@@ -64,6 +64,17 @@ def test_snippet_redacts_json_style_secret_values():
     assert "supersecretvalue" not in evidence["excerpt"]
 
 
+def test_snippet_redacts_delimited_json_style_secret_values():
+    evidence = file_evidence(
+        "package.json",
+        artifact_id="a",
+        snippet='"token": "123456789:SECRET"',
+    )
+    assert evidence["excerpt_redacted"] is True
+    assert "123456789" not in evidence["excerpt"]
+    assert "SECRET" not in evidence["excerpt"]
+
+
 def test_snippet_redacts_unterminated_quoted_secret_values():
     evidence = file_evidence(
         "package.json",
@@ -110,6 +121,21 @@ def test_snippet_redacts_webhook_url_path_tokens():
     assert "secret-token" not in evidence["excerpt"]
     assert "wait=true" not in evidence["excerpt"]
     assert "https://discord.com/api/webhooks/<redacted>/<redacted>?<redacted>" in evidence[
+        "excerpt"
+    ]
+
+
+def test_snippet_redacts_webhook_url_path_tokens_with_ports():
+    evidence = file_evidence(
+        "package.json",
+        artifact_id="a",
+        snippet="curl https://hooks.slack.com:443/services/T000000/B000000/SECRET",
+    )
+    assert evidence["excerpt_redacted"] is True
+    assert "T000000" not in evidence["excerpt"]
+    assert "B000000" not in evidence["excerpt"]
+    assert "SECRET" not in evidence["excerpt"]
+    assert "https://hooks.slack.com:443/services/<redacted>/<redacted>/<redacted>" in evidence[
         "excerpt"
     ]
 

@@ -10,7 +10,7 @@ MAX_EXCERPT_LEN = 240
 
 _TOKEN_PATTERN = re.compile(
     r"(?i)([\"']?(?:token|secret|password|api[_-]?key)[\"']?\s*[:=]\s*)"
-    r"([\"']?)([A-Za-z0-9._\-/+=]{8,})(?:\2)?"
+    r"(?:([\"'])([^\"'\r\n]{8,})(\3)?|([^\s,\"';})\]]{8,}))"
 )
 _BEARER_PATTERN = re.compile(r"(?i)(bearer\s+)([A-Za-z0-9._\-+/=]{8,})")
 _URL_PATTERN = re.compile(r"https?://[^\s\"'<>]+")
@@ -36,8 +36,11 @@ def redact_text(text: str, *, max_len: int = MAX_EXCERPT_LEN) -> tuple[str, bool
     def token_repl(match: re.Match[str]) -> str:
         nonlocal redacted
         redacted = True
-        quote = match.group(2)
-        return f"{match.group(1)}{quote}{_redaction_tag(match.group(3))}{quote}"
+        if match.group(2):
+            quote = match.group(2)
+            closing_quote = match.group(4) or ""
+            return f"{match.group(1)}{quote}{_redaction_tag(match.group(3))}{closing_quote}"
+        return f"{match.group(1)}{_redaction_tag(match.group(5))}"
 
     output = _TOKEN_PATTERN.sub(token_repl, output)
 
@@ -81,7 +84,7 @@ def redact_text(text: str, *, max_len: int = MAX_EXCERPT_LEN) -> tuple[str, bool
 
 def redact_url(url: str) -> str:
     parts = urlsplit(url)
-    path = _redact_url_path(parts.netloc.lower(), parts.path)
+    path = _redact_url_path((parts.hostname or "").lower(), parts.path)
     query = "<redacted>" if parts.query else ""
     return urlunsplit((parts.scheme, parts.netloc, path, query, parts.fragment))
 
