@@ -36,3 +36,15 @@ func TestIngestDependenciesIdempotentAndScoped(t *testing.T) {
 		t.Fatal("optional edge flags not preserved")
 	}
 }
+
+func TestIngestDependenciesUsesCanonicalPyPINormalization(t *testing.T) {
+	store := NewMemoryStore()
+	root := PackageVersion{Ecosystem: EcosystemPyPI, Name: "root", NormalizedName: "root", Version: "1.0.0", NormalizedVersion: "1.0.0"}
+	if _, err := IngestDependencies(store, []DependencyObservation{{Parent: root, ChildName: "My_Pkg", ChildVersion: "1.0.0", Scope: ScopeRuntime, Relationship: RelationshipDirect, Confidence: ConfidenceDeclaredMetadata, SourceType: SourceRegistryMetadata}}); err != nil {
+		t.Fatal(err)
+	}
+	edges := store.ListDependencyEdges()
+	if edges[0].ChildNormalizedName != "my-pkg" {
+		t.Fatalf("expected canonical pypi name my-pkg, got %q", edges[0].ChildNormalizedName)
+	}
+}

@@ -3,6 +3,8 @@ package graph
 import (
 	"sort"
 	"strings"
+
+	"github.com/Ozark-Security-Labs/Tallow/internal/identity"
 	"sync"
 	"time"
 )
@@ -54,13 +56,19 @@ func (s *MemoryStore) ListDependencyEdges() []DependencyEdge {
 func IngestDependencies(store Store, observations []DependencyObservation) ([]DependencyEdge, error) {
 	edges := make([]DependencyEdge, 0, len(observations))
 	for _, o := range observations {
-		childNorm := normalizeName(o.ChildName)
+		childNorm := normalizeNameForEcosystem(o.Parent.Ecosystem, o.ChildName)
 		childVer := strings.TrimSpace(o.ChildVersion)
 		edges = append(edges, DependencyEdge{Parent: o.Parent, ChildEcosystem: o.Parent.Ecosystem, ChildName: o.ChildName, ChildNormalizedName: childNorm, ChildVersion: o.ChildVersion, ChildNormalizedVersion: childVer, Constraint: o.Constraint, Scope: o.Scope, Relationship: o.Relationship, Optional: o.Optional, Dev: o.Dev, Build: o.Build, Confidence: o.Confidence, SourceType: o.SourceType, ManifestPath: o.ManifestPath, LockfilePath: o.LockfilePath, DependencyPath: o.Path, Evidence: o.Evidence})
 	}
 	return store.UpsertDependencyEdges(edges)
 }
-func normalizeName(s string) string { return strings.ToLower(strings.TrimSpace(s)) }
+func normalizeNameForEcosystem(ec Ecosystem, s string) string {
+	parts, err := identity.NormalizePackageName(identity.Ecosystem(ec), s)
+	if err == nil {
+		return parts.NormalizedName
+	}
+	return strings.ToLower(strings.TrimSpace(s))
+}
 func sortEdges(edges []DependencyEdge) {
 	sort.Slice(edges, func(i, j int) bool {
 		a, b := edges[i], edges[j]

@@ -35,6 +35,9 @@ CREATE TABLE IF NOT EXISTS source_correlations (
   source_id UUID REFERENCES scm_sources(id),
   revision_id UUID REFERENCES scm_revisions(id),
   confidence TEXT NOT NULL CHECK (confidence IN ('exact_metadata','release_tag_match','repository_metadata','manifest_observed','inferred_name','conflicting','unknown')),
+  score INT NOT NULL DEFAULT 0 CHECK (score >= 0 AND score <= 100),
+  conflicting_source_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+  reason TEXT NOT NULL DEFAULT '',
   evidence_refs JSONB NOT NULL DEFAULT '[]'::jsonb,
   explanation TEXT NOT NULL DEFAULT '',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()

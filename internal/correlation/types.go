@@ -14,6 +14,14 @@ const (
 	ConfidenceUnknown            Confidence = "unknown"
 )
 
+type EvidenceKind string
+
+const (
+	EvidenceRepositoryMetadata EvidenceKind = "repository_metadata"
+	EvidenceReleaseTag         EvidenceKind = "release_tag"
+	EvidenceExactMetadata      EvidenceKind = "exact_metadata"
+)
+
 type Evidence struct {
 	Source string `json:"source"`
 	URL    string `json:"url,omitempty"`
@@ -30,11 +38,13 @@ type Candidate struct {
 	Evidence Evidence
 }
 type Decision struct {
-	Package     PackageVersion
-	Ref         scm.RepositoryRef
-	Revision    string
-	Confidence  Confidence
-	Evidence    []Evidence
-	Explanation string
-	Ambiguous   bool
+	Package              PackageVersion
+	Ref                  scm.RepositoryRef
+	Revision             string
+	Confidence           Confidence
+	Score                int
+	ConflictingSourceIDs []string
+	Evidence             []Evidence
+	Explanation          string
+	Ambiguous            bool
 }

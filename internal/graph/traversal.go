@@ -8,6 +8,8 @@ import (
 type TraverseOptions struct {
 	MaxDepth        int
 	MaxPathsPerRoot int
+	IncludeDev      bool
+	IncludeOptional bool
 }
 type ImpactPath struct {
 	Root        PackageVersion
@@ -46,6 +48,12 @@ func TraverseDependents(edges []DependencyEdge, target PackageVersion, opts Trav
 			continue
 		}
 		for _, edge := range byChild[versionKey(s.current.Ecosystem, s.current.NormalizedName, s.current.NormalizedVersion)] {
+			if !opts.IncludeDev && (edge.Dev || edge.Scope == ScopeDev) {
+				continue
+			}
+			if !opts.IncludeOptional && (edge.Optional || edge.Scope == ScopeOptional) {
+				continue
+			}
 			parentKey := versionKey(edge.Parent.Ecosystem, edge.Parent.NormalizedName, edge.Parent.NormalizedVersion)
 			if s.seen[parentKey] {
 				continue

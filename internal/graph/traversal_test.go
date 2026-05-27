@@ -39,3 +39,27 @@ func TestTraverseDependentsHonorsLimits(t *testing.T) {
 		t.Fatalf("expected only direct path, got %+v", paths)
 	}
 }
+
+func TestTraverseDependentsFiltersDevAndOptional(t *testing.T) {
+	target, dev, optional, runtime := pv("bad"), pv("dev"), pv("optional"), pv("runtime")
+	devEdge := edge(dev, target)
+	devEdge.Dev = true
+	devEdge.Scope = ScopeDev
+	optionalEdge := edge(optional, target)
+	optionalEdge.Optional = true
+	optionalEdge.Scope = ScopeOptional
+	paths, err := TraverseDependents([]DependencyEdge{devEdge, optionalEdge, edge(runtime, target)}, target, TraverseOptions{MaxDepth: 2, MaxPathsPerRoot: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(paths) != 1 || paths[0].Root.NormalizedName != "runtime" {
+		t.Fatalf("expected only runtime path, got %+v", paths)
+	}
+	paths, err = TraverseDependents([]DependencyEdge{devEdge, optionalEdge, edge(runtime, target)}, target, TraverseOptions{MaxDepth: 2, MaxPathsPerRoot: 10, IncludeDev: true, IncludeOptional: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(paths) != 3 {
+		t.Fatalf("expected all paths with filters enabled, got %+v", paths)
+	}
+}

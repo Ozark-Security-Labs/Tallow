@@ -165,7 +165,8 @@ CREATE TABLE package_version_statuses (
     status TEXT NOT NULL CHECK (status IN ('clean','suspicious','compromised_intrinsic','unknown','suppressed')),
     source_finding_id TEXT NOT NULL DEFAULT '',
     evidence_refs JSONB NOT NULL DEFAULT '[]'::jsonb,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(package_version_id, status, source_finding_id)
 );
 
 CREATE TABLE transitive_impact_statuses (
@@ -179,7 +180,8 @@ CREATE TABLE transitive_impact_statuses (
     impact_path JSONB NOT NULL,
     path_fingerprint TEXT NOT NULL,
     evidence_refs JSONB NOT NULL DEFAULT '[]'::jsonb,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(affected_package_version_id, source_finding_id, path_fingerprint)
 );
 
 CREATE TABLE scm_sources (
@@ -222,6 +224,9 @@ CREATE TABLE source_correlations (
     source_id UUID REFERENCES scm_sources(id),
     revision_id UUID REFERENCES scm_revisions(id),
     confidence TEXT NOT NULL CHECK (confidence IN ('exact_metadata','release_tag_match','repository_metadata','manifest_observed','inferred_name','conflicting','unknown')),
+    score INT NOT NULL DEFAULT 0 CHECK (score >= 0 AND score <= 100),
+    conflicting_source_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+    reason TEXT NOT NULL DEFAULT '',
     evidence_refs JSONB NOT NULL DEFAULT '[]'::jsonb,
     explanation TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()

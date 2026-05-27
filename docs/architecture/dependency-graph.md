@@ -62,7 +62,8 @@ Dependent traversal walks reverse dependency edges from a suspicious or compromi
 - reject traversal without explicit `max_depth` and `max_paths_per_root` bounds;
 - suppress cycles by tracking package versions already present in the current path;
 - preserve diamond paths as distinct evidence until the per-root path limit is reached; and
-- return paths in deterministic depth/name/fingerprint order.
+- return paths in deterministic depth/name/fingerprint order; and
+- honor `include_dev` and `include_optional` controls so review workflows can exclude dev/optional paths by default.
 
 
 ## Propagation

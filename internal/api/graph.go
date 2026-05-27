@@ -60,20 +60,29 @@ func (s *Server) graphStore() GraphReader {
 }
 func parseGraphFilters(r *http.Request) (GraphFilters, error) {
 	q := r.URL.Query()
-	limit := 50
+	limit, offset, err := parseLimitOffset(r, 50)
+	if err != nil {
+		return GraphFilters{}, err
+	}
+	return GraphFilters{Ecosystem: q.Get("ecosystem"), PackageName: q.Get("package"), Version: q.Get("version"), Limit: limit, Offset: offset}, nil
+}
+
+func parseLimitOffset(r *http.Request, defaultLimit int) (int, int, error) {
+	q := r.URL.Query()
+	limit := defaultLimit
 	offset := 0
 	var err error
 	if raw := q.Get("limit"); raw != "" {
 		limit, err = strconv.Atoi(raw)
 		if err != nil || limit < 1 || limit > 200 {
-			return GraphFilters{}, tallowerr.New(tallowerr.CodeValidation, "limit must be 1..200")
+			return 0, 0, tallowerr.New(tallowerr.CodeValidation, "limit must be 1..200")
 		}
 	}
 	if raw := q.Get("offset"); raw != "" {
 		offset, err = strconv.Atoi(raw)
 		if err != nil || offset < 0 {
-			return GraphFilters{}, tallowerr.New(tallowerr.CodeValidation, "offset must be >=0")
+			return 0, 0, tallowerr.New(tallowerr.CodeValidation, "offset must be >=0")
 		}
 	}
-	return GraphFilters{Ecosystem: q.Get("ecosystem"), PackageName: q.Get("package"), Version: q.Get("version"), Limit: limit, Offset: offset}, nil
+	return limit, offset, nil
 }

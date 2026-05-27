@@ -21,7 +21,7 @@ An SCM adapter provides a provider-neutral interface with:
 - revision metadata for branch, tag, or commit references; and
 - cursor polling for repository inventories.
 
-The Go contract is represented by `internal/scm.Adapter` with `ResolveRepository`, `FetchManifest`, `RevisionMetadata`, and `PollRepositories`. GitHub implements the contract in this milestone. GitLab, Codeberg, Forgejo, and Gitea should map the same methods to their APIs in future work; this milestone documents those extension points only and does not implement those providers.
+The Go contract is represented by `internal/scm.Adapter` with `Provider`, `ResolveRepository(ctx, RepositoryClaim)`, `GetRepository`, `GetDefaultBranch`, `ListRepositoryManifests`, bounded `FetchFile(..., maxBytes)`, `GetRevision`, and `Poll`. GitHub implements the contract in this milestone. GitLab, Codeberg, Forgejo, and Gitea should map the same methods to their APIs in future work; this milestone documents those extension points only and does not implement those providers.
 
 SCM adapters must not clone entire repositories unless configured. Prefer API file fetches and size limits.
 

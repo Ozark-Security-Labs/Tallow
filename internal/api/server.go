@@ -57,6 +57,9 @@ func (s *Server) routes() http.Handler {
 	r.Get("/v1/findings/{id}", s.getFinding)
 	r.Get("/v1/graph/affected-direct-dependencies", s.listAffectedDirectDependencies)
 	r.Get("/v1/source-correlations", s.listCorrelations)
+	r.Get("/v1/package-versions/{id}/statuses", s.listAffectedDirectDependencies)
+	r.Get("/v1/package-versions/{id}/transitive-impacts", s.listAffectedDirectDependencies)
+	r.Get("/v1/statuses/{id}/affected-dependents", s.listAffectedDirectDependencies)
 	if s.Config.Metrics.Enabled {
 		r.Handle("/metrics", s.Metrics.Handler())
 	}

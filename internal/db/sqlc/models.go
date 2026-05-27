@@ -49,6 +49,43 @@ type ArtifactObservation struct {
 	EvidenceJson string
 }
 
+type DependencyEdge struct {
+	ID                     pgtype.UUID
+	ParentPackageVersionID pgtype.UUID
+	ChildPackageID         pgtype.UUID
+	ChildPackageVersionID  pgtype.UUID
+	ChildEcosystem         string
+	ChildNameNormalized    string
+	ConstraintText         string
+	ResolvedVersion        string
+	Scope                  string
+	Relationship           string
+	IsOptional             bool
+	IsDev                  bool
+	IsBuild                bool
+	Confidence             string
+	SourceType             string
+	ManifestPath           string
+	LockfilePath           string
+	DependencyPath         []byte
+	EvidenceRefs           []byte
+	EdgeFingerprint        string
+	ObservedAt             pgtype.Timestamptz
+	IngestionRunID         pgtype.UUID
+}
+
+type DependencyIngestionRun struct {
+	ID               pgtype.UUID
+	SourceKind       string
+	SourceID         pgtype.UUID
+	ArtifactID       pgtype.UUID
+	PackageVersionID pgtype.UUID
+	InputFingerprint string
+	StartedAt        pgtype.Timestamptz
+	FinishedAt       pgtype.Timestamptz
+	EdgesObserved    int32
+}
+
 type EventsInbox struct {
 	ID         string
 	Subject    string
@@ -109,6 +146,15 @@ type PackageVersion struct {
 	CreatedAt           pgtype.Timestamptz
 }
 
+type PackageVersionStatus struct {
+	ID               pgtype.UUID
+	PackageVersionID pgtype.UUID
+	Status           string
+	SourceFindingID  string
+	EvidenceRefs     []byte
+	UpdatedAt        pgtype.Timestamptz
+}
+
 type ScheduledJob struct {
 	ID             pgtype.UUID
 	Kind           string
@@ -118,6 +164,66 @@ type ScheduledJob struct {
 	LeaseOwner     pgtype.Text
 	LeaseUntil     pgtype.Timestamptz
 	CreatedAt      pgtype.Timestamptz
+}
+
+type ScmRevision struct {
+	ID           pgtype.UUID
+	SourceID     pgtype.UUID
+	Revision     string
+	RevisionType string
+	ObservedAt   pgtype.Timestamptz
+	EvidenceRefs []byte
+}
+
+type ScmSource struct {
+	ID            pgtype.UUID
+	Provider      string
+	ExternalID    string
+	Url           string
+	Owner         string
+	Repo          string
+	DefaultBranch string
+	Visibility    string
+	LastIndexedAt pgtype.Timestamptz
+}
+
+type SourceCorrelation struct {
+	ID                   pgtype.UUID
+	PackageVersionID     pgtype.UUID
+	ArtifactID           pgtype.UUID
+	SourceID             pgtype.UUID
+	RevisionID           pgtype.UUID
+	Confidence           string
+	Score                int32
+	ConflictingSourceIds []byte
+	Reason               string
+	EvidenceRefs         []byte
+	Explanation          string
+	CreatedAt            pgtype.Timestamptz
+}
+
+type SourceManifest struct {
+	ID           pgtype.UUID
+	SourceID     pgtype.UUID
+	Path         string
+	Ecosystem    string
+	ManifestType string
+	CommitSha    string
+	ParsedAt     pgtype.Timestamptz
+}
+
+type TransitiveImpactStatus struct {
+	ID                       pgtype.UUID
+	AffectedPackageVersionID pgtype.UUID
+	SourcePackageVersionID   pgtype.UUID
+	SourceStatusID           pgtype.UUID
+	SourceFindingID          string
+	Status                   string
+	Depth                    int32
+	ImpactPath               []byte
+	PathFingerprint          string
+	EvidenceRefs             []byte
+	CreatedAt                pgtype.Timestamptz
 }
 
 type User struct {
