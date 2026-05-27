@@ -64,6 +64,19 @@ def test_redacts_generic_exfil_host_path_tokens(tmp_path: Path):
     )
 
 
+def test_detects_explicit_port_webhook_urls(tmp_path: Path):
+    (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+    (tmp_path / "index.js").write_text(
+        "fetch('https://hooks.slack.com:443/services/T000000/B000000/SECRET')\n",
+        encoding="utf-8",
+    )
+    findings = _run(tmp_path)
+    assert len(findings) == 1
+    excerpt = findings[0].evidence[0]["excerpt"]
+    assert "SECRET" not in excerpt
+    assert "https://hooks.slack.com:443/services/<redacted>/<redacted>/<redacted>" in excerpt
+
+
 def test_readme_context_is_ignored(tmp_path: Path):
     (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
     (tmp_path / "README.md").write_text("https://discord.com/api/webhooks/1/fake")

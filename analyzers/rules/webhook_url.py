@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable
+from urllib.parse import urlsplit
 
 from tallow_analyzer_sdk.constants import WEBHOOK_URL_PATTERNS
 from tallow_analyzer_sdk.context import AnalysisContext
@@ -78,6 +79,13 @@ class WebhookUrlRule:
 def _matching_url(line: str, patterns: list[re.Pattern[str]]) -> str | None:
     for url_match in URL_PATTERN.finditer(line):
         url = url_match.group(0)
-        if any(pattern.search(url) for pattern in patterns):
+        normalized = _normalize_url_for_match(url)
+        if any(pattern.search(normalized) for pattern in patterns):
             return url
     return None
+
+
+def _normalize_url_for_match(url: str) -> str:
+    parts = urlsplit(url)
+    host = parts.hostname or ""
+    return f"{host}{parts.path}"
