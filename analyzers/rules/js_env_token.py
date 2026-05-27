@@ -52,17 +52,13 @@ class JsEnvTokenRule:
             if not any(match.relative_path.endswith(ext) for ext in EXECUTABLE_EXTENSIONS):
                 continue
             text = walker.read_text(match.relative_path)
+            in_block_comment = False
             for line_no, line in enumerate(text.splitlines(), start=1):
-                code_line = _strip_js_strings_for_env(line)
-                if not code_line.strip() or code_line.strip().startswith("//"):
+                code_mask, in_block_comment = _js_code_mask(line, in_block_comment)
+                if not any(code_mask):
                     continue
-                env_match = _env_token_match(line, code_line)
-                cred_match = next(
-                    (p.search(line) for p in CREDENTIAL_PATH_PATTERNS if p.search(line)),
-                    None,
-                )
-                if cred_match and not _looks_like_path_read(line):
-                    cred_match = None
+                env_match = _env_token_match(line, code_mask)
+                cred_match = _credential_path_read_match(line, code_mask)
                 if not env_match and not cred_match:
                     continue
                 summary = (
@@ -101,24 +97,47 @@ def _token_like(key: str) -> bool:
     return any(token in upper for token in markers)
 
 
-def _env_token_match(line: str, code_line: str) -> re.Match[str] | None:
-    _ = code_line
+def _env_token_match(line: str, code_mask: list[bool]) -> re.Match[str] | None:
     for pattern in ENV_PATTERNS:
         for match in pattern.finditer(line):
-            if _position_is_js_code(line, match.start()) and _token_like(match.group(1)):
+            if _position_in_code_mask(code_mask, match.start()) and _token_like(match.group(1)):
                 return match
     return None
 
 
-def _position_is_js_code(line: str, position: int) -> bool:
+def _credential_path_read_match(line: str, code_mask: list[bool]) -> re.Match[str] | None:
+    read_in_code = any(
+        _position_in_code_mask(code_mask, match.start())
+        for pattern in READ_PATTERNS
+        for match in re.finditer(re.escape(pattern), line, flags=re.I)
+    )
+    if not read_in_code:
+        return None
+    return next(
+        (pattern.search(line) for pattern in CREDENTIAL_PATH_PATTERNS if pattern.search(line)),
+        None,
+    )
+
+
+def _position_in_code_mask(code_mask: list[bool], position: int) -> bool:
+    return 0 <= position < len(code_mask) and code_mask[position]
+
+
+def _js_code_mask(line: str, in_block_comment: bool = False) -> tuple[list[bool], bool]:
+    code_mask = [False] * len(line)
     quote: str | None = None
     escaped = False
     index = 0
     while index < len(line):
         char = line[index]
+        if in_block_comment:
+            if char == "*" and index + 1 < len(line) and line[index + 1] == "/":
+                in_block_comment = False
+                index += 2
+                continue
+            index += 1
+            continue
         if quote:
-            if index == position:
-                return False
             if escaped:
                 escaped = False
             elif char == "\\":
@@ -128,41 +147,17 @@ def _position_is_js_code(line: str, position: int) -> bool:
             index += 1
             continue
         if char in {'"', "'", "`"}:
-            if index == position:
-                return False
             quote = char
             index += 1
             continue
         if char == "/" and index + 1 < len(line) and line[index + 1] == "/":
-            return position < index
-        if index == position:
-            return True
+            break
+        if char == "/" and index + 1 < len(line) and line[index + 1] == "*":
+            in_block_comment = True
+            index += 2
+            continue
+        code_mask[index] = True
         index += 1
-    return position >= len(line)
+    return code_mask, in_block_comment
 
 
-def _strip_js_strings_for_env(line: str) -> str:
-    output: list[str] = []
-    quote: str | None = None
-    escaped = False
-    for char in line:
-        if quote:
-            if escaped:
-                escaped = False
-                continue
-            if char == "\\":
-                escaped = True
-                continue
-            if char == quote:
-                quote = None
-            continue
-        if char in {'"', "'", "`"}:
-            quote = char
-            continue
-        output.append(char)
-    return "".join(output).split("//", 1)[0]
-
-
-def _looks_like_path_read(line: str) -> bool:
-    lowered = line.lower()
-    return any(pattern.lower() in lowered for pattern in READ_PATTERNS)

@@ -72,7 +72,27 @@ def test_ignores_comments_and_string_literals(tmp_path: Path):
         tmp_path,
         "src/index.js",
         '// process.env.NPM_TOKEN\n'
+        '/* process.env["NPM_TOKEN"] */\n'
+        '/*\nprocess.env["GITHUB_TOKEN"]\n*/\n'
         'const s = "process.env.GITHUB_TOKEN";\n'
         "const b = \"process.env['GITHUB_TOKEN']\";\n",
     )
     assert _run(tmp_path) == []
+
+
+def test_ignores_credential_reads_in_comments_and_string_literals(tmp_path: Path):
+    _write(
+        tmp_path,
+        "src/index.js",
+        '// fs.readFileSync(".npmrc")\n'
+        '/* fs.readFileSync(".ssh/id_rsa") */\n'
+        'const example = "fs.readFileSync(\'.npmrc\')";\n',
+    )
+    assert _run(tmp_path) == []
+
+
+def test_detects_credential_read_after_block_comment(tmp_path: Path):
+    _write(tmp_path, "src/index.js", '/* fixture */ fs.readFileSync(".npmrc");')
+    findings = _run(tmp_path)
+    assert len(findings) == 1
+    assert findings[0].confidence == "medium"
