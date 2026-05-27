@@ -61,3 +61,23 @@ def test_same_line_network_scripts_have_distinct_finding_ids(tmp_path: Path):
         for draft in _run(tmp_path)
     ]
     assert len({finding["id"] for finding in findings}) == len(findings) == 2
+
+
+def test_network_evidence_points_to_scripts_key_not_prior_matching_key(tmp_path: Path):
+    package_dir = tmp_path / "package"
+    package_dir.mkdir()
+    (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+    (package_dir / "package.json").write_text(
+        '{\n'
+        '  "metadata": {"postinstall": "curl https://example.test/not-script"},\n'
+        '  "scripts": {\n'
+        '    "postinstall": "curl https://example.test/script"\n'
+        '  }\n'
+        '}\n',
+        encoding="utf-8",
+    )
+    findings = _run(tmp_path)
+    assert len(findings) == 1
+    evidence = findings[0].evidence[0]
+    assert evidence["start_line"] == 4
+    assert '"postinstall": "curl https://example.test/script"' in evidence["excerpt"]
