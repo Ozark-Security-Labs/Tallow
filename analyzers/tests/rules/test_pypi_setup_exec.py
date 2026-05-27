@@ -37,7 +37,37 @@ def test_detects_setup_cfg_exec_marker(tmp_path: Path):
     assert findings[0].confidence == "medium"
 
 
+def test_detects_pyproject_cmdclass_hook(tmp_path: Path):
+    (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.setuptools.cmdclass]\ninstall = "pkg.build.InstallCommand"\n',
+        encoding="utf-8",
+    )
+    findings = _run(tmp_path)
+    assert findings[0].confidence == "medium"
+    assert findings[0].evidence[0]["path"] == "pyproject.toml"
+
+
+def test_detects_suspicious_pyproject_build_backend(tmp_path: Path):
+    (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text(
+        '[build-system]\nbuild-backend = "pkg.dynamic_backend"\n',
+        encoding="utf-8",
+    )
+    findings = _run(tmp_path)
+    assert findings[0].evidence[0]["start_line"] == 2
+
+
 def test_safe_setup_py_does_not_emit(tmp_path: Path):
     (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
     (tmp_path / "setup.py").write_text("from setuptools import setup\nsetup(name='safe')\n")
+    assert _run(tmp_path) == []
+
+
+def test_safe_pyproject_backend_does_not_emit(tmp_path: Path):
+    (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text(
+        '[build-system]\nbuild-backend = "setuptools.build_meta"\n',
+        encoding="utf-8",
+    )
     assert _run(tmp_path) == []

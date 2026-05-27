@@ -19,6 +19,16 @@ EXEC_NAMES = {
     ("subprocess", "check_output"),
 }
 BUILTIN_EXEC = {"eval", "exec"}
+SAFE_BUILD_BACKENDS = (
+    "setuptools.build_meta",
+    "flit_core.buildapi",
+    "poetry.core.masonry.api",
+    "hatchling.build",
+    "pdm.backend",
+    "maturin",
+    "mesonpy",
+    "scikit_build_core.build",
+)
 
 
 class PypiSetupExecRule:
@@ -104,6 +114,33 @@ class PypiSetupExecRule:
                 )
                 if len(findings) >= context.max_findings_per_rule:
                     return findings
+        for match in walker.iter_files(["pyproject.toml", "**/pyproject.toml"]):
+            text = walker.read_text(match.relative_path)
+            for line_no, line in enumerate(text.splitlines(), start=1):
+                if not _pyproject_exec_sink(line):
+                    continue
+                findings.append(
+                    FindingDraft(
+                        rule=self.metadata,
+                        subject=context.subject,
+                        title="pyproject.toml execution hook detected",
+                        summary=f"Execution-oriented build hook detected in {match.relative_path}.",
+                        evidence=[
+                            file_evidence(
+                                match.relative_path,
+                                artifact_id=context.artifact_id() or "unknown",
+                                snapshot_id=context.snapshot_id(),
+                                start_line=line_no,
+                                end_line=line_no,
+                                snippet=line.strip(),
+                                description="Execution-oriented build hook in pyproject.toml",
+                            )
+                        ],
+                        confidence="medium",
+                    )
+                )
+                if len(findings) >= context.max_findings_per_rule:
+                    return findings
         return findings
 
 
@@ -121,3 +158,21 @@ def _cfg_exec_sink(line: str) -> bool:
         marker in lowered
         for marker in ("os.system", "subprocess.", "eval(", "exec(")
     )
+
+
+def _pyproject_exec_sink(line: str) -> bool:
+    lowered = line.lower()
+    if any(marker in lowered for marker in ("os.system", "subprocess.", "eval(", "exec(")):
+        return True
+    if "cmdclass" in lowered or "[tool.setuptools.cmdclass]" in lowered:
+        return True
+    backend = _build_backend_value(line)
+    return backend != "" and not backend.startswith(SAFE_BUILD_BACKENDS)
+
+
+def _build_backend_value(line: str) -> str:
+    stripped = line.strip()
+    if not stripped.lower().startswith("build-backend") or "=" not in stripped:
+        return ""
+    value = stripped.split("=", 1)[1].strip().strip('"\'')
+    return value
