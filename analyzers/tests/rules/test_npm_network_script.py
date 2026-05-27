@@ -81,3 +81,35 @@ def test_network_evidence_points_to_scripts_key_not_prior_matching_key(tmp_path:
     evidence = findings[0].evidence[0]
     assert evidence["start_line"] == 4
     assert '"postinstall": "curl https://example.test/script"' in evidence["excerpt"]
+
+
+def test_network_evidence_uses_last_duplicate_scripts_semantics(tmp_path: Path):
+    package_dir = tmp_path / "package"
+    package_dir.mkdir()
+    (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+    (package_dir / "package.json").write_text(
+        '{\n'
+        '  "scripts": {"postinstall": "curl https://example.test/wrong"},\n'
+        '  "scripts": {\n'
+        '    "postinstall": "echo benign",\n'
+        '    "postinstall": "curl https://example.test/script"\n'
+        '  }\n'
+        '}\n',
+        encoding="utf-8",
+    )
+    findings = _run(tmp_path)
+    assert len(findings) == 1
+    evidence = findings[0].evidence[0]
+    assert evidence["start_line"] == 5
+    assert '"postinstall": "curl https://example.test/script"' in evidence["excerpt"]
+
+
+def test_non_object_scripts_does_not_emit(tmp_path: Path):
+    package_dir = tmp_path / "package"
+    package_dir.mkdir()
+    (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+    (package_dir / "package.json").write_text(
+        '{"scripts": "curl https://example.test/script"}',
+        encoding="utf-8",
+    )
+    assert _run(tmp_path) == []
