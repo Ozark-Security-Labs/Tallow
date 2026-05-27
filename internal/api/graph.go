@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/Ozark-Security-Labs/Tallow/internal/tallowerr"
+	"github.com/go-chi/chi/v5"
 )
 
 type AffectedDependency struct {
@@ -85,4 +86,93 @@ func parseLimitOffset(r *http.Request, defaultLimit int) (int, int, error) {
 		}
 	}
 	return limit, offset, nil
+}
+
+type PackageVersionStatusRecord struct {
+	ID               string `json:"id"`
+	PackageVersionID string `json:"package_version_id"`
+	Status           string `json:"status"`
+	SourceFindingID  string `json:"source_finding_id,omitempty"`
+}
+
+type TransitiveImpactRecord struct {
+	ID                       string `json:"id"`
+	AffectedPackageVersionID string `json:"affected_package_version_id"`
+	SourceFindingID          string `json:"source_finding_id"`
+	Status                   string `json:"status"`
+	Depth                    int    `json:"depth"`
+	PathFingerprint          string `json:"path_fingerprint"`
+}
+
+type StatusReader interface {
+	ListPackageVersionStatuses(context.Context, string, GraphFilters) ([]PackageVersionStatusRecord, error)
+	ListPackageVersionTransitiveImpacts(context.Context, string, GraphFilters) ([]TransitiveImpactRecord, error)
+	ListAffectedDependentsByStatus(context.Context, string, GraphFilters) ([]AffectedDependency, error)
+}
+
+type EmptyStatusStore struct{}
+
+func (EmptyStatusStore) ListPackageVersionStatuses(context.Context, string, GraphFilters) ([]PackageVersionStatusRecord, error) {
+	return []PackageVersionStatusRecord{}, nil
+}
+func (EmptyStatusStore) ListPackageVersionTransitiveImpacts(context.Context, string, GraphFilters) ([]TransitiveImpactRecord, error) {
+	return []TransitiveImpactRecord{}, nil
+}
+func (EmptyStatusStore) ListAffectedDependentsByStatus(context.Context, string, GraphFilters) ([]AffectedDependency, error) {
+	return []AffectedDependency{}, nil
+}
+func (s *Server) statusStore() StatusReader {
+	if s.Statuses == nil {
+		return EmptyStatusStore{}
+	}
+	return s.Statuses
+}
+
+func (s *Server) listPackageVersionStatuses(w http.ResponseWriter, r *http.Request) {
+	filters, err := parseGraphFilters(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	items, err := s.statusStore().ListPackageVersionStatuses(r.Context(), chi.URLParam(r, "id"), filters)
+	if err != nil {
+		writeError(w, r, tallowerr.Wrap(tallowerr.CodeDatabaseUnavailable, "list package version statuses failed", err))
+		return
+	}
+	if items == nil {
+		items = []PackageVersionStatusRecord{}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+}
+func (s *Server) listPackageVersionTransitiveImpacts(w http.ResponseWriter, r *http.Request) {
+	filters, err := parseGraphFilters(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	items, err := s.statusStore().ListPackageVersionTransitiveImpacts(r.Context(), chi.URLParam(r, "id"), filters)
+	if err != nil {
+		writeError(w, r, tallowerr.Wrap(tallowerr.CodeDatabaseUnavailable, "list transitive impacts failed", err))
+		return
+	}
+	if items == nil {
+		items = []TransitiveImpactRecord{}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+}
+func (s *Server) listAffectedDependentsByStatus(w http.ResponseWriter, r *http.Request) {
+	filters, err := parseGraphFilters(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	items, err := s.statusStore().ListAffectedDependentsByStatus(r.Context(), chi.URLParam(r, "id"), filters)
+	if err != nil {
+		writeError(w, r, tallowerr.Wrap(tallowerr.CodeDatabaseUnavailable, "list affected dependents failed", err))
+		return
+	}
+	if items == nil {
+		items = []AffectedDependency{}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": items})
 }

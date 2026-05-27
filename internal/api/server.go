@@ -23,6 +23,7 @@ type Server struct {
 	Findings     FindingReader
 	Graph        GraphReader
 	Correlations CorrelationReader
+	Statuses     StatusReader
 	Handler      http.Handler
 }
 
@@ -57,9 +58,11 @@ func (s *Server) routes() http.Handler {
 	r.Get("/v1/findings/{id}", s.getFinding)
 	r.Get("/v1/graph/affected-direct-dependencies", s.listAffectedDirectDependencies)
 	r.Get("/v1/source-correlations", s.listCorrelations)
-	r.Get("/v1/package-versions/{id}/statuses", s.listAffectedDirectDependencies)
-	r.Get("/v1/package-versions/{id}/transitive-impacts", s.listAffectedDirectDependencies)
-	r.Get("/v1/statuses/{id}/affected-dependents", s.listAffectedDirectDependencies)
+	r.Get("/v1/package-versions/{id}/statuses", s.listPackageVersionStatuses)
+	r.Get("/v1/package-versions/{id}/transitive-impacts", s.listPackageVersionTransitiveImpacts)
+	r.Get("/v1/statuses/{id}/affected-dependents", s.listAffectedDependentsByStatus)
+	r.Get("/v1/package-versions/{id}/source-correlations", s.listCorrelations)
+	r.Get("/v1/artifacts/{id}/source-correlations", s.listCorrelations)
 	if s.Config.Metrics.Enabled {
 		r.Handle("/metrics", s.Metrics.Handler())
 	}

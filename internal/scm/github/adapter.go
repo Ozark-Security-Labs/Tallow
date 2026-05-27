@@ -113,8 +113,11 @@ func (a *Adapter) ListRepositoryManifests(ctx context.Context, ref scm.Repositor
 }
 
 func (a *Adapter) FetchFile(ctx context.Context, ref scm.RepositoryRef, path, revision string, maxBytes int64) (scm.Manifest, error) {
-	escapedPath := strings.Join(escapeSegments(strings.Split(strings.TrimPrefix(path, "/"), "/")), "/")
-	u := repoPath(ref) + "/contents/" + escapedPath
+	escaped, err := escapeContentPath(path)
+	if err != nil {
+		return scm.Manifest{}, err
+	}
+	u := repoPath(ref) + "/contents/" + escaped
 	if revision != "" {
 		u += "?ref=" + url.QueryEscape(revision)
 	}
@@ -169,12 +172,20 @@ func (a *Adapter) PollRepositories(ctx context.Context, cursor scm.RepositoryCur
 func repoPath(ref scm.RepositoryRef) string {
 	return "/repos/" + url.PathEscape(ref.Owner) + "/" + url.PathEscape(ref.Name)
 }
-func escapeSegments(parts []string) []string {
+func escapeContentPath(path string) (string, error) {
+	parts := strings.Split(strings.TrimPrefix(path, "/"), "/")
 	out := make([]string, 0, len(parts))
 	for _, p := range parts {
-		if p != "" {
-			out = append(out, url.PathEscape(p))
+		if p == "" {
+			continue
 		}
+		if p == "." || p == ".." {
+			return "", scm.ErrInvalidResponse
+		}
+		out = append(out, url.PathEscape(p))
 	}
-	return out
+	if len(out) == 0 {
+		return "", scm.ErrInvalidResponse
+	}
+	return strings.Join(out, "/"), nil
 }

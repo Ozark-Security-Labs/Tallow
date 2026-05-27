@@ -82,3 +82,11 @@ func TestGitHubAdapterFetchFileEscapesRevision(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestGitHubAdapterRejectsDotSegmentPaths(t *testing.T) {
+	client := NewClient("")
+	_, err := (&Adapter{Client: client}).FetchFile(context.Background(), scm.RepositoryRef{Owner: "owner", Name: "repo"}, "../package.json", "main", 10)
+	if err != scm.ErrInvalidResponse {
+		t.Fatalf("err = %v", err)
+	}
+}

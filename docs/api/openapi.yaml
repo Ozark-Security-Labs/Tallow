@@ -84,6 +84,16 @@ paths:
       responses:
         '200': { description: Affected dependents list }
 
+  /v1/package-versions/{id}/source-correlations:
+    get:
+      summary: List source correlations for a package version
+      responses:
+        '200': { description: Source correlation evidence list }
+  /v1/artifacts/{id}/source-correlations:
+    get:
+      summary: List source correlations for an artifact
+      responses:
+        '200': { description: Source correlation evidence list }
 components:
   schemas:
     ErrorEnvelope:
