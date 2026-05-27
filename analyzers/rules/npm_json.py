@@ -12,13 +12,13 @@ def span_for_script_key(text: str, key: str) -> tuple[int, int, int]:
     root_end = _matching_delimiter(text, root_start, "{", "}")
     if root_end is None:
         return 1, 0, 0
-    for prop in _object_properties(text, root_start, root_end):
+    for prop in reversed(_object_properties(text, root_start, root_end)):
         if prop.key != "scripts" or prop.value_start >= len(text) or text[prop.value_start] != "{":
             continue
         scripts_end = _matching_delimiter(text, prop.value_start, "{", "}")
         if scripts_end is None:
             continue
-        for script_prop in _object_properties(text, prop.value_start, scripts_end):
+        for script_prop in reversed(_object_properties(text, prop.value_start, scripts_end)):
             if script_prop.key == key:
                 return _line_byte_span(text, script_prop.key_start, script_prop.colon + 1)
     return 1, 0, 0

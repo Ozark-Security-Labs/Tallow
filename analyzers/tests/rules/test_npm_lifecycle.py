@@ -120,6 +120,38 @@ def test_lifecycle_evidence_points_to_scripts_key_not_prior_matching_key(tmp_pat
     assert '"install": "node install.js"' in evidence["excerpt"]
 
 
+def test_lifecycle_evidence_uses_last_duplicate_scripts_semantics(tmp_path: Path):
+    package_dir = tmp_path / "package"
+    package_dir.mkdir()
+    (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+    (package_dir / "package.json").write_text(
+        '{\n'
+        '  "scripts": {"install": "node wrong.js"},\n'
+        '  "scripts": {\n'
+        '    "install": "",\n'
+        '    "install": "node install.js"\n'
+        '  }\n'
+        '}\n',
+        encoding="utf-8",
+    )
+    findings = _run_snapshot(tmp_path)
+    assert len(findings) == 1
+    evidence = findings[0].evidence[0]
+    assert evidence["start_line"] == 5
+    assert '"install": "node install.js"' in evidence["excerpt"]
+
+
+def test_non_object_scripts_does_not_emit(tmp_path: Path):
+    package_dir = tmp_path / "package"
+    package_dir.mkdir()
+    (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+    (package_dir / "package.json").write_text(
+        '{"scripts": "node install.js"}',
+        encoding="utf-8",
+    )
+    assert _run_snapshot(tmp_path) == []
+
+
 def test_deterministic_output():
     first = _run_fixture("lifecycle_suspicious")
     second = _run_fixture("lifecycle_suspicious")

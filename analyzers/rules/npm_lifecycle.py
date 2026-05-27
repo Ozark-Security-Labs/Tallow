@@ -46,6 +46,8 @@ class NpmLifecycleRule:
             except json.JSONDecodeError:
                 continue
             scripts = payload.get("scripts") or {}
+            if not isinstance(scripts, dict):
+                continue
             for key in LIFECYCLE_SCRIPT_KEYS:
                 value = scripts.get(key)
                 if not isinstance(value, str) or not value.strip():
