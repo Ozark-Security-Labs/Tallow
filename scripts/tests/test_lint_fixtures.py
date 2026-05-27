@@ -31,6 +31,15 @@ def test_allows_fake_secret_marker(tmp_path: Path):
     assert lint_fixtures.lint_root(tmp_path) == []
 
 
+def test_unrelated_fake_marker_does_not_mask_secret(tmp_path: Path):
+    fixture = tmp_path / "token.txt"
+    fixture.write_text(
+        "synthetic fixture\ntoken=ghp_abcdefghijklmnopqrstuvwxyz", encoding="utf-8"
+    )
+    errors = lint_fixtures.lint_root(tmp_path)
+    assert errors == [f"{fixture}: real-looking secret requires fake marker or allowlist"]
+
+
 def test_process_env_does_not_mask_realistic_secret(tmp_path: Path):
     fixture = tmp_path / "env.js"
     fixture.write_text(

@@ -81,7 +81,7 @@ def lint_root(root: Path) -> list[str]:
         if _is_executable(path) and rel not in allowlist["executable"]:
             errors.append(f"{path}: executable bit requires {ALLOWLIST_NAME} documentation")
         data = path.read_bytes()
-        if _has_secret(data) and rel not in allowlist["secrets"] and not _marked_fake(data):
+        if _has_unmarked_secret(data) and rel not in allowlist["secrets"]:
             errors.append(f"{path}: real-looking secret requires fake marker or allowlist")
     if total > MAX_TOTAL_BYTES:
         errors.append(f"{root}: fixtures exceed total size limit {MAX_TOTAL_BYTES} bytes")
@@ -92,14 +92,18 @@ def _is_executable(path: Path) -> bool:
     return bool(path.stat().st_mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH))
 
 
-def _has_secret(data: bytes) -> bool:
+def _has_unmarked_secret(data: bytes) -> bool:
     text = data[:MAX_FILE_BYTES].decode("utf-8", errors="ignore")
-    return any(pattern.search(text) for pattern in SECRET_PATTERNS)
+    return any(
+        not _match_marked_fake(match.group(0))
+        for pattern in SECRET_PATTERNS
+        for match in pattern.finditer(text)
+    )
 
 
-def _marked_fake(data: bytes) -> bool:
-    text = data[:MAX_FILE_BYTES].decode("utf-8", errors="ignore").lower()
-    return any(marker in text for marker in FAKE_MARKERS)
+def _match_marked_fake(value: str) -> bool:
+    lowered = value.lower()
+    return any(marker in lowered for marker in FAKE_MARKERS)
 
 
 def main(argv: list[str] | None = None) -> int:
