@@ -55,6 +55,13 @@ def test_detects_bracket_process_env_token(tmp_path: Path):
     assert findings[0].confidence == "high"
 
 
+def test_detects_process_env_inside_template_interpolation(tmp_path: Path):
+    _write(tmp_path, "src/index.js", 'fetch(`${process.env.NPM_TOKEN}`);')
+    findings = _run(tmp_path)
+    assert len(findings) == 1
+    assert findings[0].confidence == "high"
+
+
 def test_redacts_long_secret_before_excerpt_truncation(tmp_path: Path):
     secret = "s" * 300
     _write(
