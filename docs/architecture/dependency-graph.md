@@ -63,3 +63,8 @@ Dependent traversal walks reverse dependency edges from a suspicious or compromi
 - suppress cycles by tracking package versions already present in the current path;
 - preserve diamond paths as distinct evidence until the per-root path limit is reached; and
 - return paths in deterministic depth/name/fingerprint order.
+
+
+## Propagation
+
+Propagation starts from an intrinsic suspicious or compromised package-version finding and traverses dependents. Results are materialized as `affected_by_transitive` impacts containing source finding ID, source intrinsic status, depth, path, path fingerprint, and evidence. Propagation does not update the dependent package version's intrinsic status. Paginated APIs must apply the same deterministic ordering as traversal.
