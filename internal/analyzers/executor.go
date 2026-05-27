@@ -43,6 +43,7 @@ func (e CommandExecutor) Run(ctx context.Context, input []byte) (RunResult, erro
 		defer cancel()
 	}
 	cmd := exec.CommandContext(ctx, e.Command[0], e.Command[1:]...)
+	configureAnalyzerCommand(cmd)
 	cmd.Env = e.sanitizedEnv()
 	if e.WorkDir != "" {
 		cmd.Dir = e.WorkDir

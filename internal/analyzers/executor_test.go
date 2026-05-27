@@ -105,3 +105,34 @@ func TestCommandExecutorMarksTimeout(t *testing.T) {
 		t.Fatalf("expected timeout error/result, got timed_out=%v err=%v", result.TimedOut, err)
 	}
 }
+
+func TestCommandExecutorTimeoutKillsProcessGroup(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("uses /bin/sh")
+	}
+	marker := t.TempDir() + "/child-survived"
+	executor := CommandExecutor{
+		Command: []string{
+			"/bin/sh",
+			"-c",
+			`(sleep 0.3; printf leaked > "$1") & wait`,
+			"sh",
+			marker,
+		},
+		Timeout: 20 * time.Millisecond,
+		Env:     append(os.Environ(), "TALLOW_TEST_TIMEOUT=1"),
+	}
+	started := time.Now()
+	result, err := executor.Run(context.Background(), nil)
+	elapsed := time.Since(started)
+	if err == nil || !result.TimedOut {
+		t.Fatalf("expected timeout error/result, got timed_out=%v err=%v", result.TimedOut, err)
+	}
+	if elapsed > 500*time.Millisecond {
+		t.Fatalf("timeout did not promptly return; elapsed=%s", elapsed)
+	}
+	time.Sleep(600 * time.Millisecond)
+	if _, statErr := os.Stat(marker); !errors.Is(statErr, os.ErrNotExist) {
+		t.Fatalf("timeout left child process running; marker stat err=%v", statErr)
+	}
+}
