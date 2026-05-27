@@ -20,7 +20,7 @@ def span_for_script_key(text: str, key: str) -> tuple[int, int, int]:
             continue
         for script_prop in reversed(_object_properties(text, prop.value_start, scripts_end)):
             if script_prop.key == key:
-                return _line_byte_span(text, script_prop.key_start, script_prop.colon + 1)
+                return _line_byte_span(text, script_prop.key_start, script_prop.value_end)
     return 1, 0, 0
 
 

@@ -118,6 +118,10 @@ def test_lifecycle_evidence_points_to_scripts_key_not_prior_matching_key(tmp_pat
     evidence = findings[0].evidence[0]
     assert evidence["start_line"] == 4
     assert '"install": "node install.js"' in evidence["excerpt"]
+    text = (package_dir / "package.json").read_text(encoding="utf-8")
+    assert text.encode("utf-8")[evidence["start_byte"] : evidence["end_byte"]].decode(
+        "utf-8"
+    ) == '"install": "node install.js"'
 
 
 def test_lifecycle_evidence_uses_last_duplicate_scripts_semantics(tmp_path: Path):
@@ -150,6 +154,33 @@ def test_non_object_scripts_does_not_emit(tmp_path: Path):
         encoding="utf-8",
     )
     assert _run_snapshot(tmp_path) == []
+
+
+def test_lifecycle_respects_max_findings_per_rule(tmp_path: Path):
+    package_dir = tmp_path / "package"
+    package_dir.mkdir()
+    (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+    (package_dir / "package.json").write_text(
+        '{"scripts":{"preinstall":"node pre.js","install":"node install.js"}}',
+        encoding="utf-8",
+    )
+    payload = {
+        "contract_version": "v1",
+        "job_id": "job_test",
+        "analysis_type": "snapshot",
+        "subject": {"ecosystem": "npm", "package_name": "pkg", "version": "1.0.0"},
+        "artifacts": {"to": {"artifact_id": "art_pkg"}},
+        "snapshot_refs": {
+            "to": {
+                "snapshot_id": "snap_pkg",
+                "root": str(tmp_path),
+                "manifest_path": str(tmp_path / "manifest.json"),
+            }
+        },
+        "options": {"max_findings_per_rule": 1},
+    }
+    findings = list(NpmLifecycleRule().evaluate(AnalysisContext.from_input(payload)))
+    assert len(findings) == 1
 
 
 def test_deterministic_output():

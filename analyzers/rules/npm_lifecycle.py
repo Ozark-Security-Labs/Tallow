@@ -39,7 +39,7 @@ class NpmLifecycleRule:
             if item.relative_path.endswith("package.json")
         ]
         findings: list[FindingDraft] = []
-        for match in matches[: context.max_findings_per_rule]:
+        for match in matches:
             text = walker.read_text(match.relative_path)
             try:
                 payload = json.loads(text)
@@ -76,4 +76,6 @@ class NpmLifecycleRule:
                         tags=["lifecycle", key],
                     )
                 )
+                if len(findings) >= context.max_findings_per_rule:
+                    return findings
         return findings
