@@ -76,6 +76,8 @@ class PyDecodeExecRule:
                                 snapshot_id=context.snapshot_id(),
                                 start_line=getattr(node, "lineno", 1),
                                 end_line=getattr(node, "end_lineno", getattr(node, "lineno", 1)),
+                                start_byte=_start_byte(text, node),
+                                end_byte=_end_byte(text, node),
                                 snippet=ast.get_source_segment(text, node) or "exec/decode chain",
                                 description="Decode/decompress chain flows to execution sink",
                             )
@@ -136,3 +138,28 @@ def _call_target(node: ast.AST) -> tuple[str, str] | str:
     if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
         return node.value.id, node.attr
     return ""
+
+
+def _start_byte(text: str, node: ast.AST) -> int | None:
+    lineno = getattr(node, "lineno", None)
+    col = getattr(node, "col_offset", None)
+    if lineno is None or col is None:
+        return None
+    return _line_start_bytes(text)[lineno - 1] + col
+
+
+def _end_byte(text: str, node: ast.AST) -> int | None:
+    lineno = getattr(node, "end_lineno", None)
+    col = getattr(node, "end_col_offset", None)
+    if lineno is None or col is None:
+        return None
+    return _line_start_bytes(text)[lineno - 1] + col
+
+
+def _line_start_bytes(text: str) -> list[int]:
+    starts = [0]
+    total = 0
+    for line in text.splitlines(keepends=True):
+        total += len(line.encode("utf-8"))
+        starts.append(total)
+    return starts

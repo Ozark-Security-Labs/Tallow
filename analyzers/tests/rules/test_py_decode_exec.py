@@ -2,7 +2,9 @@ from pathlib import Path
 
 from rules.py_decode_exec import PyDecodeExecRule
 from rules.registry import build_registry
+from tallow_analyzer_sdk.constants import DETERMINISTIC_FINDING_CREATED_AT
 from tallow_analyzer_sdk.context import AnalysisContext
+from tallow_analyzer_sdk.finding import build_finding
 
 
 def _run(root: Path):
@@ -54,6 +56,19 @@ def test_detects_marshal_loads_function_type_sink(tmp_path: Path):
 def test_benign_encoded_data_does_not_emit(tmp_path: Path):
     _write(tmp_path, "import base64\ndata = base64.b64decode('ZGF0YQ==')\nprint(data)\n")
     assert _run(tmp_path) == []
+
+
+def test_same_line_decode_exec_sinks_have_distinct_finding_ids(tmp_path: Path):
+    _write(
+        tmp_path,
+        "import base64\n"
+        "exec(base64.b64decode('cHJpbnQoMSk=')); exec(base64.b64decode('cHJpbnQoMik='))\n",
+    )
+    findings = [
+        build_finding(draft, created_at=DETERMINISTIC_FINDING_CREATED_AT)
+        for draft in _run(tmp_path)
+    ]
+    assert len({finding["id"] for finding in findings}) == len(findings) == 2
 
 
 def test_registry_enables_decode_exec_rule_for_pypi_diff_jobs():
