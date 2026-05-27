@@ -41,7 +41,7 @@ class PypiSetupExecRule:
         ecosystems=("pypi",),
         default_severity_hint="high",
         default_confidence="high",
-        inputs=("snapshot",),
+        inputs=("snapshot", "snapshot_diff"),
         tags=("pypi", "setup"),
     )
 

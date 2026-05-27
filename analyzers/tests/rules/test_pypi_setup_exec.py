@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from rules.pypi_setup_exec import PypiSetupExecRule
+from rules.registry import build_registry
 from tallow_analyzer_sdk.context import AnalysisContext
 
 
@@ -71,3 +72,10 @@ def test_safe_pyproject_backend_does_not_emit(tmp_path: Path):
         encoding="utf-8",
     )
     assert _run(tmp_path) == []
+
+
+def test_registry_enables_setup_rule_for_pypi_diff_jobs():
+    rule_ids = {
+        rule.metadata.rule_id for rule in build_registry().enabled_for("pypi", "snapshot_diff")
+    }
+    assert "pypi.setup.exec_call" in rule_ids
