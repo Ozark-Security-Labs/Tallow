@@ -7,7 +7,7 @@ from tallow_analyzer_sdk.context import AnalysisContext
 HIGH_ENTROPY = bytes([*range(33, 127), *range(128, 256)]) * 3
 
 
-def _run(to_root: Path, from_root: Path | None = None):
+def _run(to_root: Path, from_root: Path | None = None, options: dict | None = None):
     refs = {
         "to": {
             "snapshot_id": "snap_to",
@@ -28,6 +28,7 @@ def _run(to_root: Path, from_root: Path | None = None):
         "subject": {"ecosystem": "npm", "package_name": "pkg", "version": "1.0.0"},
         "artifacts": {"to": {"artifact_id": "art_pkg"}},
         "snapshot_refs": refs,
+        "options": options or {},
     }
     return list(HighEntropyBlobRule().evaluate(AnalysisContext.from_input(payload)))
 
@@ -91,3 +92,8 @@ def test_lockfile_and_minified_benign_are_ignored(tmp_path: Path):
     _write(tmp_path, "package-lock.json", HIGH_ENTROPY)
     _write(tmp_path, "dist/app.min.js", HIGH_ENTROPY)
     assert _run(tmp_path) == []
+
+
+def test_binary_package_allowlist_does_not_make_entropy_scan_binaries(tmp_path: Path):
+    _write(tmp_path, "bin/native", b"\x00" + HIGH_ENTROPY)
+    assert _run(tmp_path, options={"allow_binary_packages": ["pkg"]}) == []

@@ -22,6 +22,8 @@ Tallow starts with deterministic built-in rules. Each rule has a stable ID, evid
 - Documentation/prose files are skipped for webhook findings by default to reduce false positives.
 - Binary packages must be explicitly allowed with `allow_binary_packages` entries
   (`package` or `ecosystem/package`) or `allowed_binary_paths`.
+  These allowlists suppress only `artifact.binary.unexpected`; text-oriented
+  rules still skip binary-looking files.
 
 ## Future adapter types
 

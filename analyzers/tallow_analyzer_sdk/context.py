@@ -94,7 +94,7 @@ class AnalysisContext:
         return SnapshotWalker(
             root=root,
             max_file_bytes=self.max_file_bytes,
-            include_binary=self.package_binary_allowed,
+            include_binary=False,
         )
 
 
