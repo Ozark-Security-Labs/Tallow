@@ -12,7 +12,10 @@ import (
 	"time"
 )
 
-const defaultMaxAnalyzerOutputBytes = 4 * 1024 * 1024
+const (
+	defaultMaxAnalyzerOutputBytes = 4 * 1024 * 1024
+	defaultAnalyzerTimeout        = 5 * time.Minute
+)
 
 var ErrOutputLimitExceeded = errors.New("analyzer output exceeded limit")
 
@@ -33,9 +36,10 @@ func (e CommandExecutor) Run(ctx context.Context, input []byte) (RunResult, erro
 		return RunResult{}, errors.New("analyzer command required")
 	}
 	started := time.Now().UTC()
-	if e.Timeout > 0 {
+	timeout := e.effectiveTimeout()
+	if timeout > 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, e.Timeout)
+		ctx, cancel = context.WithTimeout(ctx, timeout)
 		defer cancel()
 	}
 	cmd := exec.CommandContext(ctx, e.Command[0], e.Command[1:]...)
@@ -73,6 +77,13 @@ func (e CommandExecutor) Run(ctx context.Context, input []byte) (RunResult, erro
 		result.ExitCode = 0
 	}
 	return result, err
+}
+
+func (e CommandExecutor) effectiveTimeout() time.Duration {
+	if e.Timeout > 0 {
+		return e.Timeout
+	}
+	return defaultAnalyzerTimeout
 }
 
 func (e CommandExecutor) sanitizedEnv() []string {

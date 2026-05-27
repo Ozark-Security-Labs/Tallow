@@ -79,6 +79,18 @@ func TestCommandExecutorBoundsOutput(t *testing.T) {
 	}
 }
 
+func TestCommandExecutorHasDefaultTimeout(t *testing.T) {
+	executor := CommandExecutor{}
+	if executor.effectiveTimeout() != defaultAnalyzerTimeout {
+		t.Fatalf("expected default timeout %s, got %s", defaultAnalyzerTimeout, executor.effectiveTimeout())
+	}
+	custom := 2 * time.Second
+	executor.Timeout = custom
+	if executor.effectiveTimeout() != custom {
+		t.Fatalf("expected custom timeout %s, got %s", custom, executor.effectiveTimeout())
+	}
+}
+
 func TestCommandExecutorMarksTimeout(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("uses /bin/sh")
