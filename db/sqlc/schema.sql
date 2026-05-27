@@ -1,0 +1,122 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE TABLE packages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ecosystem TEXT NOT NULL,
+    registry_url TEXT NOT NULL,
+    raw_name TEXT NOT NULL,
+    normalized_name TEXT NOT NULL,
+    namespace TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (ecosystem, registry_url, normalized_name)
+);
+
+CREATE TABLE package_versions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    package_id UUID NOT NULL REFERENCES packages (id),
+    raw_version TEXT NOT NULL,
+    normalized_version TEXT NOT NULL,
+    normalization_status TEXT NOT NULL DEFAULT 'normalized',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (package_id, normalized_version)
+);
+
+CREATE TABLE artifacts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    version_id UUID NOT NULL REFERENCES package_versions (id),
+    artifact_type TEXT NOT NULL,
+    filename TEXT NOT NULL,
+    download_url TEXT NOT NULL,
+    sha256 TEXT,
+    observed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    registry_digests_json TEXT NOT NULL DEFAULT '{}',
+    local_digests_json TEXT NOT NULL DEFAULT '{}',
+    verification_status TEXT NOT NULL DEFAULT 'pending',
+    storage_uri TEXT NOT NULL DEFAULT '',
+    size_bytes BIGINT NOT NULL DEFAULT 0,
+    media_type TEXT NOT NULL DEFAULT '',
+    first_seen_at TIMESTAMPTZ,
+    last_seen_at TIMESTAMPTZ
+);
+
+CREATE TABLE artifact_observations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    artifact_id UUID NOT NULL REFERENCES artifacts (id),
+    source TEXT NOT NULL,
+    observed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    evidence_json TEXT NOT NULL DEFAULT '{}'
+);
+
+CREATE TABLE events_outbox (
+    id TEXT PRIMARY KEY,
+    subject TEXT NOT NULL,
+    payload JSONB NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    retry_count INT NOT NULL DEFAULT 0,
+    next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    published_at TIMESTAMPTZ
+);
+
+CREATE TABLE events_inbox (
+    id TEXT PRIMARY KEY,
+    subject TEXT NOT NULL,
+    consumed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    external_subject TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE scheduled_jobs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    kind TEXT NOT NULL,
+    target TEXT NOT NULL,
+    cadence_seconds INT NOT NULL CHECK (cadence_seconds >= 60),
+    next_run_at TIMESTAMPTZ NOT NULL,
+    lease_owner TEXT,
+    lease_until TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (kind, target)
+);
+
+CREATE TABLE analyzer_runs (
+    id TEXT PRIMARY KEY,
+    job_id TEXT NOT NULL UNIQUE,
+    analyzer_id TEXT NOT NULL,
+    analyzer_version TEXT NOT NULL,
+    ruleset_version TEXT NOT NULL,
+    status TEXT NOT NULL,
+    started_at TIMESTAMPTZ NOT NULL,
+    finished_at TIMESTAMPTZ,
+    duration_ms BIGINT,
+    input_json JSONB NOT NULL,
+    output_json JSONB,
+    error_json JSONB
+);
+
+CREATE TABLE findings (
+    id TEXT PRIMARY KEY,
+    run_id TEXT NOT NULL REFERENCES analyzer_runs (id) ON DELETE CASCADE,
+    rule_id TEXT NOT NULL,
+    rule_version TEXT NOT NULL,
+    analyzer_id TEXT NOT NULL,
+    analyzer_version TEXT NOT NULL,
+    ecosystem TEXT NOT NULL,
+    package_name TEXT NOT NULL,
+    version TEXT,
+    artifact_id TEXT,
+    snapshot_id TEXT,
+    category TEXT NOT NULL,
+    severity_hint TEXT NOT NULL,
+    confidence TEXT NOT NULL,
+    title TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    subject_json JSONB NOT NULL,
+    evidence_json JSONB NOT NULL,
+    tags TEXT[] NOT NULL DEFAULT '{}',
+    status TEXT NOT NULL DEFAULT 'open',
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
