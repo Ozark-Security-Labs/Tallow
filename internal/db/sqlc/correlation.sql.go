@@ -48,6 +48,53 @@ func (q *Queries) InsertSourceCorrelation(ctx context.Context, arg InsertSourceC
 	return id, err
 }
 
+const listSourceCorrelationsByArtifact = `-- name: ListSourceCorrelationsByArtifact :many
+SELECT id, package_version_id, artifact_id, source_id, revision_id, confidence, score, conflicting_source_ids, reason, evidence_refs, explanation, created_at
+FROM source_correlations
+WHERE artifact_id = $1
+ORDER BY confidence, score DESC, created_at DESC, id DESC
+LIMIT $2 OFFSET $3
+`
+
+type ListSourceCorrelationsByArtifactParams struct {
+	ArtifactID pgtype.UUID
+	Limit      int32
+	Offset     int32
+}
+
+func (q *Queries) ListSourceCorrelationsByArtifact(ctx context.Context, arg ListSourceCorrelationsByArtifactParams) ([]SourceCorrelation, error) {
+	rows, err := q.db.Query(ctx, listSourceCorrelationsByArtifact, arg.ArtifactID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SourceCorrelation
+	for rows.Next() {
+		var i SourceCorrelation
+		if err := rows.Scan(
+			&i.ID,
+			&i.PackageVersionID,
+			&i.ArtifactID,
+			&i.SourceID,
+			&i.RevisionID,
+			&i.Confidence,
+			&i.Score,
+			&i.ConflictingSourceIds,
+			&i.Reason,
+			&i.EvidenceRefs,
+			&i.Explanation,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSourceCorrelationsByPackageVersion = `-- name: ListSourceCorrelationsByPackageVersion :many
 SELECT id, package_version_id, artifact_id, source_id, revision_id, confidence, score, conflicting_source_ids, reason, evidence_refs, explanation, created_at
 FROM source_correlations

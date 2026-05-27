@@ -27,14 +27,21 @@ func NormalizeRepositoryURL(raw string) (scm.RepositoryRef, bool) {
 		return scm.RepositoryRef{}, false
 	}
 	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
-	if len(parts) < 2 || parts[0] == "" || parts[1] == "" {
+	if len(parts) < 2 {
 		return scm.RepositoryRef{}, false
 	}
 	name := strings.TrimSuffix(parts[1], ".git")
+	if !validRepoPart(parts[0]) || !validRepoPart(name) {
+		return scm.RepositoryRef{}, false
+	}
 	return ref(parts[0], name), true
 }
 func ref(owner, name string) scm.RepositoryRef {
 	owner = strings.ToLower(owner)
 	name = strings.ToLower(name)
 	return scm.RepositoryRef{Provider: "github", Owner: owner, Name: name, URL: "https://github.com/" + owner + "/" + name}
+}
+
+func validRepoPart(s string) bool {
+	return s != "" && s != "." && s != ".." && !strings.Contains(s, "/")
 }

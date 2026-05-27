@@ -19,3 +19,11 @@ func TestClaimsFromPackageMetadata(t *testing.T) {
 		t.Fatalf("bad claims: %+v", claims)
 	}
 }
+
+func TestNormalizeRepositoryURLRejectsDotSegments(t *testing.T) {
+	for _, raw := range []string{"https://github.com/../repo", "https://github.com/owner/..", "https://github.com/./repo"} {
+		if _, ok := NormalizeRepositoryURL(raw); ok {
+			t.Fatalf("normalized unsafe repo URL: %s", raw)
+		}
+	}
+}

@@ -52,7 +52,7 @@ func (a *Adapter) ResolveRepository(_ context.Context, claim scm.RepositoryClaim
 			return ref, nil
 		}
 	}
-	if claim.Provider == "github" && claim.Owner != "" && claim.Name != "" {
+	if claim.Provider == "github" && validRepoPart(claim.Owner) && validRepoPart(claim.Name) {
 		return scm.RepositoryRef{Provider: "github", Owner: strings.ToLower(claim.Owner), Name: strings.ToLower(claim.Name), URL: "https://github.com/" + strings.ToLower(claim.Owner) + "/" + strings.ToLower(claim.Name)}, nil
 	}
 	return scm.RepositoryRef{}, scm.ErrNotFound
@@ -170,6 +170,9 @@ func (a *Adapter) PollRepositories(ctx context.Context, cursor scm.RepositoryCur
 	return a.Poll(ctx, cursor)
 }
 func repoPath(ref scm.RepositoryRef) string {
+	if !validRepoPart(ref.Owner) || !validRepoPart(ref.Name) {
+		return "/repos/invalid/invalid"
+	}
 	return "/repos/" + url.PathEscape(ref.Owner) + "/" + url.PathEscape(ref.Name)
 }
 func escapeContentPath(path string) (string, error) {

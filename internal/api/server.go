@@ -61,8 +61,8 @@ func (s *Server) routes() http.Handler {
 	r.Get("/v1/package-versions/{id}/statuses", s.listPackageVersionStatuses)
 	r.Get("/v1/package-versions/{id}/transitive-impacts", s.listPackageVersionTransitiveImpacts)
 	r.Get("/v1/statuses/{id}/affected-dependents", s.listAffectedDependentsByStatus)
-	r.Get("/v1/package-versions/{id}/source-correlations", s.listCorrelations)
-	r.Get("/v1/artifacts/{id}/source-correlations", s.listCorrelations)
+	r.Get("/v1/package-versions/{id}/source-correlations", s.listPackageVersionCorrelations)
+	r.Get("/v1/artifacts/{id}/source-correlations", s.listArtifactCorrelations)
 	if s.Config.Metrics.Enabled {
 		r.Handle("/metrics", s.Metrics.Handler())
 	}
