@@ -67,6 +67,8 @@ def normalize_evidence_for_id(evidence: list[dict]) -> list[dict]:
         normalized,
         key=lambda item: (
             item.get("kind", ""),
+            item.get("artifact_id", ""),
+            item.get("snapshot_id", ""),
             item.get("path", ""),
             item.get("start_line", -1),
             item.get("end_line", -1),
