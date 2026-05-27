@@ -100,6 +100,26 @@ def test_same_line_lifecycle_scripts_have_distinct_finding_ids(tmp_path: Path):
     assert len({finding["id"] for finding in findings}) == len(findings) == 2
 
 
+def test_lifecycle_evidence_points_to_scripts_key_not_prior_matching_key(tmp_path: Path):
+    package_dir = tmp_path / "package"
+    package_dir.mkdir()
+    (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+    (package_dir / "package.json").write_text(
+        '{\n'
+        '  "config": {"install": "not a lifecycle script"},\n'
+        '  "scripts": {\n'
+        '    "install": "node install.js"\n'
+        '  }\n'
+        '}\n',
+        encoding="utf-8",
+    )
+    findings = _run_snapshot(tmp_path)
+    assert len(findings) == 1
+    evidence = findings[0].evidence[0]
+    assert evidence["start_line"] == 4
+    assert '"install": "node install.js"' in evidence["excerpt"]
+
+
 def test_deterministic_output():
     first = _run_fixture("lifecycle_suspicious")
     second = _run_fixture("lifecycle_suspicious")
