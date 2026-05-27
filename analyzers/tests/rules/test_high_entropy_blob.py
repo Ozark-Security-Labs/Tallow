@@ -72,6 +72,14 @@ def test_detects_new_entropy_blob_in_diff_mode(tmp_path: Path):
     assert [finding.evidence[0]["path"] for finding in findings] == ["src/payload.txt"]
 
 
+def test_diff_mode_ignores_modified_files_with_preexisting_entropy(tmp_path: Path):
+    old = tmp_path / "old"
+    new = tmp_path / "new"
+    _write(old, "src/payload.txt", HIGH_ENTROPY + b"\nold comment")
+    _write(new, "src/payload.txt", HIGH_ENTROPY + b"\nnew harmless comment")
+    assert _run(new, old) == []
+
+
 def test_registry_enables_entropy_rule_for_diff_jobs():
     rule_ids = {
         rule.metadata.rule_id for rule in build_registry().enabled_for("npm", "snapshot_diff")

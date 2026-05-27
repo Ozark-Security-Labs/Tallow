@@ -36,14 +36,14 @@ class HighEntropyBlobRule:
 
     def evaluate(self, context: AnalysisContext) -> Iterable[FindingDraft]:
         walker = context.walker("to")
-        previous_hashes = _previous_hashes(context)
+        previous_paths = _previous_paths(context)
         findings: list[FindingDraft] = []
         for match in walker.iter_files(["**/*"]):
             if _should_ignore(match.relative_path):
                 continue
-            data = walker.read_bytes(match.relative_path)
-            if previous_hashes.get(match.relative_path) == _content_hash(data):
+            if match.relative_path in previous_paths:
                 continue
+            data = walker.read_bytes(match.relative_path)
             min_len = int(context.options.get("high_entropy_min_length", 512))
             threshold = float(context.options.get("high_entropy_threshold", 7.2))
             for window in _entropy_windows(data, min_len=min_len):
@@ -109,16 +109,15 @@ def _entropy_windows(data: bytes, *, min_len: int) -> list[dict]:
     return results
 
 
-def _previous_hashes(context: AnalysisContext) -> dict[str, str]:
+def _previous_paths(context: AnalysisContext) -> set[str]:
     if "from" not in context.snapshot_roots:
-        return {}
+        return set()
     walker = context.walker("from")
-    hashes: dict[str, str] = {}
-    for match in walker.iter_files(["**/*"]):
-        if _should_ignore(match.relative_path):
-            continue
-        hashes[match.relative_path] = _content_hash(walker.read_bytes(match.relative_path))
-    return hashes
+    return {
+        match.relative_path
+        for match in walker.iter_files(["**/*"])
+        if not _should_ignore(match.relative_path)
+    }
 
 
 def _content_hash(data: bytes) -> str:
