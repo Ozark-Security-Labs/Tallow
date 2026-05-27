@@ -167,7 +167,7 @@ def _pyproject_exec_sink(line: str) -> bool:
     if "cmdclass" in lowered or "[tool.setuptools.cmdclass]" in lowered:
         return True
     backend = _build_backend_value(line)
-    return backend != "" and not backend.startswith(SAFE_BUILD_BACKENDS)
+    return backend != "" and not _is_safe_backend(backend)
 
 
 def _build_backend_value(line: str) -> str:
@@ -176,3 +176,7 @@ def _build_backend_value(line: str) -> str:
         return ""
     value = stripped.split("=", 1)[1].strip().strip('"\'')
     return value
+
+
+def _is_safe_backend(backend: str) -> bool:
+    return any(backend == safe or backend.startswith(f"{safe}:") for safe in SAFE_BUILD_BACKENDS)

@@ -59,6 +59,16 @@ def test_detects_suspicious_pyproject_build_backend(tmp_path: Path):
     assert findings[0].evidence[0]["start_line"] == 2
 
 
+def test_safe_backend_prefix_bypass_does_not_hide_suspicious_backend(tmp_path: Path):
+    (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text(
+        '[build-system]\nbuild-backend = "setuptools.build_meta_evil"\n',
+        encoding="utf-8",
+    )
+    findings = _run(tmp_path)
+    assert findings[0].evidence[0]["start_line"] == 2
+
+
 def test_safe_setup_py_does_not_emit(tmp_path: Path):
     (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
     (tmp_path / "setup.py").write_text("from setuptools import setup\nsetup(name='safe')\n")
@@ -69,6 +79,15 @@ def test_safe_pyproject_backend_does_not_emit(tmp_path: Path):
     (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
     (tmp_path / "pyproject.toml").write_text(
         '[build-system]\nbuild-backend = "setuptools.build_meta"\n',
+        encoding="utf-8",
+    )
+    assert _run(tmp_path) == []
+
+
+def test_safe_pyproject_backend_entrypoint_does_not_emit(tmp_path: Path):
+    (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text(
+        '[build-system]\nbuild-backend = "setuptools.build_meta:__legacy__"\n',
         encoding="utf-8",
     )
     assert _run(tmp_path) == []
