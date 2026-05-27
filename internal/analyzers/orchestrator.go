@@ -60,16 +60,12 @@ type Orchestrator struct {
 }
 
 func (o Orchestrator) HandleEnvelope(ctx context.Context, envelope events.Envelope) error {
-	if envelope.Type != "artifact.observed" && envelope.Type != "artifact.downloaded" {
+	if envelope.Type != "analysis.requested" {
 		return nil
 	}
 	var event events.ArtifactEvent
-	if err := json.Unmarshal(envelope.Data, &event); err != nil || event.ArtifactID == "" {
-		input, inputErr := o.inputFromArtifactObserved(ctx, envelope.Data)
-		if inputErr != nil {
-			return fmt.Errorf("prepare analyzer input: %w", inputErr)
-		}
-		return o.Run(ctx, input)
+	if err := json.Unmarshal(envelope.Data, &event); err != nil {
+		return fmt.Errorf("prepare analyzer input: %w", err)
 	}
 	if err := event.Validate(); err != nil {
 		return fmt.Errorf("prepare analyzer input: %w", err)
@@ -233,54 +229,6 @@ func eventSHA256(event events.ArtifactEvent) string {
 }
 
 func boolPtr(value bool) *bool { return &value }
-
-func (o Orchestrator) inputFromArtifactObserved(
-	ctx context.Context,
-	data []byte,
-) (AnalyzerInput, error) {
-	var observed events.ArtifactObserved
-	if err := json.Unmarshal(data, &observed); err != nil {
-		return AnalyzerInput{}, err
-	}
-	if err := observed.Validate(); err != nil {
-		return AnalyzerInput{}, err
-	}
-	packageObj, ok := observed.Package.(map[string]any)
-	if !ok {
-		return AnalyzerInput{}, fmt.Errorf("artifact observed event package must be object")
-	}
-	versionObj, ok := observed.Version.(map[string]any)
-	if !ok {
-		return AnalyzerInput{}, fmt.Errorf("artifact observed event version must be object")
-	}
-	artifactObj, ok := observed.Artifact.(map[string]any)
-	if !ok {
-		return AnalyzerInput{}, fmt.Errorf("artifact observed event artifact must be object")
-	}
-	packageName, _ := packageObj["name"].(string)
-	if packageName == "" {
-		packageName, _ = packageObj["raw_name"].(string)
-	}
-	ecosystem, _ := packageObj["ecosystem"].(string)
-	version, _ := versionObj["raw_version"].(string)
-	artifactID, _ := artifactObj["id"].(string)
-	kind, _ := artifactObj["kind"].(string)
-	if artifactID == "" {
-		artifactID, _ = artifactObj["artifact_id"].(string)
-	}
-	if ecosystem == "" || packageName == "" || version == "" || artifactID == "" || observed.StorageRef == "" {
-		return AnalyzerInput{}, fmt.Errorf("artifact observed event missing analyzer fields")
-	}
-	return o.inputFromArtifactEvent(ctx, events.ArtifactEvent{
-		Ecosystem:    ecosystem,
-		Package:      packageName,
-		Version:      version,
-		ArtifactID:   artifactID,
-		ArtifactKind: kind,
-		StorageURI:   observed.StorageRef,
-		ObservedAt:   observed.ObservedAt,
-	})
-}
 
 func (o Orchestrator) resolveSnapshotRoot(
 	ctx context.Context,

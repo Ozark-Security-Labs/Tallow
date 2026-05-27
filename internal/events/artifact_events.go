@@ -52,3 +52,14 @@ func NewArtifactEnvelope(eventType string, a ArtifactEvent) (Envelope, error) {
 	}
 	return NewEnvelope(eventType, b), nil
 }
+
+func NewAnalysisRequestedEnvelope(a ArtifactEvent) (Envelope, error) {
+	if err := a.Validate(); err != nil {
+		return Envelope{}, err
+	}
+	b, err := json.Marshal(a)
+	if err != nil {
+		return Envelope{}, err
+	}
+	return NewEnvelope("analysis.requested", b), nil
+}

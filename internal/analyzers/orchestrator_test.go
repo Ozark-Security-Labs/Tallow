@@ -248,7 +248,7 @@ func TestOrchestratorRejectsMismatchedOutputJobID(t *testing.T) {
 	}
 }
 
-func TestHandleEnvelopeConsumesArtifactEvent(t *testing.T) {
+func TestHandleEnvelopeConsumesAnalysisRequestedEvent(t *testing.T) {
 	snapshotBase := t.TempDir()
 	snapshotRoot := filepath.Join(snapshotBase, "snapshots", "art_1")
 	if err := os.MkdirAll(snapshotRoot, 0o755); err != nil {
@@ -271,7 +271,7 @@ func TestHandleEnvelopeConsumesArtifactEvent(t *testing.T) {
 		context.Background(),
 		events.Envelope{
 			ID:         "evt_1",
-			Type:       "artifact.downloaded",
+			Type:       "analysis.requested",
 			Version:    "1.0",
 			OccurredAt: time.Now(),
 			Producer:   "test",
@@ -300,6 +300,30 @@ func TestHandleEnvelopeConsumesArtifactEvent(t *testing.T) {
 	}
 }
 
+func TestHandleEnvelopeIgnoresEarlyArtifactEvents(t *testing.T) {
+	event := events.ArtifactEvent{
+		Ecosystem:    "npm",
+		Package:      "pkg",
+		Version:      "1.0.0",
+		ArtifactID:   "art_1",
+		ArtifactKind: "tarball",
+		StorageURI:   "fs://artifacts/raw/pkg",
+		LocalHashes:  map[string]string{"sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+		ObservedAt:   time.Date(2026, 5, 26, 12, 0, 0, 0, time.UTC),
+	}
+	data, _ := json.Marshal(event)
+	executor := &fakeExecutor{}
+	err := (Orchestrator{Executor: executor, SnapshotRootDir: t.TempDir()}).HandleEnvelope(
+		context.Background(), events.Envelope{Type: "artifact.downloaded", Data: data},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(executor.input) != 0 {
+		t.Fatal("downloaded artifact event must not start analyzer before snapshot-ready request")
+	}
+}
+
 func TestHandleEnvelopeRejectsStorageURIAsSnapshotRoot(t *testing.T) {
 	event := events.ArtifactEvent{
 		Ecosystem:    "npm",
@@ -313,7 +337,7 @@ func TestHandleEnvelopeRejectsStorageURIAsSnapshotRoot(t *testing.T) {
 	}
 	data, _ := json.Marshal(event)
 	err := (Orchestrator{Executor: &fakeExecutor{}, SnapshotRootDir: t.TempDir()}).HandleEnvelope(
-		context.Background(), events.Envelope{Type: "artifact.downloaded", Data: data},
+		context.Background(), events.Envelope{Type: "analysis.requested", Data: data},
 	)
 	if err == nil {
 		t.Fatal("expected non-local snapshot root error")
@@ -437,21 +461,13 @@ func TestValidateOutputRejectsAdditionalEvidenceProperties(t *testing.T) {
 	}
 }
 
-func TestHandleEnvelopeRejectsMalformedArtifactObserved(t *testing.T) {
-	data := []byte(`{
-		"package": "not-object",
-		"version": {"raw_version": "1.0.0"},
-		"artifact": {"id": "art_1", "kind": "tarball"},
-		"registry_hashes": {"sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
-		"source": "registry",
-		"observed_at": "2026-05-26T12:00:00Z",
-		"storage_ref": "/tmp/snapshot"
-	}`)
+func TestHandleEnvelopeRejectsMalformedAnalysisRequested(t *testing.T) {
+	data := []byte(`{"ecosystem":"npm","package":"pkg"}`)
 	err := (Orchestrator{Executor: &fakeExecutor{}}).HandleEnvelope(
 		context.Background(),
-		events.Envelope{Type: "artifact.observed", Data: data},
+		events.Envelope{Type: "analysis.requested", Data: data},
 	)
 	if err == nil {
-		t.Fatal("expected malformed observed event error")
+		t.Fatal("expected malformed analysis request error")
 	}
 }
