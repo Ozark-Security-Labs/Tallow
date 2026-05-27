@@ -76,6 +76,24 @@ def test_snippet_redacts_standalone_known_token_shapes():
     assert "npm_abcdefghijklmnopqrstuv" not in evidence["excerpt"]
 
 
+def test_snippet_redacts_webhook_url_path_tokens():
+    evidence = file_evidence(
+        "package.json",
+        artifact_id="a",
+        snippet=(
+            "postinstall=curl "
+            "https://discord.com/api/webhooks/123456789012345678/secret-token?wait=true"
+        ),
+    )
+    assert evidence["excerpt_redacted"] is True
+    assert "123456789012345678" not in evidence["excerpt"]
+    assert "secret-token" not in evidence["excerpt"]
+    assert "wait=true" not in evidence["excerpt"]
+    assert "https://discord.com/api/webhooks/<redacted>/<redacted>?<redacted>" in evidence[
+        "excerpt"
+    ]
+
+
 def test_metadata_hashes_secret_like_values():
     evidence = metadata_evidence("npm_token", "super-secret-token-value", artifact_id="a")
     assert evidence["hash"] != "super-secret-token-value"
