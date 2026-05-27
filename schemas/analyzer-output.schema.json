@@ -1,1 +1,126 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://tallow.osl.dev/schemas/analyzer-output.schema.json","type":"object","required":["contract_version","job_id","analyzer","status","findings"],"properties":{"contract_version":{"const":"v1"},"job_id":{"type":"string"},"analyzer":{"type":"object"},"status":{"enum":["ok","failed"]},"findings":{"type":"array"}},"additionalProperties":true}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tallow.osl.dev/schemas/analyzer-output.schema.json",
+  "title": "Analyzer Output",
+  "type": "object",
+  "required": [
+    "contract_version",
+    "job_id",
+    "analyzer",
+    "status",
+    "findings",
+    "errors",
+    "metrics"
+  ],
+  "properties": {
+    "contract_version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "job_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "analyzer": {
+      "$ref": "#/$defs/analyzerInfo"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ok", "failed"]
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "finding.schema.json"
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/analyzerError"
+      }
+    },
+    "metrics": {
+      "$ref": "#/$defs/metrics"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "analyzerInfo": {
+      "type": "object",
+      "required": ["id", "version", "ruleset_version"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ruleset_version": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "analyzerError": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rule_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "metrics": {
+      "type": "object",
+      "required": [
+        "rules_evaluated",
+        "files_scanned",
+        "findings_emitted",
+        "rules_failed",
+        "files_skipped_size",
+        "files_skipped_binary"
+      ],
+      "properties": {
+        "rules_evaluated": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "files_scanned": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "findings_emitted": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rules_failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "files_skipped_size": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "files_skipped_binary": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

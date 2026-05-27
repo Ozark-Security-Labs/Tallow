@@ -8,9 +8,11 @@ import (
 	"github.com/Ozark-Security-Labs/Tallow/internal/api"
 	"github.com/Ozark-Security-Labs/Tallow/internal/config"
 	"github.com/Ozark-Security-Labs/Tallow/internal/db"
+	"github.com/Ozark-Security-Labs/Tallow/internal/db/sqlc"
 	"github.com/Ozark-Security-Labs/Tallow/internal/events"
+	"github.com/Ozark-Security-Labs/Tallow/internal/findings"
 	"github.com/Ozark-Security-Labs/Tallow/internal/version"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"io"
 	"log/slog"
 	"net/http"
@@ -134,16 +136,16 @@ func (a App) db(args []string) int {
 func Main(args []string, out, err io.Writer) int { return App{Out: out, Err: err}.Run(args) }
 
 func defaultServerRunner(cfg config.Config) error {
+	pool, err := pgxpool.New(context.Background(), cfg.Postgres.DSN)
+	if err != nil {
+		return err
+	}
+	defer pool.Close()
 	checks := map[string]api.Check{
 		"postgres": func(ctx context.Context) error {
 			cctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 			defer cancel()
-			conn, err := pgx.Connect(cctx, cfg.Postgres.DSN)
-			if err != nil {
-				return err
-			}
-			defer conn.Close(cctx)
-			return conn.Ping(cctx)
+			return pool.Ping(cctx)
 		},
 		"nats_jetstream": func(ctx context.Context) error {
 			bus, err := events.Connect(ctx, cfg.NATS.URL)
@@ -154,7 +156,7 @@ func defaultServerRunner(cfg config.Config) error {
 			return bus.Ready(ctx)
 		},
 	}
-	srv := api.New(cfg, slog.Default(), checks)
+	srv := api.NewWithFindings(cfg, slog.Default(), checks, findings.NewSQLStore(sqlc.New(pool)))
 	httpSrv := &http.Server{
 		Addr:              cfg.Server.ListenAddress,
 		Handler:           srv.Handler,

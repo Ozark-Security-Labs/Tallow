@@ -23,3 +23,13 @@ func TestMigrateErrorsWhenNoFilesFound(t *testing.T) {
 		t.Fatalf("want missing migrations error, got %v", err)
 	}
 }
+
+func TestSplitSQLStatementsKeepsDollarQuotedBlocks(t *testing.T) {
+	stmts := splitSQLStatements("CREATE TABLE a(id int);\nDO $$\nBEGIN\nRAISE NOTICE 'x;y';\nEND $$;\nSELECT 1;")
+	if len(stmts) != 3 {
+		t.Fatalf("got %d statements: %#v", len(stmts), stmts)
+	}
+	if !strings.Contains(stmts[1], "RAISE NOTICE") || !strings.Contains(stmts[1], "END $$") {
+		t.Fatalf("dollar block split incorrectly: %#v", stmts)
+	}
+}

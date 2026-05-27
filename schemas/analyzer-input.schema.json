@@ -1,1 +1,264 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://tallow.osl.dev/schemas/analyzer-input.schema.json","type":"object","required":["contract_version","job_id","analysis_type","package"],"properties":{"contract_version":{"const":"v1"},"job_id":{"type":"string"},"analysis_type":{"type":"string"},"package":{"type":"object"},"artifacts":{"type":"object"},"options":{"type":"object"}},"additionalProperties":true}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tallow.osl.dev/schemas/analyzer-input.schema.json",
+  "title": "Analyzer Input",
+  "type": "object",
+  "required": ["contract_version", "job_id", "analysis_type", "subject", "artifacts", "options"],
+  "properties": {
+    "contract_version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "job_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "analysis_type": {
+      "type": "string",
+      "enum": ["snapshot", "snapshot_diff", "hash_verification"]
+    },
+    "subject": {
+      "$ref": "#/$defs/subject"
+    },
+    "artifacts": {
+      "$ref": "#/$defs/artifactRefs"
+    },
+    "snapshot_refs": {
+      "$ref": "#/$defs/snapshotRefs"
+    },
+    "hash_verification": {
+      "$ref": "#/$defs/hashVerification"
+    },
+    "options": {
+      "$ref": "#/$defs/options"
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {"properties": {"analysis_type": {"const": "snapshot"}}},
+      "then": {
+        "required": ["snapshot_refs"],
+        "properties": {
+          "subject": {"required": ["version"]},
+          "artifacts": {"required": ["to"]},
+          "snapshot_refs": {"required": ["to"]}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"analysis_type": {"const": "snapshot_diff"}}},
+      "then": {
+        "required": ["snapshot_refs"],
+        "properties": {
+          "subject": {"required": ["to_version"]},
+          "artifacts": {"required": ["from", "to"]},
+          "snapshot_refs": {"required": ["from", "to"]}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"analysis_type": {"const": "hash_verification"}}},
+      "then": {
+        "required": ["hash_verification"],
+        "properties": {
+          "subject": {"required": ["version"]},
+          "artifacts": {"required": ["to"]}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "subject": {
+      "type": "object",
+      "required": ["ecosystem", "package_name"],
+      "properties": {
+        "ecosystem": {
+          "type": "string",
+          "enum": ["npm", "pypi"]
+        },
+        "package_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": ["string", "null"],
+          "minLength": 1
+        },
+        "from_version": {
+          "type": ["string", "null"]
+        },
+        "to_version": {
+          "type": ["string", "null"]
+        },
+        "package_id": {
+          "type": ["string", "null"]
+        },
+        "artifact_id": {
+          "type": ["string", "null"]
+        },
+        "snapshot_id": {
+          "type": ["string", "null"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "artifactEntry": {
+      "type": "object",
+      "required": ["artifact_id", "sha256", "filename", "size_bytes", "snapshot_path"],
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "filename": {
+          "type": "string",
+          "minLength": 1
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "snapshot_path": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "artifactRefs": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/artifactEntry"
+        },
+        "to": {
+          "$ref": "#/$defs/artifactEntry"
+        }
+      },
+      "additionalProperties": false
+    },
+    "snapshotEntry": {
+      "type": "object",
+      "required": ["snapshot_id", "root", "manifest_path"],
+      "properties": {
+        "snapshot_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "root": {
+          "type": "string",
+          "minLength": 1
+        },
+        "manifest_path": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "snapshotRefs": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/snapshotEntry"
+        },
+        "to": {
+          "$ref": "#/$defs/snapshotEntry"
+        }
+      },
+      "additionalProperties": false
+    },
+    "hashVerification": {
+      "type": "object",
+      "required": ["artifact_id", "expected_sha256", "observed_sha256", "source"],
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "observed_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["registry", "artifact", "mirror"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "options": {
+      "type": "object",
+      "required": [
+        "enabled_rules",
+        "disabled_rules",
+        "max_file_bytes",
+        "max_findings_per_rule",
+        "allow_binary_packages",
+        "allowed_binary_paths",
+        "high_entropy_min_length",
+        "high_entropy_threshold",
+        "fail_fast"
+      ],
+      "properties": {
+        "enabled_rules": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "disabled_rules": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "max_file_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_findings_per_rule": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "allow_binary_packages": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "allowed_binary_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "high_entropy_min_length": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "high_entropy_threshold": {
+          "type": "number",
+          "minimum": 0
+        },
+        "fail_fast": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

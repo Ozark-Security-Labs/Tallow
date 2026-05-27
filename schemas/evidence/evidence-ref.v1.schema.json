@@ -1,1 +1,36 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","required":["kind","artifact_id"],"properties":{"kind":{"type":"string"},"artifact_id":{"type":"string"},"snapshot_id":{"type":"string"},"path":{"type":"string","not":{"anyOf":[{"pattern":"^/"},{"pattern":"\\\\"},{"pattern":"(^|/)\\.\\.(/|$)"}]}},"start_line":{"type":"integer","minimum":0},"end_line":{"type":"integer","minimum":0},"start_byte":{"type":"integer","minimum":0},"end_byte":{"type":"integer","minimum":0},"hash":{"type":"string"},"excerpt":{"type":"string"},"excerpt_redacted":{"type":"boolean"},"description":{"type":"string"}}}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tallow.osl.dev/schemas/evidence/evidence-ref.v1.schema.json",
+  "type": "object",
+  "required": ["kind", "artifact_id"],
+  "properties": {
+    "kind": {"type": "string"},
+    "artifact_id": {"type": "string"},
+    "snapshot_id": {"type": "string"},
+    "path": {
+      "type": "string",
+      "not": {
+        "anyOf": [
+          {"pattern": "^/"},
+          {"pattern": "^[A-Za-z]:"},
+          {"pattern": "\\\\"},
+          {"pattern": "(^|/)\\.\\.(/|$)"}
+        ]
+      }
+    },
+    "start_line": {"type": "integer", "minimum": 0},
+    "end_line": {"type": "integer", "minimum": 0},
+    "start_byte": {"type": "integer", "minimum": 0},
+    "end_byte": {"type": "integer", "minimum": 0},
+    "hash": {"type": "string"},
+    "magic": {"type": "string"},
+    "size_bytes": {"type": "integer", "minimum": 0},
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "excerpt": {"type": "string"},
+    "excerpt_redacted": {"type": "boolean"},
+    "description": {"type": "string"}
+  },
+  "dependentRequired": {
+    "excerpt": ["excerpt_redacted"]
+  }
+}

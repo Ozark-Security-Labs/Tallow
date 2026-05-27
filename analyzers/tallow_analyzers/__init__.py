@@ -1,0 +1,1 @@
+"""Tallow analyzer package."""

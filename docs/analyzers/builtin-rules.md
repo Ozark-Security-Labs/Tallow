@@ -4,18 +4,26 @@ Tallow starts with deterministic built-in rules. Each rule has a stable ID, evid
 
 ## Initial rule families
 
-- `artifact.hash.registry_mismatch`
-- `artifact.hash.observed_changed`
-- `npm.lifecycle.postinstall_added`
-- `npm.lifecycle.install_script_changed`
-- `js.execution.child_process_added`
-- `js.obfuscation.eval_decode_chain`
-- `js.secrets.env_token_access`
-- `py.setup.subprocess_execution`
-- `py.obfuscation.decode_exec_chain`
-- `network.webhook_url_added`
-- `artifact.binary_added`
-- `artifact.high_entropy_blob_added`
+- `npm.lifecycle.install_script`: flags npm install lifecycle script keys.
+- `npm.lifecycle.network_command`: flags network-capable commands in npm lifecycle scripts.
+- `js.secrets.env_token_access`: flags token-like `process.env` access and credential path reads.
+- `js.obfuscation.eval_decode_chain`: flags JavaScript decode-to-execution chains.
+- `pypi.setup.exec_call`: flags execution sinks in Python packaging setup files.
+- `py.obfuscation.decode_exec_chain`: flags Python decode/decompress-to-execution chains.
+- `network.webhook_url`: flags webhook-like exfiltration URLs in executable package files.
+- `artifact.binary.unexpected`: flags unexpected ELF/PE/Mach-O native binaries.
+- `artifact.entropy.high_blob`: flags new high-entropy text blobs without storing the blob.
+
+## Limitations
+
+- Built-in rules are static and heuristic; they do not execute package code or prove exploitability.
+- JavaScript checks use bounded source scanning instead of a full JavaScript parser in the MVP.
+- High-entropy findings report path, line, entropy, length, and a hash, not raw blob contents.
+- Documentation/prose files are skipped for webhook findings by default to reduce false positives.
+- Binary packages must be explicitly allowed with `allow_binary_packages` entries
+  (`package` or `ecosystem/package`) or `allowed_binary_paths`.
+  These allowlists suppress only `artifact.binary.unexpected`; text-oriented
+  rules still skip binary-looking files.
 
 ## Future adapter types
 

@@ -4,9 +4,105 @@ paths:
   /healthz: { get: { responses: { '200': { description: healthy } } } }
   /readyz: { get: { responses: { '200': { description: ready }, '503': { description: not ready } } } }
   /metrics: { get: { responses: { '200': { description: prometheus metrics } } } }
+  /v1/findings:
+    get:
+      summary: List findings
+      description: >-
+        Returns findings ordered by `created_at DESC, id DESC`. Use `limit`
+        and the opaque `next_cursor` response value for cursor pagination.
+      parameters:
+        - { name: ecosystem, in: query, schema: { type: string } }
+        - { name: package, in: query, schema: { type: string } }
+        - { name: version, in: query, schema: { type: string } }
+        - { name: severity_hint, in: query, schema: { type: string } }
+        - { name: confidence, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: category, in: query, schema: { type: string } }
+        - { name: rule_id, in: query, schema: { type: string } }
+        - { name: artifact_id, in: query, schema: { type: string } }
+        - { name: snapshot_id, in: query, schema: { type: string } }
+        - { name: created_after, in: query, schema: { type: string, format: date-time } }
+        - { name: created_before, in: query, schema: { type: string, format: date-time } }
+        - { name: cursor, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+      responses:
+        '200':
+          description: findings page
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/FindingSummary' } }
+                  next_cursor: { type: string }
+        '400': { description: invalid filter or cursor }
+  /v1/findings/{id}:
+    get:
+      summary: Get a finding
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: finding
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Finding' }
+        '404': { description: finding not found }
 components:
   schemas:
     ErrorEnvelope:
       type: object
       required: [error]
       properties: { error: { type: object, required: [code,message], properties: { code: { type: string }, message: { type: string }, request_id: { type: string } } } }
+    Finding:
+      type: object
+      required: [id, run_id, rule_id, analyzer_id, ecosystem, package_name, severity_hint, confidence, status, created_at]
+      properties:
+        id: { type: string }
+        run_id: { type: string }
+        rule_id: { type: string }
+        rule_version: { type: string }
+        analyzer_id: { type: string }
+        analyzer_version: { type: string }
+        ecosystem: { type: string }
+        package_name: { type: string }
+        version: { type: string }
+        artifact_id: { type: string }
+        snapshot_id: { type: string }
+        category: { type: string }
+        severity_hint: { type: string }
+        confidence: { type: string }
+        title: { type: string }
+        summary: { type: string }
+        subject: { type: object }
+        evidence: { type: array }
+        tags: { type: array, items: { type: string } }
+        status: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    FindingSummary:
+      type: object
+      required: [id, run_id, rule_id, analyzer_id, ecosystem, package_name, severity_hint, confidence, status, evidence_count, created_at]
+      properties:
+        id: { type: string }
+        run_id: { type: string }
+        rule_id: { type: string }
+        rule_version: { type: string }
+        analyzer_id: { type: string }
+        analyzer_version: { type: string }
+        ecosystem: { type: string }
+        package_name: { type: string }
+        version: { type: string }
+        artifact_id: { type: string }
+        snapshot_id: { type: string }
+        category: { type: string }
+        severity_hint: { type: string }
+        confidence: { type: string }
+        title: { type: string }
+        summary: { type: string }
+        evidence_count: { type: integer, minimum: 0 }
+        tags: { type: array, items: { type: string } }
+        status: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }

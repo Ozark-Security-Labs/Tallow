@@ -17,6 +17,7 @@ const (
 	CodeRegistryUnavailable Code = "registry_unavailable"
 	CodeDatabaseUnavailable Code = "database_unavailable"
 	CodeEventBusUnavailable Code = "event_bus_unavailable"
+	CodeNotFound            Code = "not_found"
 	CodeInternal            Code = "internal_error"
 	CodeNotImplemented      Code = "not_implemented"
 )
@@ -53,6 +54,8 @@ func HTTPStatus(code Code) int {
 		return http.StatusServiceUnavailable
 	case CodeNotImplemented:
 		return http.StatusNotImplemented
+	case CodeNotFound:
+		return http.StatusNotFound
 	default:
 		return http.StatusInternalServerError
 	}

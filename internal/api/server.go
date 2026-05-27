@@ -16,18 +16,28 @@ import (
 
 type Check func(context.Context) error
 type Server struct {
-	Config  config.Config
-	Logger  *slog.Logger
-	Checks  map[string]Check
-	Metrics *metrics.Metrics
-	Handler http.Handler
+	Config   config.Config
+	Logger   *slog.Logger
+	Checks   map[string]Check
+	Metrics  *metrics.Metrics
+	Findings FindingReader
+	Handler  http.Handler
 }
 
 func New(cfg config.Config, logger *slog.Logger, checks map[string]Check) *Server {
+	return NewWithFindings(cfg, logger, checks, EmptyFindingStore{})
+}
+
+func NewWithFindings(
+	cfg config.Config,
+	logger *slog.Logger,
+	checks map[string]Check,
+	findings FindingReader,
+) *Server {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	s := &Server{Config: cfg, Logger: logger, Checks: checks, Metrics: metrics.New()}
+	s := &Server{Config: cfg, Logger: logger, Checks: checks, Metrics: metrics.New(), Findings: findings}
 	s.Handler = s.routes()
 	return s
 }
@@ -41,6 +51,8 @@ func (s *Server) routes() http.Handler {
 	}
 	r.Get("/healthz", s.health)
 	r.Get("/readyz", s.ready)
+	r.Get("/v1/findings", s.listFindings)
+	r.Get("/v1/findings/{id}", s.getFinding)
 	if s.Config.Metrics.Enabled {
 		r.Handle("/metrics", s.Metrics.Handler())
 	}

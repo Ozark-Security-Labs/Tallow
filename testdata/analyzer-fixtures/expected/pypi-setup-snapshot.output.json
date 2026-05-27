@@ -1,0 +1,59 @@
+{
+  "analyzer": {
+    "id": "builtin.rules",
+    "ruleset_version": "2026.05.26",
+    "version": "0.1.0"
+  },
+  "contract_version": "v1",
+  "errors": [],
+  "findings": [
+    {
+      "analyzer_id": "builtin.rules",
+      "analyzer_version": "0.1.0",
+      "category": "script",
+      "confidence": "high",
+      "created_at": "1970-01-01T00:00:00Z",
+      "evidence": [
+        {
+          "artifact_id": "art_pypi_setup",
+          "description": "Execution sink ('subprocess', 'run') in setup.py",
+          "end_byte": 51,
+          "end_line": 3,
+          "excerpt": "subprocess.run([\"echo\", \"safe\"])",
+          "excerpt_redacted": false,
+          "kind": "file",
+          "path": "setup.py",
+          "snapshot_id": "snap_pypi_setup",
+          "start_byte": 19,
+          "start_line": 3
+        }
+      ],
+      "id": "fin_v1_8032f2c13f392d5c75e8b9f2146d3677",
+      "rule_id": "pypi.setup.exec_call",
+      "rule_version": "1.0.0",
+      "schema_version": "v1",
+      "severity_hint": "high",
+      "subject": {
+        "artifact_id": "art_pypi_setup",
+        "ecosystem": "pypi",
+        "package_name": "fixture",
+        "snapshot_id": "snap_pypi_setup",
+        "to_artifact_id": "art_pypi_setup",
+        "version": "1.0.0"
+      },
+      "summary": "Execution sink ('subprocess', 'run') detected in setup.py.",
+      "tags": [],
+      "title": "setup.py execution sink detected"
+    }
+  ],
+  "job_id": "job_fixture_pypi_setup",
+  "metrics": {
+    "files_scanned": 1,
+    "files_skipped_binary": 0,
+    "files_skipped_size": 0,
+    "findings_emitted": 1,
+    "rules_evaluated": 1,
+    "rules_failed": 0
+  },
+  "status": "ok"
+}

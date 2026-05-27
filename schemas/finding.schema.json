@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tallow.osl.dev/schemas/finding.schema.json",
+  "title": "Analyzer Finding",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id",
+    "rule_id",
+    "rule_version",
+    "analyzer_id",
+    "analyzer_version",
+    "subject",
+    "title",
+    "summary",
+    "category",
+    "severity_hint",
+    "confidence",
+    "evidence",
+    "tags",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^fin_v1_[0-9a-f]{32}$"
+    },
+    "rule_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rule_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "analyzer_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "analyzer_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subject": {
+      "$ref": "#/$defs/findingSubject"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "hash",
+        "metadata",
+        "script",
+        "credential",
+        "obfuscation",
+        "network",
+        "binary",
+        "maintainer",
+        "community",
+        "source_correlation"
+      ]
+    },
+    "severity_hint": {
+      "type": "string",
+      "enum": ["info", "low", "medium", "high", "critical"]
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["low", "medium", "high"]
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/findingEvidence"
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "findingSubject": {
+      "type": "object",
+      "required": ["ecosystem", "package_name"],
+      "properties": {
+        "ecosystem": {
+          "type": "string",
+          "enum": ["npm", "pypi"]
+        },
+        "package_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": ["string", "null"],
+          "minLength": 1
+        },
+        "from_version": {
+          "type": ["string", "null"]
+        },
+        "to_version": {
+          "type": ["string", "null"]
+        },
+        "package_id": {
+          "type": ["string", "null"]
+        },
+        "artifact_id": {
+          "type": ["string", "null"]
+        },
+        "snapshot_id": {
+          "type": ["string", "null"]
+        },
+        "from_artifact_id": {
+          "type": ["string", "null"]
+        },
+        "to_artifact_id": {
+          "type": ["string", "null"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "findingEvidence": {
+      "allOf": [
+        {
+          "$ref": "evidence/evidence-ref.v1.schema.json"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "file",
+                "diff",
+                "hash",
+                "metadata",
+                "registry",
+                "community",
+                "source"
+              ]
+            },
+            "excerpt": {
+              "type": "string",
+              "maxLength": 240
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    }
+  }
+}

@@ -24,3 +24,10 @@ Tallow's default analysis mode is static. Analyzer workers must not execute pack
 ## Future dynamic analysis
 
 Sandboxed dynamic analysis may be added later as a separate capability. It must have separate configuration, separate docs, explicit operator opt-in, no host secrets, constrained egress, and auditable telemetry. Static analysis must remain usable without dynamic execution.
+
+## Analyzer test enforcement
+
+Analyzer tests support `TALLOW_ANALYZER_NETWORK_OFF=1`, which monkeypatches
+common Python socket and URL-opening entry points so any attempted outbound
+network access fails the test. MVP analyzers have no network exceptions: rules
+must read only local snapshot, metadata, and fixture files.

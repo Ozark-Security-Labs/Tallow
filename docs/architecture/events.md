@@ -48,6 +48,11 @@ Tallow uses NATS JetStream as the durable workflow spine. Events use versioned J
 
 JetStream is at-least-once. Consumers must be idempotent where practical. Event payloads should reference database IDs/artifact IDs rather than embedding large package content.
 
+Analyzer workers publish `tallow.analysis.completed.v1` or
+`tallow.analysis.failed.v1` only after analyzer run/finding persistence succeeds.
+Failed analysis events include a deterministic error code and message for retry
+and operator triage.
+
 ## Request IDs
 
 HTTP and event flows use `X-Request-ID`; event traces include originating `request_id` when available.
