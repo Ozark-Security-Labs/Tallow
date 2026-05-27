@@ -65,3 +65,21 @@ def test_detects_settimeout_decoded_variable(tmp_path: Path):
 def test_benign_base64_data_does_not_emit(tmp_path: Path):
     _write(tmp_path, 'const data = Buffer.from("Y29udGVudA==", "base64");')
     assert _run(tmp_path) == []
+
+
+def test_ignores_decode_execution_in_comments_and_strings(tmp_path: Path):
+    _write(
+        tmp_path,
+        '// eval(atob("Y29uc29sZS5sb2coMSk="));\n'
+        '/* Function(Buffer.from("Y29uc29sZS5sb2coMSk=", "base64")) */\n'
+        'const example = "eval(atob(\"Y29uc29sZS5sb2coMSk=\"))";\n'
+        'const template = `template start\n'
+        'eval(atob("Y29uc29sZS5sb2coMSk="));\n'
+        'template end`;\n',
+    )
+    assert _run(tmp_path) == []
+
+
+def test_ignores_commented_decode_assignment_before_sink(tmp_path: Path):
+    _write(tmp_path, '// const decoded = atob("Y29uc29sZS5sb2coMSk=");\nsetTimeout(decoded);')
+    assert _run(tmp_path) == []

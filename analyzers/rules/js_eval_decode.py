@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 
+from rules.js_code import JSCodeState, js_line_masks, position_in_mask
 from tallow_analyzer_sdk.context import AnalysisContext
 from tallow_analyzer_sdk.evidence import file_evidence
 from tallow_analyzer_sdk.finding import FindingDraft
@@ -53,9 +54,11 @@ class JsEvalDecodeRule:
                 continue
             text = walker.read_text(match.relative_path)
             decoded_vars: set[str] = set()
+            state = JSCodeState()
             for line_no, line in enumerate(text.splitlines(), start=1):
-                decoded_vars.update(_decoded_assignments(line))
-                if not _has_decode_execution(line, decoded_vars):
+                code_mask, _, state = js_line_masks(line, state)
+                decoded_vars.update(_decoded_assignments(line, code_mask))
+                if not _has_decode_execution(line, decoded_vars, code_mask):
                     continue
                 confidence = (
                     "high"
@@ -87,22 +90,40 @@ class JsEvalDecodeRule:
         return findings
 
 
-def _decoded_assignments(line: str) -> set[str]:
+def _decoded_assignments(line: str, code_mask: list[bool]) -> set[str]:
     names: set[str] = set()
     for pattern in DECODE_ASSIGNMENT_PATTERNS:
         match = pattern.search(line)
-        if match:
+        if match and position_in_mask(code_mask, match.start()):
             names.add(match.group(1))
     return names
 
 
-def _has_decode_execution(line: str, decoded_vars: set[str]) -> bool:
-    if any(pattern.search(line) for pattern in PATTERNS):
-        return True
+def _has_decode_execution(line: str, decoded_vars: set[str], code_mask: list[bool]) -> bool:
+    for pattern in PATTERNS:
+        if _search_in_code(pattern, line, code_mask):
+            return True
     for name in decoded_vars:
         escaped = re.escape(name)
-        if re.search(rf"(?:eval|setTimeout|setInterval)\s*\(\s*{escaped}\b", line, re.I):
+        if _search_in_code(
+            re.compile(rf"(?:eval|setTimeout|setInterval)\s*\(\s*{escaped}\b", re.I),
+            line,
+            code_mask,
+        ):
             return True
-        if re.search(rf"(?:new\s+)?Function\s*\(\s*{escaped}\b", line, re.I):
+        if _search_in_code(
+            re.compile(rf"(?:new\s+)?Function\s*\(\s*{escaped}\b", re.I),
+            line,
+            code_mask,
+        ):
             return True
     return False
+
+
+def _search_in_code(
+    pattern: re.Pattern[str], line: str, code_mask: list[bool]
+) -> re.Match[str] | None:
+    for match in pattern.finditer(line):
+        if position_in_mask(code_mask, match.start()):
+            return match
+    return None
