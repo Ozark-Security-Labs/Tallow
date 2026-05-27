@@ -172,6 +172,17 @@ def test_snippet_redacts_url_credentials():
     ]
 
 
+def test_snippet_redacts_url_fragments():
+    evidence = file_evidence(
+        "package.json",
+        artifact_id="a",
+        snippet="curl https://example.com/callback#abcdef1234567890",
+    )
+    assert evidence["excerpt_redacted"] is True
+    assert "abcdef1234567890" not in evidence["excerpt"]
+    assert "https://example.com/callback#<redacted>" in evidence["excerpt"]
+
+
 def test_metadata_hashes_secret_like_values():
     evidence = metadata_evidence("npm_token", "super-secret-token-value", artifact_id="a")
     assert evidence["hash"] != "super-secret-token-value"

@@ -86,7 +86,8 @@ def redact_url(url: str) -> str:
     parts = urlsplit(url)
     path = _redact_url_path((parts.hostname or "").lower(), parts.path)
     query = "<redacted>" if parts.query else ""
-    return urlunsplit((parts.scheme, _redact_url_netloc(parts.netloc), path, query, parts.fragment))
+    fragment = "<redacted>" if parts.fragment else ""
+    return urlunsplit((parts.scheme, _redact_url_netloc(parts.netloc), path, query, fragment))
 
 
 def _redact_url_netloc(netloc: str) -> str:
