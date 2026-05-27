@@ -83,7 +83,7 @@ class JsEnvTokenRule:
                                 snapshot_id=context.snapshot_id(),
                                 start_line=line_no,
                                 end_line=line_no,
-                                snippet=line.strip()[:240],
+                                snippet=line.strip(),
                                 description=summary,
                             )
                         ],

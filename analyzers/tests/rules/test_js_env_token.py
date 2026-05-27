@@ -55,6 +55,18 @@ def test_detects_bracket_process_env_token(tmp_path: Path):
     assert findings[0].confidence == "high"
 
 
+def test_redacts_long_secret_before_excerpt_truncation(tmp_path: Path):
+    secret = "s" * 300
+    _write(
+        tmp_path,
+        "src/index.js",
+        f'fetch(process.env.NPM_TOKEN); const cfg = {{"token": "{secret}"}};',
+    )
+    evidence = _run(tmp_path)[0].evidence[0]
+    assert evidence["excerpt_redacted"] is True
+    assert "s" * 32 not in evidence["excerpt"]
+
+
 def test_ignores_comments_and_string_literals(tmp_path: Path):
     _write(
         tmp_path,

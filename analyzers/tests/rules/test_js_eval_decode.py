@@ -41,6 +41,17 @@ def test_detects_function_buffer_from_base64(tmp_path: Path):
     assert len(_run(tmp_path)) == 1
 
 
+def test_redacts_long_secret_before_excerpt_truncation(tmp_path: Path):
+    secret = "s" * 300
+    _write(
+        tmp_path,
+        f'eval(atob("Y29uc29sZS5sb2coMSk=")); const cfg = {{"token": "{secret}"}};',
+    )
+    evidence = _run(tmp_path)[0].evidence[0]
+    assert evidence["excerpt_redacted"] is True
+    assert "s" * 32 not in evidence["excerpt"]
+
+
 def test_benign_base64_data_does_not_emit(tmp_path: Path):
     _write(tmp_path, 'const data = Buffer.from("Y29udGVudA==", "base64");')
     assert _run(tmp_path) == []

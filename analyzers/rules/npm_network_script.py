@@ -66,7 +66,7 @@ class NpmNetworkScriptRule:
                                 snapshot_id=context.snapshot_id(),
                                 start_line=line_no,
                                 end_line=line_no,
-                                snippet=f"\"{key}\": \"{value[:120]}\"",
+                                snippet=f"\"{key}\": \"{value}\"",
                                 description=(
                                     f"Network-capable command detected in lifecycle script {key}"
                                 ),

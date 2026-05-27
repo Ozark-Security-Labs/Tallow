@@ -64,6 +64,16 @@ def test_snippet_redacts_json_style_secret_values():
     assert "supersecretvalue" not in evidence["excerpt"]
 
 
+def test_snippet_redacts_unterminated_quoted_secret_values():
+    evidence = file_evidence(
+        "package.json",
+        artifact_id="a",
+        snippet='"token": "supersecretvalue-without-closing-quote',
+    )
+    assert evidence["excerpt_redacted"] is True
+    assert "supersecretvalue" not in evidence["excerpt"]
+
+
 def test_snippet_redacts_bearer_and_single_quoted_tokens():
     evidence = file_evidence(
         "package.json",

@@ -51,7 +51,7 @@ class NpmLifecycleRule:
                 if not isinstance(value, str) or not value.strip():
                     continue
                 line_no = _line_for_key(text, key)
-                snippet = f"\"{key}\": \"{value[:120]}\""
+                snippet = f"\"{key}\": \"{value}\""
                 findings.append(
                     FindingDraft(
                         rule=self.metadata,

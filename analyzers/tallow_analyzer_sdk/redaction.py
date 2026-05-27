@@ -10,7 +10,7 @@ MAX_EXCERPT_LEN = 240
 
 _TOKEN_PATTERN = re.compile(
     r"(?i)([\"']?(?:token|secret|password|api[_-]?key)[\"']?\s*[:=]\s*)"
-    r"([\"']?)([A-Za-z0-9._\-/+=]{8,})(\2)"
+    r"([\"']?)([A-Za-z0-9._\-/+=]{8,})(?:\2)?"
 )
 _BEARER_PATTERN = re.compile(r"(?i)(bearer\s+)([A-Za-z0-9._\-+/=]{8,})")
 _URL_PATTERN = re.compile(r"https?://[^\s\"'<>]+")
