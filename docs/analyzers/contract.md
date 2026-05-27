@@ -14,13 +14,17 @@ Required top-level fields:
 - `job_id`: non-empty stable job identifier.
 - `analysis_type`: one of `snapshot`, `snapshot_diff`, or `hash_verification`.
 - `subject`: package and artifact coordinates.
+- `artifacts`: `from` / `to` artifact metadata. Each referenced artifact must
+  include `artifact_id`, `sha256`, `filename`, `size_bytes`, and
+  `snapshot_path`.
+- `options`: analyzer execution options. All option keys listed below are
+  required so analyzers receive deterministic defaults.
 
-Optional top-level fields:
+Conditionally required top-level fields:
 
-- `artifacts`: `from` / `to` artifact metadata (`artifact_id`, `sha256`, `filename`, `size_bytes`, `snapshot_path`).
-- `snapshot_refs`: `from` / `to` snapshot roots (`snapshot_id`, `root`, `manifest_path`).
+- `snapshot_refs`: required for `snapshot` and `snapshot_diff` jobs. Snapshot
+  jobs require `to`; snapshot diff jobs require both `from` and `to`.
 - `hash_verification`: hash mismatch context for `hash_verification` jobs.
-- `options`: analyzer execution options.
 
 Supported `options` fields include `enabled_rules`, `disabled_rules`,
 `max_file_bytes`, `max_findings_per_rule`, `allow_binary_packages`,
@@ -44,8 +48,20 @@ Example:
     "to_version": "1.0.1"
   },
   "artifacts": {
-    "from": {"artifact_id": "art_from_01"},
-    "to": {"artifact_id": "art_to_01"}
+    "from": {
+      "artifact_id": "art_from_01",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "filename": "example-package-1.0.0.tgz",
+      "size_bytes": 4096,
+      "snapshot_path": "snapshots/art_from_01"
+    },
+    "to": {
+      "artifact_id": "art_to_01",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "filename": "example-package-1.0.1.tgz",
+      "size_bytes": 8192,
+      "snapshot_path": "snapshots/art_to_01"
+    }
   },
   "snapshot_refs": {
     "from": {
@@ -61,7 +77,14 @@ Example:
   },
   "options": {
     "enabled_rules": ["npm.lifecycle.install_script"],
-    "max_file_bytes": 1048576
+    "disabled_rules": [],
+    "max_file_bytes": 1048576,
+    "max_findings_per_rule": 100,
+    "allow_binary_packages": [],
+    "allowed_binary_paths": [],
+    "high_entropy_min_length": 512,
+    "high_entropy_threshold": 7.2,
+    "fail_fast": false
   }
 }
 ```
