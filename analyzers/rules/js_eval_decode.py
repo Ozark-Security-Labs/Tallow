@@ -19,6 +19,16 @@ PATTERNS = (
     re.compile(r"new\s+Function\s*\(.*(?:atob|base64)", re.I),
     re.compile(r"setTimeout\s*\(\s*atob\s*\(", re.I),
 )
+DECODE_ASSIGNMENT_PATTERNS = (
+    re.compile(
+        r"(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*atob\s*\(",
+        re.I,
+    ),
+    re.compile(
+        r"(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*Buffer\.from\s*\([^)]*['\"]base64['\"]",
+        re.I,
+    ),
+)
 
 
 class JsEvalDecodeRule:
@@ -42,8 +52,10 @@ class JsEvalDecodeRule:
             if match.relative_path.endswith(".d.ts") or is_doc_path(match.relative_path):
                 continue
             text = walker.read_text(match.relative_path)
+            decoded_vars: set[str] = set()
             for line_no, line in enumerate(text.splitlines(), start=1):
-                if not any(pattern.search(line) for pattern in PATTERNS):
+                decoded_vars.update(_decoded_assignments(line))
+                if not _has_decode_execution(line, decoded_vars):
                     continue
                 confidence = (
                     "high"
@@ -73,3 +85,24 @@ class JsEvalDecodeRule:
                 if len(findings) >= context.max_findings_per_rule:
                     return findings
         return findings
+
+
+def _decoded_assignments(line: str) -> set[str]:
+    names: set[str] = set()
+    for pattern in DECODE_ASSIGNMENT_PATTERNS:
+        match = pattern.search(line)
+        if match:
+            names.add(match.group(1))
+    return names
+
+
+def _has_decode_execution(line: str, decoded_vars: set[str]) -> bool:
+    if any(pattern.search(line) for pattern in PATTERNS):
+        return True
+    for name in decoded_vars:
+        escaped = re.escape(name)
+        if re.search(rf"(?:eval|setTimeout|setInterval)\s*\(\s*{escaped}\b", line, re.I):
+            return True
+        if re.search(rf"(?:new\s+)?Function\s*\(\s*{escaped}\b", line, re.I):
+            return True
+    return False

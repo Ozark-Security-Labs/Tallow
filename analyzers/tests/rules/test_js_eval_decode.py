@@ -52,6 +52,16 @@ def test_redacts_long_secret_before_excerpt_truncation(tmp_path: Path):
     assert "s" * 32 not in evidence["excerpt"]
 
 
+def test_detects_settimeout_decoded_variable(tmp_path: Path):
+    _write(
+        tmp_path,
+        'const decoded = atob("Y29uc29sZS5sb2coMSk=");\nsetTimeout(decoded);',
+    )
+    findings = _run(tmp_path)
+    assert len(findings) == 1
+    assert findings[0].evidence[0]["start_line"] == 2
+
+
 def test_benign_base64_data_does_not_emit(tmp_path: Path):
     _write(tmp_path, 'const data = Buffer.from("Y29udGVudA==", "base64");')
     assert _run(tmp_path) == []
