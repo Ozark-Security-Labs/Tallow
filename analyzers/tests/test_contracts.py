@@ -30,6 +30,29 @@ def test_incomplete_input_contract_fails():
     payload.pop("options")
     with pytest.raises(ValidationError):
         validate_analyzer_input(payload)
+
+
+def test_snapshot_subject_requires_version():
+    payload = json.loads((EXAMPLES / "analyzer-input.snapshot-diff.npm.json").read_text())
+    payload["analysis_type"] = "snapshot"
+    payload["subject"].pop("version", None)
+    payload["subject"].pop("to_version", None)
+    payload["subject"].pop("from_version", None)
+    payload["artifacts"].pop("from")
+    payload["snapshot_refs"].pop("from")
+    with pytest.raises(ValidationError):
+        validate_analyzer_input(payload)
+    payload["subject"]["version"] = "1.0.0"
+    validate_analyzer_input(payload)
+
+
+def test_snapshot_diff_subject_requires_to_version_not_version():
+    payload = json.loads((EXAMPLES / "analyzer-input.snapshot-diff.npm.json").read_text())
+    payload["subject"]["version"] = None
+    validate_analyzer_input(payload)
+    payload["subject"].pop("to_version")
+    with pytest.raises(ValidationError):
+        validate_analyzer_input(payload)
     payload = json.loads((EXAMPLES / "analyzer-input.snapshot-diff.npm.json").read_text())
     payload["artifacts"]["to"].pop("filename")
     with pytest.raises(ValidationError):
