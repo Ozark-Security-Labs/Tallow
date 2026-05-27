@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from rules.py_decode_exec import PyDecodeExecRule
+from rules.registry import build_registry
 from tallow_analyzer_sdk.context import AnalysisContext
 
 
@@ -53,3 +54,10 @@ def test_detects_marshal_loads_function_type_sink(tmp_path: Path):
 def test_benign_encoded_data_does_not_emit(tmp_path: Path):
     _write(tmp_path, "import base64\ndata = base64.b64decode('ZGF0YQ==')\nprint(data)\n")
     assert _run(tmp_path) == []
+
+
+def test_registry_enables_decode_exec_rule_for_pypi_diff_jobs():
+    rule_ids = {
+        rule.metadata.rule_id for rule in build_registry().enabled_for("pypi", "snapshot_diff")
+    }
+    assert "py.obfuscation.decode_exec_chain" in rule_ids
