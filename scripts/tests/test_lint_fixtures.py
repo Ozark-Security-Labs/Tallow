@@ -50,6 +50,36 @@ def test_allowlist_does_not_mask_unmarked_secret(tmp_path: Path):
     assert errors == [f"{fixture}: real-looking secret requires fake marker on matched value"]
 
 
+def test_rejects_realistic_webhook_tokens(tmp_path: Path):
+    fixture = tmp_path / "urls.txt"
+    fixture.write_text(
+        "\n".join(
+            [
+                "https://discord.com/api/webhooks/123456789012345678/REALWEBHOOKTOKEN",
+                "https://hooks.slack.com/services/T12345678/B12345678/REALWEBHOOKTOKEN",
+                "https://api.telegram.org/bot123456789:REALWEBHOOKTOKEN/sendMessage",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    errors = lint_fixtures.lint_root(tmp_path)
+    assert errors == [f"{fixture}: real-looking secret requires fake marker on matched value"]
+
+
+def test_allows_fake_webhook_tokens(tmp_path: Path):
+    (tmp_path / "urls.txt").write_text(
+        "\n".join(
+            [
+                "https://discord.com/api/webhooks/000000000000000000/fake-test-token",
+                "https://hooks.slack.com/services/T00000000/B00000000/FAKESECRET",
+                "https://api.telegram.org/bot123456789:FAKESECRET/sendMessage",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    assert lint_fixtures.lint_root(tmp_path) == []
+
+
 def test_process_env_does_not_mask_realistic_secret(tmp_path: Path):
     fixture = tmp_path / "env.js"
     fixture.write_text(
