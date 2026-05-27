@@ -71,3 +71,13 @@ Correlation evidence records include source field, original URL or manifest path
 ## Non-goals
 
 Source correlation does not clone repositories by default, does not execute repository code, does not perform full package manager resolution for loose ranges, and does not use LLMs to infer ownership.
+
+
+## Test plan
+
+Correlation tests cover exact/missing/multiple/conflicting evidence:
+
+- exact or release-tag metadata: one repository candidate plus version/tag evidence;
+- missing metadata: no candidates and `unknown` confidence;
+- multiple matching claims for the same repository: retain all evidence without duplication; and
+- conflicting claims: multiple repository candidates produce `conflicting` confidence and an ambiguity flag.
