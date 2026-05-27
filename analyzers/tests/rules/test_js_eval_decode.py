@@ -90,3 +90,13 @@ def test_ignores_decode_execution_in_comments_and_strings(tmp_path: Path):
 def test_ignores_commented_decode_assignment_before_sink(tmp_path: Path):
     _write(tmp_path, '// const decoded = atob("Y29uc29sZS5sb2coMSk=");\nsetTimeout(decoded);')
     assert _run(tmp_path) == []
+
+
+def test_detects_code_decode_assignment_after_same_line_string_decoy(tmp_path: Path):
+    _write(
+        tmp_path,
+        'const s = "const decoded = atob("; '
+        'const decoded = atob("Y29uc29sZS5sb2coMSk="); eval(decoded);',
+    )
+    findings = _run(tmp_path)
+    assert len(findings) == 1

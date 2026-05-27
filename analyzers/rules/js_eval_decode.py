@@ -93,8 +93,9 @@ class JsEvalDecodeRule:
 def _decoded_assignments(line: str, code_mask: list[bool]) -> set[str]:
     names: set[str] = set()
     for pattern in DECODE_ASSIGNMENT_PATTERNS:
-        match = pattern.search(line)
-        if match and position_in_mask(code_mask, match.start()):
+        for match in pattern.finditer(line):
+            if not position_in_mask(code_mask, match.start()):
+                continue
             names.add(match.group(1))
     return names
 
