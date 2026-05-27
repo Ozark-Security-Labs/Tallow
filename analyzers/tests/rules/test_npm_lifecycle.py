@@ -1,7 +1,9 @@
 from pathlib import Path
 
 from rules.npm_lifecycle import NpmLifecycleRule
+from tallow_analyzer_sdk.constants import DETERMINISTIC_FINDING_CREATED_AT
 from tallow_analyzer_sdk.context import AnalysisContext
+from tallow_analyzer_sdk.finding import build_finding
 
 FIXTURES = Path(__file__).resolve().parents[3] / "testdata" / "analyzer-fixtures" / "npm"
 
@@ -81,6 +83,21 @@ def test_lifecycle_keys_are_detected(tmp_path: Path):
     keys = {finding.tags[-1] for finding in findings}
     assert keys == {"preinstall", "install", "postinstall", "prepare"}
     assert all(finding.rule.rule_id == "npm.lifecycle.install_script" for finding in findings)
+
+
+def test_same_line_lifecycle_scripts_have_distinct_finding_ids(tmp_path: Path):
+    package_dir = tmp_path / "package"
+    package_dir.mkdir()
+    (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+    (package_dir / "package.json").write_text(
+        '{"name":"pkg","scripts":{"preinstall":"node pre.js","install":"node install.js"}}',
+        encoding="utf-8",
+    )
+    findings = [
+        build_finding(draft, created_at=DETERMINISTIC_FINDING_CREATED_AT)
+        for draft in _run_snapshot(tmp_path)
+    ]
+    assert len({finding["id"] for finding in findings}) == len(findings) == 2
 
 
 def test_deterministic_output():

@@ -48,11 +48,7 @@ class NpmNetworkScriptRule:
                     continue
                 if not any(pattern.search(value) for pattern in compiled):
                     continue
-                line_no = (
-                    text.count("\n", 0, text.find(f'"{key}"')) + 1
-                    if f'"{key}"' in text
-                    else 1
-                )
+                line_no, start_byte, end_byte = _span_for_key(text, key)
                 findings.append(
                     FindingDraft(
                         rule=self.metadata,
@@ -66,6 +62,8 @@ class NpmNetworkScriptRule:
                                 snapshot_id=context.snapshot_id(),
                                 start_line=line_no,
                                 end_line=line_no,
+                                start_byte=start_byte,
+                                end_byte=end_byte,
                                 snippet=f"\"{key}\": \"{value}\"",
                                 description=(
                                     f"Network-capable command detected in lifecycle script {key}"
@@ -78,3 +76,15 @@ class NpmNetworkScriptRule:
                 if len(findings) >= context.max_findings_per_rule:
                     return findings
         return findings
+
+
+def _span_for_key(text: str, key: str) -> tuple[int, int, int]:
+    pattern = re.compile(rf'"{re.escape(key)}"\s*:')
+    match = pattern.search(text)
+    if not match:
+        return 1, 0, 0
+    return (
+        text.count("\n", 0, match.start()) + 1,
+        len(text[: match.start()].encode("utf-8")),
+        len(text[: match.end()].encode("utf-8")),
+    )

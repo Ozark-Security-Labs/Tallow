@@ -17,16 +17,18 @@
         {
           "artifact_id": "art_npm_lifecycle",
           "description": "Lifecycle script key postinstall present in package.json",
+          "end_byte": 91,
           "end_line": 5,
           "excerpt": "\"postinstall\": \"node ./scripts/postinstall.js\"",
           "excerpt_redacted": false,
           "kind": "file",
           "path": "package/package.json",
           "snapshot_id": "snap_npm_lifecycle",
+          "start_byte": 77,
           "start_line": 5
         }
       ],
-      "id": "fin_v1_871bcb850cfa270b36cd5b03b8556f16",
+      "id": "fin_v1_8a182d2eb877dddcd730c4aa97bc84af",
       "rule_id": "npm.lifecycle.install_script",
       "rule_version": "1.0.0",
       "schema_version": "v1",

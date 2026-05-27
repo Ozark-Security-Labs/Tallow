@@ -1,7 +1,9 @@
 from pathlib import Path
 
 from rules.npm_network_script import NpmNetworkScriptRule
+from tallow_analyzer_sdk.constants import DETERMINISTIC_FINDING_CREATED_AT
 from tallow_analyzer_sdk.context import AnalysisContext
+from tallow_analyzer_sdk.finding import build_finding
 
 
 def _run(root: Path):
@@ -47,3 +49,15 @@ def test_readme_prose_is_not_scanned_as_script(tmp_path: Path):
     _write_package(tmp_path, '"test":"node test.js"')
     (tmp_path / "README.md").write_text("Run curl manually in examples.", encoding="utf-8")
     assert _run(tmp_path) == []
+
+
+def test_same_line_network_scripts_have_distinct_finding_ids(tmp_path: Path):
+    _write_package(
+        tmp_path,
+        '"preinstall":"curl https://example.test/a","postinstall":"wget https://example.test/b"',
+    )
+    findings = [
+        build_finding(draft, created_at=DETERMINISTIC_FINDING_CREATED_AT)
+        for draft in _run(tmp_path)
+    ]
+    assert len({finding["id"] for finding in findings}) == len(findings) == 2
