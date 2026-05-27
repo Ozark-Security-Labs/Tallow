@@ -67,3 +67,11 @@ func (a *Adapter) FetchManifest(ctx context.Context, ref scm.RepositoryRef, path
 	}
 	return scm.Manifest{Path: cr.Path, Revision: revision, Content: content, Size: cr.Size}, nil
 }
+
+func (a *Adapter) RevisionMetadata(ctx context.Context, ref scm.RepositoryRef, revision string) (scm.Revision, error) {
+	return scm.Revision{Branch: revision}, nil
+}
+
+func (a *Adapter) PollRepositories(context.Context, scm.RepositoryCursor) (scm.RepositoryPage, error) {
+	return scm.RepositoryPage{}, nil
+}

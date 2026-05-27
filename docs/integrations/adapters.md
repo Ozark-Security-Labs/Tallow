@@ -14,11 +14,14 @@ A registry adapter provides:
 
 ## SCM adapter interface
 
-An SCM adapter provides:
-- List repositories.
-- Fetch manifest files by path/commit.
-- Enumerate default branch HEAD.
-- Optionally receive webhook events.
+An SCM adapter provides a provider-neutral interface with:
+
+- repository resolution from normalized owner/name/URL claims;
+- manifest fetch by path and revision/commit without cloning;
+- revision metadata for branch, tag, or commit references; and
+- cursor polling for repository inventories.
+
+The Go contract is represented by `internal/scm.Adapter` with `ResolveRepository`, `FetchManifest`, `RevisionMetadata`, and `PollRepositories`. GitHub implements the contract in this milestone. GitLab, Codeberg, Forgejo, and Gitea should map the same methods to their APIs in future work; this milestone documents those extension points only and does not implement those providers.
 
 SCM adapters must not clone entire repositories unless configured. Prefer API file fetches and size limits.
 
