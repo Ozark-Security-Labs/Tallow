@@ -31,7 +31,7 @@ class UnexpectedBinaryRule:
         if context.package_binary_allowed:
             return []
         walker = context.walker("to")
-        previous_binary_paths = _previous_binary_paths(context)
+        previous_binary_hashes = _previous_binary_hashes(context)
         findings: list[FindingDraft] = []
         for match in walker.iter_files(include_binary=True):
             if match.relative_path in context.allowed_binary_paths:
@@ -40,9 +40,9 @@ class UnexpectedBinaryRule:
             magic = _detect_magic(data)
             if magic is None:
                 continue
-            if is_diff and match.relative_path in previous_binary_paths:
-                continue
             digest = hashlib.sha256(walker.read_bytes(match.relative_path)).hexdigest()
+            if is_diff and previous_binary_hashes.get(match.relative_path) == digest:
+                continue
             findings.append(
                 FindingDraft(
                     rule=self.metadata,
@@ -77,12 +77,15 @@ def _detect_magic(data: bytes) -> str | None:
     return None
 
 
-def _previous_binary_paths(context: AnalysisContext) -> set[str]:
+def _previous_binary_hashes(context: AnalysisContext) -> dict[str, str]:
     if "from" not in context.snapshot_roots:
-        return set()
+        return {}
     walker = context.walker("from")
-    return {
-        match.relative_path
-        for match in walker.iter_files(include_binary=True)
-        if _detect_magic(walker.read_bytes(match.relative_path, max_bytes=16)) is not None
-    }
+    hashes: dict[str, str] = {}
+    for match in walker.iter_files(include_binary=True):
+        if _detect_magic(walker.read_bytes(match.relative_path, max_bytes=16)) is None:
+            continue
+        hashes[match.relative_path] = hashlib.sha256(
+            walker.read_bytes(match.relative_path)
+        ).hexdigest()
+    return hashes
