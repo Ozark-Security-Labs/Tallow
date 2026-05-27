@@ -86,7 +86,13 @@ def redact_url(url: str) -> str:
     parts = urlsplit(url)
     path = _redact_url_path((parts.hostname or "").lower(), parts.path)
     query = "<redacted>" if parts.query else ""
-    return urlunsplit((parts.scheme, parts.netloc, path, query, parts.fragment))
+    return urlunsplit((parts.scheme, _redact_url_netloc(parts.netloc), path, query, parts.fragment))
+
+
+def _redact_url_netloc(netloc: str) -> str:
+    if "@" not in netloc:
+        return netloc
+    return "<redacted>@" + netloc.rsplit("@", 1)[1]
 
 
 def _redact_url_path(host: str, path: str) -> str:
