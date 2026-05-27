@@ -24,6 +24,7 @@ class SnapshotWalker:
         self,
         globs: list[str] | None = None,
         include_binary: bool | None = None,
+        include_oversized: bool = False,
     ) -> list[SnapshotFile]:
         include_bin = self.include_binary if include_binary is None else include_binary
         matches: list[SnapshotFile] = []
@@ -41,7 +42,7 @@ class SnapshotWalker:
                 if globs and not any(_glob_match(rel, pattern) for pattern in globs):
                     continue
                 size = absolute.stat().st_size
-                if size > self.max_file_bytes:
+                if size > self.max_file_bytes and not include_oversized:
                     continue
                 if not include_bin and _looks_binary(absolute):
                     continue

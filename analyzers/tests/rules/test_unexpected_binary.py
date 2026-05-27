@@ -1,3 +1,4 @@
+import hashlib
 from pathlib import Path
 
 from rules.unexpected_binary import UnexpectedBinaryRule
@@ -45,6 +46,18 @@ def test_detects_elf_with_hash_size_and_magic(tmp_path: Path):
     assert evidence["size_bytes"] == binary.stat().st_size
     assert len(evidence["sha256"]) == 64
     assert "synthetic-not-executable" not in str(evidence)
+
+
+def test_detects_oversized_native_binary_magic(tmp_path: Path):
+    (tmp_path / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+    binary = tmp_path / "bin" / "large-native"
+    binary.parent.mkdir()
+    binary.write_bytes(b"\x7fELF" + b"0" * 128)
+    evidence = _run(tmp_path, {"max_file_bytes": 16})[0].evidence[0]
+    assert evidence["path"] == "bin/large-native"
+    assert evidence["magic"] == "elf"
+    assert evidence["size_bytes"] == binary.stat().st_size
+    assert evidence["sha256"] == hashlib.sha256(binary.read_bytes()).hexdigest()
 
 
 def test_allowed_binary_path_is_ignored(tmp_path: Path):

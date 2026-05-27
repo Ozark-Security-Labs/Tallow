@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 from collections.abc import Iterable
+from pathlib import Path
 
 from tallow_analyzer_sdk.constants import BINARY_MAGICS
 from tallow_analyzer_sdk.context import AnalysisContext
@@ -33,14 +34,14 @@ class UnexpectedBinaryRule:
         walker = context.walker("to")
         previous_binary_hashes = _previous_binary_hashes(context)
         findings: list[FindingDraft] = []
-        for match in walker.iter_files(include_binary=True):
+        for match in walker.iter_files(include_binary=True, include_oversized=True):
             if match.relative_path in context.allowed_binary_paths:
                 continue
             data = walker.read_bytes(match.relative_path, max_bytes=16)
             magic = _detect_magic(data)
             if magic is None:
                 continue
-            digest = hashlib.sha256(walker.read_bytes(match.relative_path)).hexdigest()
+            digest = _sha256_file(match.absolute_path)
             if is_diff and previous_binary_hashes.get(match.relative_path) == digest:
                 continue
             findings.append(
@@ -82,10 +83,16 @@ def _previous_binary_hashes(context: AnalysisContext) -> dict[str, str]:
         return {}
     walker = context.walker("from")
     hashes: dict[str, str] = {}
-    for match in walker.iter_files(include_binary=True):
+    for match in walker.iter_files(include_binary=True, include_oversized=True):
         if _detect_magic(walker.read_bytes(match.relative_path, max_bytes=16)) is None:
             continue
-        hashes[match.relative_path] = hashlib.sha256(
-            walker.read_bytes(match.relative_path)
-        ).hexdigest()
+        hashes[match.relative_path] = _sha256_file(match.absolute_path)
     return hashes
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
