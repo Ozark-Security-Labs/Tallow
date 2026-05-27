@@ -56,6 +56,34 @@ def test_read_helpers_reject_root_escape(tmp_path: Path):
         walker.read_bytes("../secret.txt")
 
 
+def test_snapshot_context_ignores_extra_from_ref(tmp_path: Path):
+    to_root = tmp_path / "to"
+    from_root = tmp_path / "from"
+    to_root.mkdir()
+    from_root.mkdir()
+    payload = {
+        "contract_version": "v1",
+        "job_id": "job_test",
+        "analysis_type": "snapshot",
+        "subject": {"ecosystem": "npm", "package_name": "simple", "version": "1.0.0"},
+        "snapshot_refs": {
+            "from": {
+                "snapshot_id": "snap_from",
+                "root": str(from_root),
+                "manifest_path": str(from_root / "manifest.json"),
+            },
+            "to": {
+                "snapshot_id": "snap_to",
+                "root": str(to_root),
+                "manifest_path": str(to_root / "manifest.json"),
+            },
+        },
+        "options": {"max_file_bytes": 4096},
+    }
+    context = AnalysisContext.from_input(payload)
+    assert sorted(context.snapshot_roots) == ["to"]
+
+
 def test_finding_builder_emits_valid_schema():
     from tallow_analyzer_sdk.contracts import validate_finding
     from tallow_analyzer_sdk.evidence import file_evidence

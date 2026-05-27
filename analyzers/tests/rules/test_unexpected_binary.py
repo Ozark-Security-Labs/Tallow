@@ -4,7 +4,12 @@ from rules.unexpected_binary import UnexpectedBinaryRule
 from tallow_analyzer_sdk.context import AnalysisContext
 
 
-def _run(root: Path, options: dict | None = None, from_root: Path | None = None):
+def _run(
+    root: Path,
+    options: dict | None = None,
+    from_root: Path | None = None,
+    analysis_type: str | None = None,
+):
     refs = {
         "to": {
             "snapshot_id": "snap_pkg",
@@ -21,7 +26,7 @@ def _run(root: Path, options: dict | None = None, from_root: Path | None = None)
     payload = {
         "contract_version": "v1",
         "job_id": "job_binary",
-        "analysis_type": "snapshot_diff" if from_root else "snapshot",
+        "analysis_type": analysis_type or ("snapshot_diff" if from_root else "snapshot"),
         "subject": {"ecosystem": "npm", "package_name": "pkg", "version": "1.0.0"},
         "artifacts": {"to": {"artifact_id": "art_pkg"}},
         "snapshot_refs": refs,
@@ -81,6 +86,18 @@ def test_diff_mode_emits_text_to_binary_replacements(tmp_path: Path):
     (old / "bin" / "tool").write_text("console.log('synthetic')", encoding="utf-8")
     (new / "bin" / "tool").write_bytes(b"\x7fELF" + b"synthetic")
     findings = _run(new, from_root=old)
+    assert [finding.evidence[0]["path"] for finding in findings] == ["bin/tool"]
+
+
+def test_snapshot_mode_does_not_use_extra_from_ref_for_diff_suppression(tmp_path: Path):
+    old = tmp_path / "old"
+    new = tmp_path / "new"
+    for root in (old, new):
+        root.mkdir()
+        (root / "manifest.json").write_text('{"files":[]}', encoding="utf-8")
+        (root / "bin").mkdir()
+        (root / "bin" / "tool").write_bytes(b"MZ" + b"synthetic")
+    findings = _run(new, from_root=old, analysis_type="snapshot")
     assert [finding.evidence[0]["path"] for finding in findings] == ["bin/tool"]
 
 

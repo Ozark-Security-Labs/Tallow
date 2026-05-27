@@ -7,7 +7,12 @@ from tallow_analyzer_sdk.context import AnalysisContext
 HIGH_ENTROPY = bytes([*range(33, 127), *range(128, 256)]) * 3
 
 
-def _run(to_root: Path, from_root: Path | None = None, options: dict | None = None):
+def _run(
+    to_root: Path,
+    from_root: Path | None = None,
+    options: dict | None = None,
+    analysis_type: str | None = None,
+):
     refs = {
         "to": {
             "snapshot_id": "snap_to",
@@ -24,7 +29,7 @@ def _run(to_root: Path, from_root: Path | None = None, options: dict | None = No
     payload = {
         "contract_version": "v1",
         "job_id": "job_entropy",
-        "analysis_type": "snapshot_diff" if from_root else "snapshot",
+        "analysis_type": analysis_type or ("snapshot_diff" if from_root else "snapshot"),
         "subject": {"ecosystem": "npm", "package_name": "pkg", "version": "1.0.0"},
         "artifacts": {"to": {"artifact_id": "art_pkg"}},
         "snapshot_refs": refs,
@@ -79,6 +84,15 @@ def test_diff_mode_ignores_modified_files_with_preexisting_entropy(tmp_path: Pat
     _write(old, "src/payload.txt", HIGH_ENTROPY + b"\nold comment")
     _write(new, "src/payload.txt", HIGH_ENTROPY + b"\nnew harmless comment")
     assert _run(new, old) == []
+
+
+def test_snapshot_mode_does_not_use_extra_from_ref_for_diff_suppression(tmp_path: Path):
+    old = tmp_path / "old"
+    new = tmp_path / "new"
+    _write(old, "src/payload.txt", HIGH_ENTROPY)
+    _write(new, "src/payload.txt", HIGH_ENTROPY)
+    findings = _run(new, old, analysis_type="snapshot")
+    assert [finding.evidence[0]["path"] for finding in findings] == ["src/payload.txt"]
 
 
 def test_registry_enables_entropy_rule_for_diff_jobs():

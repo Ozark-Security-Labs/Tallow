@@ -19,6 +19,7 @@ class AnalysisContext:
     analyzer_input: dict
     subject: dict
     ecosystem: str
+    analysis_type: str
     snapshot_roots: dict[str, Path]
     options: dict
     clock: Callable[[], datetime] = field(default=_utc_now)
@@ -26,9 +27,11 @@ class AnalysisContext:
     @classmethod
     def from_input(cls, payload: dict, repo_root: Path | None = None) -> AnalysisContext:
         subject = _finding_subject(payload)
+        analysis_type = str(payload.get("analysis_type") or "")
         snapshot_refs = payload.get("snapshot_refs") or {}
         roots: dict[str, Path] = {}
-        for side in ("from", "to"):
+        sides = ("from", "to") if analysis_type == "snapshot_diff" else ("to",)
+        for side in sides:
             ref = snapshot_refs.get(side)
             if ref and ref.get("root"):
                 roots[side] = Path(ref["root"])
@@ -36,6 +39,7 @@ class AnalysisContext:
             analyzer_input=payload,
             subject=subject,
             ecosystem=subject["ecosystem"],
+            analysis_type=analysis_type,
             snapshot_roots=roots,
             options=payload.get("options") or {},
         )
