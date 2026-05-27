@@ -53,3 +53,13 @@ repo -> manifest -> direct-package@version -> ... -> compromised-package@version
 ```
 
 Each path references the source finding/status and includes depth, path fingerprint, and evidence references so operators can explain exactly why a repo or package version is affected.
+
+
+## Traversal bounds
+
+Dependent traversal walks reverse dependency edges from a suspicious or compromised package version to direct and transitive dependents. Implementations must:
+
+- reject traversal without explicit `max_depth` and `max_paths_per_root` bounds;
+- suppress cycles by tracking package versions already present in the current path;
+- preserve diamond paths as distinct evidence until the per-root path limit is reached; and
+- return paths in deterministic depth/name/fingerprint order.
