@@ -12,6 +12,7 @@
       "not": {
         "anyOf": [
           {"pattern": "^/"},
+          {"pattern": "^[A-Za-z]:"},
           {"pattern": "\\\\"},
           {"pattern": "(^|/)\\.\\.(/|$)"}
         ]

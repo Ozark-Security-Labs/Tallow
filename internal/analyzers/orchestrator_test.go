@@ -402,6 +402,13 @@ func TestValidateOutputRejectsSchemaViolations(t *testing.T) {
 			},
 		},
 		{
+			name: "windows absolute path",
+			mutate: func(f Finding) Finding {
+				f.Evidence[0].Path = "C:/Users/operator/token.txt"
+				return f
+			},
+		},
+		{
 			name: "invalid severity",
 			mutate: func(f Finding) Finding {
 				f.SeverityHint = "urgent"
