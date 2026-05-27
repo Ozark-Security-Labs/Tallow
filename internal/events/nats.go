@@ -84,12 +84,18 @@ func validateEnvelopeData(e Envelope) error {
 			return err
 		}
 		return a.Validate()
-	case "artifact.downloaded", "artifact.hash.verified", "artifact.hash.mismatch", "analysis.requested":
+	case "artifact.downloaded", "artifact.hash.verified", "artifact.hash.mismatch":
 		var a ArtifactEvent
 		if err := json.Unmarshal(e.Data, &a); err != nil {
 			return err
 		}
 		return a.Validate()
+	case "analysis.requested":
+		var a ArtifactEvent
+		if err := json.Unmarshal(e.Data, &a); err != nil {
+			return err
+		}
+		return a.ValidateAnalysisRequest()
 	case "analysis.completed", "analysis.failed":
 		var a AnalysisEvent
 		if err := json.Unmarshal(e.Data, &a); err != nil {

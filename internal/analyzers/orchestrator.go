@@ -67,7 +67,7 @@ func (o Orchestrator) HandleEnvelope(ctx context.Context, envelope events.Envelo
 	if err := json.Unmarshal(envelope.Data, &event); err != nil {
 		return fmt.Errorf("prepare analyzer input: %w", err)
 	}
-	if err := event.Validate(); err != nil {
+	if err := event.ValidateAnalysisRequest(); err != nil {
 		return fmt.Errorf("prepare analyzer input: %w", err)
 	}
 	input, err := o.inputFromArtifactEvent(ctx, event)

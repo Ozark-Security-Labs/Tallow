@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+const testSHA256 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
 func TestArtifactEventsEnvelopeAndSubjects(t *testing.T) {
 	if SubjectArtifactDownloaded != "tallow.artifact.downloaded.v1" {
 		t.Fatal(SubjectArtifactDownloaded)
@@ -28,13 +30,37 @@ func TestArtifactEventsEnvelopeAndSubjects(t *testing.T) {
 }
 
 func TestAnalysisRequestedEnvelope(t *testing.T) {
-	payload := ArtifactEvent{Ecosystem: "npm", Package: "pkg", Version: "1.0.0", ArtifactID: "artifact-1", ArtifactKind: "npm_tarball", StorageURI: "snapshots/artifact-1", LocalHashes: map[string]string{"sha256": "def"}, ObservedAt: time.Now().UTC()}
+	payload := ArtifactEvent{Ecosystem: "npm", Package: "pkg", Version: "1.0.0", ArtifactID: "artifact-1", ArtifactKind: "npm_tarball", StorageURI: "snapshots/artifact-1", LocalHashes: map[string]string{"sha256": testSHA256}, ObservedAt: time.Now().UTC()}
 	env, err := NewAnalysisRequestedEnvelope(payload)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if env.Type != "analysis.requested" {
 		t.Fatalf("unexpected type %q", env.Type)
+	}
+}
+
+func TestAnalysisRequestedEnvelopeRequiresSnapshotAndSHA256(t *testing.T) {
+	base := ArtifactEvent{Ecosystem: "npm", Package: "pkg", Version: "1.0.0", ArtifactID: "artifact-1", ArtifactKind: "npm_tarball", StorageURI: "snapshots/artifact-1", LocalHashes: map[string]string{"sha256": testSHA256}, ObservedAt: time.Now().UTC()}
+	missingStorage := base
+	missingStorage.StorageURI = ""
+	if _, err := NewAnalysisRequestedEnvelope(missingStorage); err == nil {
+		t.Fatal("want missing storage URI validation error")
+	}
+	rawStorage := base
+	rawStorage.StorageURI = "fs://artifacts/raw/pkg"
+	if _, err := NewAnalysisRequestedEnvelope(rawStorage); err == nil {
+		t.Fatal("want raw storage URI validation error")
+	}
+	missingHash := base
+	missingHash.LocalHashes = nil
+	if _, err := NewAnalysisRequestedEnvelope(missingHash); err == nil {
+		t.Fatal("want missing sha256 validation error")
+	}
+	badHash := base
+	badHash.LocalHashes = map[string]string{"sha256": "def"}
+	if _, err := NewAnalysisRequestedEnvelope(badHash); err == nil {
+		t.Fatal("want malformed sha256 validation error")
 	}
 }
 
