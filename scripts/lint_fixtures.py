@@ -81,8 +81,8 @@ def lint_root(root: Path) -> list[str]:
         if _is_executable(path) and rel not in allowlist["executable"]:
             errors.append(f"{path}: executable bit requires {ALLOWLIST_NAME} documentation")
         data = path.read_bytes()
-        if _has_unmarked_secret(data) and rel not in allowlist["secrets"]:
-            errors.append(f"{path}: real-looking secret requires fake marker or allowlist")
+        if _has_unmarked_secret(data):
+            errors.append(f"{path}: real-looking secret requires fake marker on matched value")
     if total > MAX_TOTAL_BYTES:
         errors.append(f"{root}: fixtures exceed total size limit {MAX_TOTAL_BYTES} bytes")
     return errors

@@ -38,7 +38,7 @@ def test_fixture_linter_allows_documented_fake_secret(tmp_path: Path):
         encoding="utf-8",
     )
     (tmp_path / "secret.txt").write_text(
-        "synthetic token='ghp_abcdefghijklmnopqrstuvwxyz123456'",
+        "token='tallow_test_000000000000000000'",
         encoding="utf-8",
     )
     assert lint_root(tmp_path) == []

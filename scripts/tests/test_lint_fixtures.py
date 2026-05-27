@@ -21,7 +21,7 @@ def test_rejects_realistic_secret_without_fake_marker(tmp_path: Path):
     fixture = tmp_path / "token.txt"
     fixture.write_text("token=ghp_abcdefghijklmnopqrstuvwxyz", encoding="utf-8")
     errors = lint_fixtures.lint_root(tmp_path)
-    assert errors == [f"{fixture}: real-looking secret requires fake marker or allowlist"]
+    assert errors == [f"{fixture}: real-looking secret requires fake marker on matched value"]
 
 
 def test_allows_fake_secret_marker(tmp_path: Path):
@@ -37,7 +37,17 @@ def test_unrelated_fake_marker_does_not_mask_secret(tmp_path: Path):
         "synthetic fixture\ntoken=ghp_abcdefghijklmnopqrstuvwxyz", encoding="utf-8"
     )
     errors = lint_fixtures.lint_root(tmp_path)
-    assert errors == [f"{fixture}: real-looking secret requires fake marker or allowlist"]
+    assert errors == [f"{fixture}: real-looking secret requires fake marker on matched value"]
+
+
+def test_allowlist_does_not_mask_unmarked_secret(tmp_path: Path):
+    (tmp_path / lint_fixtures.ALLOWLIST_NAME).write_text(
+        '{"allowed_secret_paths":["token.txt"]}', encoding="utf-8"
+    )
+    fixture = tmp_path / "token.txt"
+    fixture.write_text("token=ghp_abcdefghijklmnopqrstuvwxyz", encoding="utf-8")
+    errors = lint_fixtures.lint_root(tmp_path)
+    assert errors == [f"{fixture}: real-looking secret requires fake marker on matched value"]
 
 
 def test_process_env_does_not_mask_realistic_secret(tmp_path: Path):
@@ -47,7 +57,7 @@ def test_process_env_does_not_mask_realistic_secret(tmp_path: Path):
         encoding="utf-8",
     )
     errors = lint_fixtures.lint_root(tmp_path)
-    assert errors == [f"{fixture}: real-looking secret requires fake marker or allowlist"]
+    assert errors == [f"{fixture}: real-looking secret requires fake marker on matched value"]
 
 
 def test_process_env_reference_alone_is_not_a_secret(tmp_path: Path):
