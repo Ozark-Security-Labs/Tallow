@@ -71,6 +71,8 @@ def test_ignores_comments_and_string_literals(tmp_path: Path):
     _write(
         tmp_path,
         "src/index.js",
-        '// process.env.NPM_TOKEN\nconst s = "process.env.GITHUB_TOKEN";\n',
+        '// process.env.NPM_TOKEN\n'
+        'const s = "process.env.GITHUB_TOKEN";\n'
+        "const b = \"process.env['GITHUB_TOKEN']\";\n",
     )
     assert _run(tmp_path) == []

@@ -102,11 +102,43 @@ def _token_like(key: str) -> bool:
 
 
 def _env_token_match(line: str, code_line: str) -> re.Match[str] | None:
-    for pattern, target in ((ENV_PATTERNS[0], code_line), (ENV_PATTERNS[1], line)):
-        match = pattern.search(target)
-        if match and _token_like(match.group(1)):
-            return match
+    _ = code_line
+    for pattern in ENV_PATTERNS:
+        for match in pattern.finditer(line):
+            if _position_is_js_code(line, match.start()) and _token_like(match.group(1)):
+                return match
     return None
+
+
+def _position_is_js_code(line: str, position: int) -> bool:
+    quote: str | None = None
+    escaped = False
+    index = 0
+    while index < len(line):
+        char = line[index]
+        if quote:
+            if index == position:
+                return False
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == quote:
+                quote = None
+            index += 1
+            continue
+        if char in {'"', "'", "`"}:
+            if index == position:
+                return False
+            quote = char
+            index += 1
+            continue
+        if char == "/" and index + 1 < len(line) and line[index + 1] == "/":
+            return position < index
+        if index == position:
+            return True
+        index += 1
+    return position >= len(line)
 
 
 def _strip_js_strings_for_env(line: str) -> str:
