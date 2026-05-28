@@ -37,7 +37,7 @@ func TestLLMConfigProviderRequirements(t *testing.T) {
 	}
 	api := DefaultLLMConfig()
 	api.Enabled = true
-	api.Provider = LLMProviderConfig{Type: LLMProviderAPI, Name: "api", Model: "test", Endpoint: "http://example.com", APIKeyEnv: "TALLOW_KEY"}
+	api.Provider = LLMProviderConfig{Type: LLMProviderHTTPAPI, Name: "api", Model: "test", Endpoint: "http://example.com", APIKeyEnv: "TALLOW_KEY"}
 	if err := api.Validate(); err == nil {
 		t.Fatal("api provider without https should fail")
 	}

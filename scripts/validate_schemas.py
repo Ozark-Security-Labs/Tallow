@@ -87,6 +87,8 @@ def validate_examples(registry: Registry) -> list[str]:
         "analyzer-input": "schemas/analyzer-input.schema.json",
         "analyzer-output": "schemas/analyzer-output.schema.json",
         "llm-prompt-template": "schemas/llm-prompt-template.schema.json",
+        "llm-evidence-bundle": "schemas/llm-evidence-bundle.schema.json",
+        "llm-provider-request": "schemas/llm-provider-request.schema.json",
         "llm-narrative-output": "schemas/llm-narrative-output.schema.json",
         "community-signal-payload": "schemas/community-signal-payload.schema.json",
     }

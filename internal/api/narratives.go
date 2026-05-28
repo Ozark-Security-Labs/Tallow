@@ -19,6 +19,7 @@ func (s *Server) createNarrative(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var input llm.GenerateInput
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		writeError(w, r, tallowerr.New(tallowerr.CodeValidation, "invalid narrative request"))
 		return

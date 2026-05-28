@@ -9,7 +9,7 @@ import (
 const (
 	LLMProviderFake             = "fake"
 	LLMProviderCLI              = "cli"
-	LLMProviderAPI              = "api"
+	LLMProviderHTTPAPI          = "http_api"
 	LLMProviderOpenAICompatible = "openai_compatible"
 )
 
@@ -67,7 +67,7 @@ func (c LLMConfig) Validate() error {
 		if len(c.Provider.Command) == 0 || strings.TrimSpace(c.Provider.Command[0]) == "" {
 			return fmt.Errorf("enabled cli llm provider requires command argv")
 		}
-	case LLMProviderAPI, LLMProviderOpenAICompatible:
+	case LLMProviderHTTPAPI, LLMProviderOpenAICompatible:
 		u, err := url.Parse(c.Provider.Endpoint)
 		if err != nil || u.Scheme != "https" || u.Host == "" {
 			return fmt.Errorf("enabled api llm provider requires https endpoint")

@@ -39,7 +39,7 @@ LLM narrative enrichment is disabled by default and is non-authoritative. Determ
 llm:
   enabled: false
   provider:
-    type: "" # fake, cli, api, or openai_compatible when explicitly enabled
+    type: "" # fake, cli, http_api, or openai_compatible when explicitly enabled
     name: ""
     model: ""
     command: []

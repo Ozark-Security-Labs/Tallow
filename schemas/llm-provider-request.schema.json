@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tallow.osl.dev/schemas/llm-provider-request.schema.json",
+  "title": "Tallow LLM Provider Request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["request_id", "provider_type", "provider_name", "model", "prompt_template_version", "input_digest", "messages", "response_format", "timeout_seconds"],
+  "properties": {
+    "request_id": {"type": "string"},
+    "provider_type": {"type": "string", "enum": ["fake", "cli", "http_api", "openai_compatible"]},
+    "provider_name": {"type": "string"},
+    "model": {"type": "string"},
+    "prompt_template_version": {"type": "string"},
+    "input_digest": {"type": "string"},
+    "messages": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["role", "content"], "properties": {"role": {"type": "string", "enum": ["system", "developer", "user"]}, "content": {"type": "string"}}}},
+    "response_format": {"const": "json_schema"},
+    "timeout_seconds": {"type": "integer", "minimum": 1}
+  }
+}

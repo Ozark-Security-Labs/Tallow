@@ -11,7 +11,7 @@ func New(cfg config.LLMProviderConfig) (Provider, error) {
 		return &Fake{ProviderName: cfg.Name, ModelName: cfg.Model}, nil
 	case config.LLMProviderCLI:
 		return &CLI{ProviderName: cfg.Name, ModelName: cfg.Model, Command: cfg.Command}, nil
-	case config.LLMProviderAPI, config.LLMProviderOpenAICompatible:
+	case config.LLMProviderHTTPAPI, config.LLMProviderOpenAICompatible:
 		return &HTTPAPI{ProviderType: cfg.Type, ProviderName: cfg.Name, ModelName: cfg.Model, Endpoint: cfg.Endpoint, APIKeyEnv: cfg.APIKeyEnv}, nil
 	default:
 		return nil, fmt.Errorf("unknown llm provider type %q", cfg.Type)

@@ -8,7 +8,7 @@ Milestone 6 defines provider modes without enabling any provider by default:
 
 - `fake`: deterministic local test provider used by unit and regression tests.
 - `cli`: argv-based local command provider. Tallow sends a prepared request on stdin and reads JSON from stdout; it does not pass package text to a shell.
-- `api`: generic HTTPS JSON API provider using Tallow's provider request contract.
+- `http_api`: generic HTTPS JSON API provider using Tallow's provider request contract.
 - `openai_compatible`: OpenAI-compatible HTTPS mode reserved for compatible endpoints; it uses the same prepared request boundary in this milestone.
 
 Enabled providers must declare provider type, provider name, model, prompt template version, timeout, and an input digest. API providers must use an environment-variable secret reference rather than a committed key.
