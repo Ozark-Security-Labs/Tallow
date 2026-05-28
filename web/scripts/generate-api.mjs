@@ -1,8 +1,8 @@
-import { readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 
-const specPath = resolve('../docs/api/openapi.yaml');
-const spec = JSON.parse(readFileSync(specPath, 'utf8'));
+const specPath = resolve("../docs/api/openapi.yaml");
+const spec = JSON.parse(readFileSync(specPath, "utf8"));
 const schemas = Object.keys(spec.components?.schemas ?? {}).sort();
 
 const content = `/* Generated from docs/api/openapi.yaml. Do not edit by hand. */
@@ -33,5 +33,5 @@ export interface NotificationRoute { id: string; name: string; channel: 'email' 
 export interface ListResponse<T> { items: T[]; page?: PageInfo; next_cursor?: string }
 `;
 
-writeFileSync(resolve('src/api/generated.ts'), content);
+writeFileSync(resolve("src/api/generated.ts"), content);
 console.log(`Generated src/api/generated.ts from ${schemas.length} schemas`);

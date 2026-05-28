@@ -3,19 +3,58 @@
   "version": "1",
   "description": "Email digest of recent findings and scans.",
   "compatible_channels": ["email"],
-  "variables": {
-    "digest_window": {"type": "string", "required": true, "redaction": "none", "description": "Digest window"},
-    "finding_count": {"type": "number", "required": true, "redaction": "none", "description": "Finding count"},
-    "critical_count": {"type": "number", "required": true, "redaction": "none", "description": "Critical count"},
-    "high_count": {"type": "number", "required": true, "redaction": "none", "description": "High count"},
-    "package_summary": {"type": "string", "required": true, "redaction": "none", "description": "Package summary"},
-    "triage_url": {"type": "url", "required": true, "redaction": "url", "description": "Digest link"}
-  },
-  "targets": {
-    "email": {
-      "subject": "Tallow digest: {{ finding_count }} findings in {{ digest_window }}",
-      "text": "Tallow digest for {{ digest_window }}.\nFindings: {{ finding_count }}\nCritical: {{ critical_count }}\nHigh: {{ high_count }}\nPackages: {{ package_summary }}\nReview: {{ triage_url }}",
-      "html": "<h1>Tallow digest</h1><p><strong>Window:</strong> {{ digest_window }}</p><p><strong>Findings:</strong> {{ finding_count }}; <strong>Critical:</strong> {{ critical_count }}; <strong>High:</strong> {{ high_count }}</p><p><strong>Packages:</strong> {{ package_summary }}</p><p><strong>Review:</strong> {{ triage_url }}</p>"
+  "variables":
+    {
+      "digest_window":
+        {
+          "type": "string",
+          "required": true,
+          "redaction": "none",
+          "description": "Digest window"
+        },
+      "finding_count":
+        {
+          "type": "number",
+          "required": true,
+          "redaction": "none",
+          "description": "Finding count"
+        },
+      "critical_count":
+        {
+          "type": "number",
+          "required": true,
+          "redaction": "none",
+          "description": "Critical count"
+        },
+      "high_count":
+        {
+          "type": "number",
+          "required": true,
+          "redaction": "none",
+          "description": "High count"
+        },
+      "package_summary":
+        {
+          "type": "string",
+          "required": true,
+          "redaction": "none",
+          "description": "Package summary"
+        },
+      "triage_url":
+        {
+          "type": "url",
+          "required": true,
+          "redaction": "url",
+          "description": "Digest link"
+        }
+    },
+  "targets":
+    {
+      "email":
+        {
+          "subject": "Tallow digest: {{ finding_count }} findings in {{ digest_window }}",
+          "text": "Tallow digest for {{ digest_window }}.\nFindings: {{ finding_count }}\nCritical: {{ critical_count }}\nHigh: {{ high_count }}\nPackages: {{ package_summary }}\nReview: {{ triage_url }}",
+          "html": "<h1>Tallow digest</h1><p><strong>Window:</strong> {{ digest_window }}</p><p><strong>Findings:</strong> {{ finding_count }}; <strong>Critical:</strong> {{ critical_count }}; <strong>High:</strong> {{ high_count }}</p><p><strong>Packages:</strong> {{ package_summary }}</p><p><strong>Review:</strong> {{ triage_url }}</p>"
+        }
     }
-  }
 }

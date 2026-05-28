@@ -3,19 +3,58 @@
   "version": "1",
   "description": "Email notification for a failed analyzer scan.",
   "compatible_channels": ["email"],
-  "variables": {
-    "package_name": {"type": "string", "required": true, "redaction": "none", "description": "Package name"},
-    "version": {"type": "string", "required": true, "redaction": "none", "description": "Package version"},
-    "ecosystem": {"type": "string", "required": true, "redaction": "none", "description": "Package ecosystem"},
-    "run_id": {"type": "string", "required": true, "redaction": "none", "description": "Analyzer run ID"},
-    "sanitized_error": {"type": "string", "required": true, "redaction": "none", "description": "Sanitized failure summary"},
-    "triage_url": {"type": "url", "required": true, "redaction": "url", "description": "Run link"}
-  },
-  "targets": {
-    "email": {
-      "subject": "Tallow scan failed: {{ ecosystem }}/{{ package_name }} {{ version }}",
-      "text": "Tallow could not complete a scan.\nPackage: {{ ecosystem }}/{{ package_name }}\nVersion: {{ version }}\nRun: {{ run_id }}\nError: {{ sanitized_error }}\nReview: {{ triage_url }}",
-      "html": "<h1>Tallow scan failed</h1><p><strong>Package:</strong> {{ ecosystem }}/{{ package_name }} {{ version }}</p><p><strong>Run:</strong> {{ run_id }}</p><p><strong>Error:</strong> {{ sanitized_error }}</p><p><strong>Review:</strong> {{ triage_url }}</p>"
+  "variables":
+    {
+      "package_name":
+        {
+          "type": "string",
+          "required": true,
+          "redaction": "none",
+          "description": "Package name"
+        },
+      "version":
+        {
+          "type": "string",
+          "required": true,
+          "redaction": "none",
+          "description": "Package version"
+        },
+      "ecosystem":
+        {
+          "type": "string",
+          "required": true,
+          "redaction": "none",
+          "description": "Package ecosystem"
+        },
+      "run_id":
+        {
+          "type": "string",
+          "required": true,
+          "redaction": "none",
+          "description": "Analyzer run ID"
+        },
+      "sanitized_error":
+        {
+          "type": "string",
+          "required": true,
+          "redaction": "none",
+          "description": "Sanitized failure summary"
+        },
+      "triage_url":
+        {
+          "type": "url",
+          "required": true,
+          "redaction": "url",
+          "description": "Run link"
+        }
+    },
+  "targets":
+    {
+      "email":
+        {
+          "subject": "Tallow scan failed: {{ ecosystem }}/{{ package_name }} {{ version }}",
+          "text": "Tallow could not complete a scan.\nPackage: {{ ecosystem }}/{{ package_name }}\nVersion: {{ version }}\nRun: {{ run_id }}\nError: {{ sanitized_error }}\nReview: {{ triage_url }}",
+          "html": "<h1>Tallow scan failed</h1><p><strong>Package:</strong> {{ ecosystem }}/{{ package_name }} {{ version }}</p><p><strong>Run:</strong> {{ run_id }}</p><p><strong>Error:</strong> {{ sanitized_error }}</p><p><strong>Review:</strong> {{ triage_url }}</p>"
+        }
     }
-  }
 }

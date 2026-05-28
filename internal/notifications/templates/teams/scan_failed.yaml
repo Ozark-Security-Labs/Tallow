@@ -3,13 +3,56 @@
   "version": "1",
   "description": "Teams card for failed analyzer scan.",
   "compatible_channels": ["teams"],
-  "variables": {
-    "package_name": {"type": "string", "required": true, "redaction": "none", "description": "Package name"},
-    "version": {"type": "string", "required": true, "redaction": "none", "description": "Package version"},
-    "ecosystem": {"type": "string", "required": true, "redaction": "none", "description": "Ecosystem"},
-    "severity": {"type": "string", "required": true, "redaction": "none", "description": "Severity"},
-    "rule_ids": {"type": "string", "required": true, "redaction": "none", "description": "Rule IDs"},
-    "evidence_url": {"type": "url", "required": true, "redaction": "url", "description": "Evidence link"}
-  },
-  "targets": {"teams": {"card_json": "{\"type\":\"message\",\"text\":\"Tallow scan failed for {{ ecosystem }}/{{ package_name }} {{ version }} with {{ severity }} severity. Rule context: {{ rule_ids }}. Evidence: {{ evidence_url }}\"}"}}
+  "variables":
+    {
+      "package_name":
+        {
+          "type": "string",
+          "required": true,
+          "redaction": "none",
+          "description": "Package name"
+        },
+      "version":
+        {
+          "type": "string",
+          "required": true,
+          "redaction": "none",
+          "description": "Package version"
+        },
+      "ecosystem":
+        {
+          "type": "string",
+          "required": true,
+          "redaction": "none",
+          "description": "Ecosystem"
+        },
+      "severity":
+        {
+          "type": "string",
+          "required": true,
+          "redaction": "none",
+          "description": "Severity"
+        },
+      "rule_ids":
+        {
+          "type": "string",
+          "required": true,
+          "redaction": "none",
+          "description": "Rule IDs"
+        },
+      "evidence_url":
+        {
+          "type": "url",
+          "required": true,
+          "redaction": "url",
+          "description": "Evidence link"
+        }
+    },
+  "targets":
+    {
+      "teams":
+        {
+          "card_json": "{\"type\":\"message\",\"text\":\"Tallow scan failed for {{ ecosystem }}/{{ package_name }} {{ version }} with {{ severity }} severity. Rule context: {{ rule_ids }}. Evidence: {{ evidence_url }}\"}"
+        }
+    }
 }
