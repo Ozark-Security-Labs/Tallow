@@ -8,6 +8,7 @@ import (
 	"github.com/Ozark-Security-Labs/Tallow/internal/config"
 	"github.com/Ozark-Security-Labs/Tallow/internal/metrics"
 	"github.com/Ozark-Security-Labs/Tallow/internal/rbac"
+	"github.com/Ozark-Security-Labs/Tallow/internal/llm"
 	"github.com/Ozark-Security-Labs/Tallow/internal/requestid"
 	"github.com/Ozark-Security-Labs/Tallow/internal/tallowerr"
 	"github.com/go-chi/chi/v5"
@@ -29,6 +30,7 @@ type Server struct {
 	Graph          GraphReader
 	Correlations   CorrelationReader
 	Statuses       StatusReader
+	Narratives     interface { GenerateNarrative(context.Context, llm.GenerateInput) (llm.Narrative, error) }
 	Handler        http.Handler
 }
 
@@ -78,6 +80,7 @@ func (s *Server) routes() http.Handler {
 	r.Get("/v1/observations", chain(s.requireAuth, permissionMiddleware(rbac.ReadPackages), s.listObservations))
 	r.Get("/v1/analyzer-runs", chain(s.requireAuth, permissionMiddleware(rbac.ReadAnalyzerRuns), s.listAnalyzerRuns))
 	r.Get("/v1/analyzer-runs/{run_id}", chain(s.requireAuth, permissionMiddleware(rbac.ReadAnalyzerRuns), s.getAnalyzerRun))
+	r.Post("/v1/narratives", chain(s.requireAuth, csrfGuard, permissionMiddleware(rbac.ReadFindings), s.createNarrative))
 	r.Get("/v1/settings", chain(s.requireAuth, permissionMiddleware(rbac.ReadSettings), s.getSettings))
 	r.Patch("/v1/settings", chain(s.requireAuth, csrfGuard, permissionMiddleware(rbac.MutateSettings), s.updateSettings))
 	r.Get("/v1/alerts", chain(s.requireAuth, permissionMiddleware(rbac.ReadAlerts), s.listAlerts))
