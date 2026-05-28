@@ -18,6 +18,7 @@ _URL_QUERY_PATTERN = re.compile(r"(\?)([^#\s]+)")
 _STANDALONE_SECRET_PATTERN = re.compile(
     r"\b("
     r"gh[pousr]_[A-Za-z0-9_]{20,}"
+    r"|github_pat_[A-Za-z0-9_]{22,}"
     r"|npm_[A-Za-z0-9]{20,}"
     r"|AKIA[0-9A-Z]{16}"
     r")\b"
