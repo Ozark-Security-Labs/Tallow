@@ -16,6 +16,7 @@ type Config struct {
 	Auth          AuthConfig
 	Notifications NotificationsConfig
 	LLM           LLMConfig
+	Community     CommunitySignalsConfig
 	Metrics       MetricsConfig
 	Log           LogConfig
 }
@@ -68,7 +69,7 @@ type MetricsConfig struct{ Enabled bool }
 type LogConfig struct{ Level string }
 
 func Default() Config {
-	return Config{Server: ServerConfig{"127.0.0.1:8844"}, Postgres: PostgresConfig{"postgres://tallow:tallow@localhost:5432/tallow?sslmode=disable"}, NATS: NATSConfig{"nats://localhost:4222"}, Storage: StorageConfig{"./var/tallow/storage"}, Auth: AuthConfig{Session: AuthSessionConfig{CookieName: "tallow_session", TTL: "24h", SecureCookies: true}, Local: AuthLocalConfig{Enabled: true}}, Notifications: NotificationsConfig{Email: NotificationsEmailConfig{SMTPHost: "localhost", SMTPPort: 25, From: "tallow@example.com"}, Teams: NotificationsTeamsConfig{}}, LLM: DefaultLLMConfig(), Metrics: MetricsConfig{true}, Log: LogConfig{"info"}}
+	return Config{Server: ServerConfig{"127.0.0.1:8844"}, Postgres: PostgresConfig{"postgres://tallow:tallow@localhost:5432/tallow?sslmode=disable"}, NATS: NATSConfig{"nats://localhost:4222"}, Storage: StorageConfig{"./var/tallow/storage"}, Auth: AuthConfig{Session: AuthSessionConfig{CookieName: "tallow_session", TTL: "24h", SecureCookies: true}, Local: AuthLocalConfig{Enabled: true}}, Notifications: NotificationsConfig{Email: NotificationsEmailConfig{SMTPHost: "localhost", SMTPPort: 25, From: "tallow@example.com"}, Teams: NotificationsTeamsConfig{}}, LLM: DefaultLLMConfig(), Community: DefaultCommunitySignalsConfig(), Metrics: MetricsConfig{true}, Log: LogConfig{"info"}}
 }
 
 func Load(env map[string]string) (Config, error) {
@@ -231,6 +232,23 @@ func Load(env map[string]string) (Config, error) {
 		c.LLM.TimeoutSeconds = n
 	}
 
+	if v, ok := get("TALLOW_COMMUNITY_SIGNALS_ENABLED"); ok {
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			return c, fmt.Errorf("invalid TALLOW_COMMUNITY_SIGNALS_ENABLED: %w", err)
+		}
+		c.Community.Sharing.Enabled = b
+	}
+	if v, ok := get("TALLOW_COMMUNITY_SIGNALS_ORG_ID"); ok {
+		c.Community.Sharing.OrganizationID = v
+	}
+	if v, ok := get("TALLOW_COMMUNITY_SIGNALS_ALLOWED_CLASSES"); ok {
+		c.Community.Sharing.AllowedSignalClasses = splitCSV(v)
+	}
+	if v, ok := get("TALLOW_COMMUNITY_SIGNALS_ANONYMIZATION"); ok {
+		c.Community.Sharing.AnonymizationLevel = v
+	}
+
 	if v, ok := get("TALLOW_METRICS_ENABLED"); ok {
 		b, err := strconv.ParseBool(v)
 		if err != nil {
@@ -283,6 +301,9 @@ func (c Config) Validate() error {
 		return fmt.Errorf("invalid auth session ttl: %w", err)
 	}
 	if err := c.LLM.Validate(); err != nil {
+		return err
+	}
+	if err := c.Community.Validate(); err != nil {
 		return err
 	}
 	switch c.Log.Level {

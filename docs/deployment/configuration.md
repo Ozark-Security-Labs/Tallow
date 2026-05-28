@@ -55,3 +55,17 @@ llm:
 ```
 
 Environment equivalents include `TALLOW_LLM_ENABLED`, `TALLOW_LLM_PROVIDER_TYPE`, `TALLOW_LLM_PROVIDER_NAME`, `TALLOW_LLM_PROVIDER_MODEL`, `TALLOW_LLM_PROVIDER_COMMAND`, `TALLOW_LLM_PROVIDER_ENDPOINT`, and `TALLOW_LLM_PROVIDER_API_KEY_ENV`. API keys must come from environment or secret references, not committed YAML.
+
+
+## Community signal sharing
+
+Community signal sharing is disabled by default and must be enabled by an admin. Store allowed signal classes and anonymization level explicitly.
+
+```yaml
+communitySignals:
+  sharing:
+    enabled: false
+    organization_id: ""
+    allowed_signal_classes: []
+    anonymization_level: coarse
+```

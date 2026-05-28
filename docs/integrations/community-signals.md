@@ -44,3 +44,16 @@ Future sources must be added behind adapters and stored with provenance.
 - Maintainer change between observations creates signal with old/new bounded values.
 - Repeated observation of same status is idempotent.
 - Untrusted issue text cannot alter LLM instructions.
+
+
+## Opt-in model
+
+Community signal sharing is organization-level and defaults to `false`. An admin role with integration-management permission is required to enable sharing. The opt-in record stores the organization identifier, allowed signal classes, and anonymization level (`coarse`, `hashed`, or `public_only`). Disabled organizations emit no community signal payloads.
+
+Example disabled configuration:
+
+```yaml
+communitySignals:
+  sharing:
+    enabled: false
+```
