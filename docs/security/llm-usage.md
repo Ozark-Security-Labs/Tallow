@@ -52,3 +52,8 @@ Tallow prompt templates are versioned contracts. The default template is `config
 ## Redaction pipeline
 
 The LLM redaction pipeline runs before prompt rendering and before community export. It redacts token-like values, email addresses, URL credentials, common absolute local paths, and oversized snippets. Redaction returns deterministic audit counts so stored narratives and exports can report what was removed without retaining the original secret. Builders refuse unredacted raw artifact content.
+
+
+## Narrative output schema
+
+Narrative output validates against `schemas/llm-narrative-output.schema.json`. It includes summary, attack hypothesis, supporting evidence IDs, benign explanations, recommended actions, uncertainty notes, and narrative-only confidence. The parser rejects invalid JSON as a typed non-fatal error and rejects severity overrides, unknown evidence IDs, and rule ID changes. Validated narratives are records separate from deterministic findings.

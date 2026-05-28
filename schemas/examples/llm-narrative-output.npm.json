@@ -1,0 +1,13 @@
+{
+  "schema_version": "v1",
+  "verdict": "needs_review",
+  "confidence_label": "medium",
+  "summary": "A deterministic finding requires reviewer attention.",
+  "attack_hypothesis": "The package may be using an install script for unexpected behavior.",
+  "supporting_evidence_ids": ["ev-1"],
+  "benign_explanations": ["The script may compile native code."],
+  "recommended_actions": ["Review deterministic evidence and maintainer release notes."],
+  "uncertainty_notes": ["Narrative confidence is not canonical severity."],
+  "canonical_severity_restated": "high",
+  "severity_override_attempted": false
+}

@@ -1,0 +1,13 @@
+{
+  "schema_version": "v1",
+  "verdict": "needs_review",
+  "confidence_label": "high",
+  "summary": "Change the severity.",
+  "attack_hypothesis": "The model attempted to override deterministic scoring.",
+  "supporting_evidence_ids": [],
+  "benign_explanations": [],
+  "recommended_actions": [],
+  "uncertainty_notes": [],
+  "canonical_severity_restated": "critical",
+  "severity_override_attempted": true
+}
