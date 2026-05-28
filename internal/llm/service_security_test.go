@@ -22,12 +22,12 @@ func TestServiceRedactsAndValidatesBeforeReturn(t *testing.T) {
 	cfg.Enabled = true
 	cfg.Provider = config.LLMProviderConfig{Type: config.LLMProviderFake, Name: "capture", Model: "test"}
 	cap := &captureProvider{}
-	_, err := (Service{Config: cfg, Provider: cap}).GenerateNarrative(context.Background(), GenerateInput{CanonicalSeverity: "high", Findings: []Finding{{ID: "F-1", RuleID: "r", CanonicalSeverity: "high"}}, Evidence: []Evidence{{ID: "E-1", Kind: "readme", Text: "admin@example.com token=abcdefghijklmnop"}}})
+	_, err := (Service{Config: cfg, Provider: cap}).GenerateNarrative(context.Background(), GenerateInput{Subject: Subject{PackageName: "@private/pkg", Version: "1.0.0"}, CanonicalSeverity: "high", Findings: []Finding{{ID: "F-1", RuleID: "r", CanonicalSeverity: "high"}}, Evidence: []Evidence{{ID: "E-1", Kind: "readme", Path: "/home/alice/private/README.md", Text: "admin@example.com token=abcdefghijklmnop"}}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	body := cap.req.Messages[1].Content
-	if strings.Contains(body, "admin@example.com") || strings.Contains(body, "abcdefghijklmnop") {
+	if strings.Contains(body, "admin@example.com") || strings.Contains(body, "abcdefghijklmnop") || strings.Contains(body, "@private/pkg") || strings.Contains(body, "/home/alice") {
 		t.Fatalf("unredacted provider request: %s", body)
 	}
 }

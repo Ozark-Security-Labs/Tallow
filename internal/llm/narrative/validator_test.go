@@ -37,3 +37,10 @@ func TestRejectsUnknownEvidenceID(t *testing.T) {
 		t.Fatal("expected unknown evidence")
 	}
 }
+
+func TestRejectsMissingRequiredNarrativeFields(t *testing.T) {
+	raw := []byte(`{"schema_version":"v1","summary":"partial","canonical_severity_restated":"high","severity_override_attempted":false}`)
+	if _, err := ParseAndValidate(raw, Context{CanonicalSeverity: "high"}); err == nil {
+		t.Fatal("expected required field rejection")
+	}
+}

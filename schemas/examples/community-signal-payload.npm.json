@@ -3,15 +3,15 @@
   "sharing_enabled": true,
   "generated_at": "2026-05-28T14:33:09Z",
   "producer": {
-    "instance_id_hash": "sha256:f48d9ed4e16079907d8dbe6c88fe7da89f1f30f44d74c79ed69c749049f5e035",
-    "organization_id_hash": "sha256:19be7ffc2c36731288e6c15d9bdb53a83321675f9c5a068552a2bfd20d5d6dc1",
+    "instance_id_hash": "sha256:adca87cc1cdcd8cce4843c693e45039d87b70a8d1fec1352692aab4ed744acef",
+    "organization_id_hash": "sha256:4d738adaaa58f33704701176d0199604ceb558cfd0d973f09151ef185eb97bca",
     "tallow_version": "test"
   },
   "signals": [
     {
       "signal_id": "S-1",
       "ecosystem": "npm",
-      "package_name_hash": "sha256:95dfaec1ddc9309a82686febc3e56eeff4d17579ba6ed679651636b22db13a56",
+      "package_name_hash": "sha256:a5f83fd1f2f3e49cc9ec99896aefc9023cccc4252f8f8529645fd4471fcbc1ca",
       "rule_id": "rule-1",
       "signal_type": "yanked",
       "observed_at_coarse": "2026-05-28T14:00:00Z",

@@ -39,8 +39,8 @@ func (b Builder) Build(input llm.GenerateInput) (Bundle, error) {
 		if idx >= b.MaxEvidenceItems {
 			continue
 		}
-		if ev.Kind == "raw_artifact" && !redaction.ContainsSecretLike(ev.Text) {
-			return Bundle{}, fmt.Errorf("unredacted raw artifact content refused")
+		if ev.Kind == "raw_artifact" {
+			return Bundle{}, fmt.Errorf("raw artifact content refused")
 		}
 		res := b.Redactor.RedactText(ev.Text, redaction.Options{MaxBytes: b.MaxSnippetBytes})
 		for _, f := range res.Findings {

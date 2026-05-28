@@ -95,6 +95,10 @@ func redactInput(in GenerateInput, cfg config.LLMConfig) (GenerateInput, []strin
 	}
 	redactor := redaction.DefaultRedactor{}
 	out := in
+	if out.Subject.PackageName != "" {
+		out.Subject.PackageName = "[REDACTED:PACKAGE_NAME]"
+	}
+	out.Subject.Version = redactor.RedactText(out.Subject.Version, redaction.Options{MaxBytes: 128}).Text
 	out.Evidence = nil
 	evidenceIDs := []string{}
 	for i, ev := range in.Evidence {
@@ -106,6 +110,7 @@ func redactInput(in GenerateInput, cfg config.LLMConfig) (GenerateInput, []strin
 		}
 		res := redactor.RedactText(ev.Text, redaction.Options{MaxBytes: maxBytes})
 		ev.Text = res.Text
+		ev.Path = redactor.RedactText(ev.Path, redaction.Options{MaxBytes: 512}).Text
 		out.Evidence = append(out.Evidence, ev)
 		evidenceIDs = append(evidenceIDs, ev.ID)
 	}

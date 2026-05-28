@@ -37,8 +37,18 @@ func ParseAndValidate(raw []byte, ctx Context) (Output, error) {
 	if err := dec.Decode(&out); err != nil {
 		return Output{}, fmt.Errorf("%w: %v", ErrInvalidJSON, err)
 	}
-	if out.SchemaVersion != "v1" || out.Summary == "" {
+	if out.SchemaVersion != "v1" || out.Summary == "" || out.Verdict == "" || out.ConfidenceLabel == "" || out.AttackHypothesis == "" || out.CanonicalSeverityRestated == "" || out.BenignExplanations == nil || out.RecommendedActions == nil || out.UncertaintyNotes == nil || out.SupportingEvidenceIDs == nil {
 		return Output{}, fmt.Errorf("invalid narrative output schema")
+	}
+	switch out.Verdict {
+	case "needs_review", "likely_benign", "suspicious", "insufficient_evidence":
+	default:
+		return Output{}, fmt.Errorf("invalid narrative verdict")
+	}
+	switch out.ConfidenceLabel {
+	case "low", "medium", "high":
+	default:
+		return Output{}, fmt.Errorf("invalid narrative confidence")
 	}
 	if out.SeverityOverrideAttempted {
 		return Output{}, fmt.Errorf("severity override attempted")

@@ -46,7 +46,7 @@ type BuildSignalInput struct {
 }
 
 func BuildPayload(opt OptIn, instanceID, tallowVersion string, now time.Time, inputs []BuildSignalInput) (Payload, error) {
-	p := Payload{SchemaVersion: "community-signals/v1", SharingEnabled: opt.Enabled, GeneratedAt: now.UTC(), Producer: Producer{InstanceIDHash: hash(instanceID), OrganizationIDHash: hash(opt.OrganizationID), TallowVersion: tallowVersion}, Privacy: Privacy{RedactionPolicyVersion: "redaction-v1"}}
+	p := Payload{SchemaVersion: "community-signals/v1", SharingEnabled: opt.Enabled, GeneratedAt: now.UTC(), Producer: Producer{InstanceIDHash: hashWithSalt("instance", instanceID), OrganizationIDHash: hashWithSalt(instanceID, opt.OrganizationID), TallowVersion: tallowVersion}, Privacy: Privacy{RedactionPolicyVersion: "redaction-v1"}}
 	if !opt.Enabled {
 		return p, nil
 	}
@@ -54,7 +54,7 @@ func BuildPayload(opt OptIn, instanceID, tallowVersion string, now time.Time, in
 		if in.RawArtifact != "" || in.PrivateRepoName != "" || in.User != "" || in.Secret != "" {
 			return Payload{}, fmt.Errorf("private fields are not allowed in community signal payload")
 		}
-		p.Signals = append(p.Signals, PayloadSignal{SignalID: in.SignalID, Ecosystem: in.Ecosystem, PackageNameHash: hash(in.PackageName), RuleID: in.RuleID, SignalType: in.SignalType, ObservedAtCoarse: coarseHour(in.ObservedAt), EvidenceDigest: in.EvidenceDigest, Confidence: in.Confidence})
+		p.Signals = append(p.Signals, PayloadSignal{SignalID: in.SignalID, Ecosystem: in.Ecosystem, PackageNameHash: hashWithSalt(instanceID, in.PackageName), RuleID: in.RuleID, SignalType: in.SignalType, ObservedAtCoarse: coarseHour(in.ObservedAt), EvidenceDigest: in.EvidenceDigest, Confidence: in.Confidence})
 	}
 	return p, ValidatePayload(p)
 }
@@ -72,11 +72,11 @@ func ValidatePayload(p Payload) error {
 	}
 	return nil
 }
-func hash(s string) string {
+func hashWithSalt(salt, s string) string {
 	if s == "" {
 		return ""
 	}
-	sum := sha256.Sum256([]byte(s))
+	sum := sha256.Sum256([]byte(salt + "\x00" + s))
 	return "sha256:" + hex.EncodeToString(sum[:])
 }
 func coarseHour(t time.Time) string {
