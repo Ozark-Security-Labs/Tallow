@@ -23,6 +23,18 @@ auth:
     callback_url: http://localhost:8844/v1/auth/github/callback
     allowed_orgs: []
     allowed_teams: []
+notifications:
+  email:
+    enabled: false
+    smtp_host: localhost
+    smtp_port: 1025
+    username: ""
+    password_ref: TALLOW_SMTP_PASSWORD
+    from: tallow@example.com
+    to: [ops@example.com]
+  teams:
+    enabled: false
+    webhook_url_ref: TALLOW_TEAMS_WEBHOOK_URL
 metrics:
   enabled: true
 log:

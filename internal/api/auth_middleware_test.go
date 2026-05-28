@@ -203,6 +203,14 @@ func TestCurrentUserAndAdminRoutesRequireAuthAndRBAC(t *testing.T) {
 	if admin.Code != http.StatusOK {
 		t.Fatalf("%d %s", admin.Code, admin.Body.String())
 	}
+
+	routeReq := httptest.NewRequest("POST", "/v1/notification-routes", nil)
+	routeReq.AddCookie(cookie)
+	route := httptest.NewRecorder()
+	s.Handler.ServeHTTP(route, routeReq)
+	if route.Code != http.StatusCreated {
+		t.Fatalf("%d %s", route.Code, route.Body.String())
+	}
 }
 
 func TestGitHubOAuthHandlers(t *testing.T) {

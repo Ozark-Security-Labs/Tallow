@@ -9,13 +9,14 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig
-	Postgres PostgresConfig
-	NATS     NATSConfig
-	Storage  StorageConfig
-	Auth     AuthConfig
-	Metrics  MetricsConfig
-	Log      LogConfig
+	Server        ServerConfig
+	Postgres      PostgresConfig
+	NATS          NATSConfig
+	Storage       StorageConfig
+	Auth          AuthConfig
+	Notifications NotificationsConfig
+	Metrics       MetricsConfig
+	Log           LogConfig
 }
 type ServerConfig struct{ ListenAddress string }
 type PostgresConfig struct{ DSN string }
@@ -45,11 +46,28 @@ type AuthGitHubConfig struct {
 	AllowedOrgs  []string
 	AllowedTeams []string
 }
+type NotificationsConfig struct {
+	Email NotificationsEmailConfig
+	Teams NotificationsTeamsConfig
+}
+type NotificationsEmailConfig struct {
+	Enabled     bool
+	SMTPHost    string
+	SMTPPort    int
+	Username    string
+	PasswordRef string
+	From        string
+	To          []string
+}
+type NotificationsTeamsConfig struct {
+	Enabled       bool
+	WebhookURLRef string
+}
 type MetricsConfig struct{ Enabled bool }
 type LogConfig struct{ Level string }
 
 func Default() Config {
-	return Config{Server: ServerConfig{"127.0.0.1:8844"}, Postgres: PostgresConfig{"postgres://tallow:tallow@localhost:5432/tallow?sslmode=disable"}, NATS: NATSConfig{"nats://localhost:4222"}, Storage: StorageConfig{"./var/tallow/storage"}, Auth: AuthConfig{Session: AuthSessionConfig{CookieName: "tallow_session", TTL: "24h", SecureCookies: true}, Local: AuthLocalConfig{Enabled: true}}, Metrics: MetricsConfig{true}, Log: LogConfig{"info"}}
+	return Config{Server: ServerConfig{"127.0.0.1:8844"}, Postgres: PostgresConfig{"postgres://tallow:tallow@localhost:5432/tallow?sslmode=disable"}, NATS: NATSConfig{"nats://localhost:4222"}, Storage: StorageConfig{"./var/tallow/storage"}, Auth: AuthConfig{Session: AuthSessionConfig{CookieName: "tallow_session", TTL: "24h", SecureCookies: true}, Local: AuthLocalConfig{Enabled: true}}, Notifications: NotificationsConfig{Email: NotificationsEmailConfig{SMTPHost: "localhost", SMTPPort: 25, From: "tallow@example.com"}, Teams: NotificationsTeamsConfig{}}, Metrics: MetricsConfig{true}, Log: LogConfig{"info"}}
 }
 
 func Load(env map[string]string) (Config, error) {
@@ -121,6 +139,42 @@ func Load(env map[string]string) (Config, error) {
 	}
 	if v, ok := get("TALLOW_AUTH_GITHUB_ALLOWED_TEAMS"); ok {
 		c.Auth.GitHub.AllowedTeams = splitCSV(v)
+	}
+	if v, ok := get("TALLOW_NOTIFICATIONS_EMAIL_ENABLED"); ok {
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			return c, fmt.Errorf("invalid TALLOW_NOTIFICATIONS_EMAIL_ENABLED: %w", err)
+		}
+		c.Notifications.Email.Enabled = b
+	}
+	if v, ok := get("TALLOW_NOTIFICATIONS_EMAIL_SMTP_HOST"); ok {
+		c.Notifications.Email.SMTPHost = v
+	}
+	if v, ok := get("TALLOW_NOTIFICATIONS_EMAIL_SMTP_PORT"); ok {
+		p, err := strconv.Atoi(v)
+		if err != nil {
+			return c, fmt.Errorf("invalid TALLOW_NOTIFICATIONS_EMAIL_SMTP_PORT: %w", err)
+		}
+		c.Notifications.Email.SMTPPort = p
+	}
+	if v, ok := get("TALLOW_NOTIFICATIONS_EMAIL_PASSWORD_REF"); ok {
+		c.Notifications.Email.PasswordRef = v
+	}
+	if v, ok := get("TALLOW_NOTIFICATIONS_EMAIL_FROM"); ok {
+		c.Notifications.Email.From = v
+	}
+	if v, ok := get("TALLOW_NOTIFICATIONS_EMAIL_TO"); ok {
+		c.Notifications.Email.To = splitCSV(v)
+	}
+	if v, ok := get("TALLOW_NOTIFICATIONS_TEAMS_ENABLED"); ok {
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			return c, fmt.Errorf("invalid TALLOW_NOTIFICATIONS_TEAMS_ENABLED: %w", err)
+		}
+		c.Notifications.Teams.Enabled = b
+	}
+	if v, ok := get("TALLOW_NOTIFICATIONS_TEAMS_WEBHOOK_URL_REF"); ok {
+		c.Notifications.Teams.WebhookURLRef = v
 	}
 	if v, ok := get("TALLOW_METRICS_ENABLED"); ok {
 		b, err := strconv.ParseBool(v)

@@ -35,6 +35,12 @@ The initial Teams templates are:
 
 Teams template tests parse and compare canonical JSON snapshots. Templates must not render webhook URLs, OAuth tokens, raw artifact bodies, or untrusted markdown action spoofing content.
 
+## Routes and delivery audit
+
+Notification routes select a channel and sanitized configuration. Email routes use SMTP host, port, sender, recipients, and a password secret reference. Teams routes use a webhook/workflow URL secret reference. Delivery dispatch records pending/sent/failed attempts with route, alert/finding, channel, attempt count, provider message ID, timestamps, and sanitized errors. Raw artifact bodies, webhook URLs, SMTP passwords, OAuth tokens, and full sensitive URLs must not be stored in delivery errors or rendered previews.
+
+Admin-only APIs manage routes and send test notifications. Analysts and admins may read/triage alerts; notification route management and integration tests are admin-only.
+
 Run:
 
 ```sh
