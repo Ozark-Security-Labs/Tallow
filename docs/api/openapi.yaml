@@ -1,153 +1,105 @@
-openapi: 3.1.0
-info: { title: Tallow API, version: 0.1.0 }
-paths:
-  /healthz: { get: { responses: { '200': { description: healthy } } } }
-  /readyz: { get: { responses: { '200': { description: ready }, '503': { description: not ready } } } }
-  /metrics: { get: { responses: { '200': { description: prometheus metrics } } } }
-  /v1/findings:
-    get:
-      summary: List findings
-      description: >-
-        Returns findings ordered by `created_at DESC, id DESC`. Use `limit`
-        and the opaque `next_cursor` response value for cursor pagination.
-      parameters:
-        - { name: ecosystem, in: query, schema: { type: string } }
-        - { name: package, in: query, schema: { type: string } }
-        - { name: version, in: query, schema: { type: string } }
-        - { name: severity_hint, in: query, schema: { type: string } }
-        - { name: confidence, in: query, schema: { type: string } }
-        - { name: status, in: query, schema: { type: string } }
-        - { name: category, in: query, schema: { type: string } }
-        - { name: rule_id, in: query, schema: { type: string } }
-        - { name: artifact_id, in: query, schema: { type: string } }
-        - { name: snapshot_id, in: query, schema: { type: string } }
-        - { name: created_after, in: query, schema: { type: string, format: date-time } }
-        - { name: created_before, in: query, schema: { type: string, format: date-time } }
-        - { name: cursor, in: query, schema: { type: string } }
-        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
-      responses:
-        '200':
-          description: findings page
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [items]
-                properties:
-                  items: { type: array, items: { $ref: '#/components/schemas/FindingSummary' } }
-                  next_cursor: { type: string }
-        '400': { description: invalid filter or cursor }
-  /v1/findings/{id}:
-    get:
-      summary: Get a finding
-      parameters:
-        - { name: id, in: path, required: true, schema: { type: string } }
-      responses:
-        '200':
-          description: finding
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Finding' }
-        '404': { description: finding not found }
-  /v1/graph/affected-direct-dependencies:
-    get:
-      summary: List direct dependencies affected by transitive findings
-      responses:
-        '200':
-          description: Affected dependency list
-  /v1/source-correlations:
-    get:
-      summary: List source correlation evidence
-      parameters:
-        - in: query
-          name: limit
-          schema: { type: integer, minimum: 1, maximum: 200 }
-        - in: query
-          name: offset
-          schema: { type: integer, minimum: 0 }
-      responses:
-        '200':
-          description: Source correlation evidence list
-  /v1/package-versions/{id}/statuses:
-    get:
-      summary: List package version statuses
-      responses:
-        '200': { description: Status list }
-  /v1/package-versions/{id}/transitive-impacts:
-    get:
-      summary: List transitive impact records
-      responses:
-        '200': { description: Transitive impact list }
-  /v1/statuses/{id}/affected-dependents:
-    get:
-      summary: List affected dependents for a status
-      responses:
-        '200': { description: Affected dependents list }
-
-  /v1/package-versions/{id}/source-correlations:
-    get:
-      summary: List source correlations for a package version
-      responses:
-        '200': { description: Source correlation evidence list }
-  /v1/artifacts/{id}/source-correlations:
-    get:
-      summary: List source correlations for an artifact
-      responses:
-        '200': { description: Source correlation evidence list }
-components:
-  schemas:
-    ErrorEnvelope:
-      type: object
-      required: [error]
-      properties: { error: { type: object, required: [code,message], properties: { code: { type: string }, message: { type: string }, request_id: { type: string } } } }
-    Finding:
-      type: object
-      required: [id, run_id, rule_id, analyzer_id, ecosystem, package_name, severity_hint, confidence, status, created_at]
-      properties:
-        id: { type: string }
-        run_id: { type: string }
-        rule_id: { type: string }
-        rule_version: { type: string }
-        analyzer_id: { type: string }
-        analyzer_version: { type: string }
-        ecosystem: { type: string }
-        package_name: { type: string }
-        version: { type: string }
-        artifact_id: { type: string }
-        snapshot_id: { type: string }
-        category: { type: string }
-        severity_hint: { type: string }
-        confidence: { type: string }
-        title: { type: string }
-        summary: { type: string }
-        subject: { type: object }
-        evidence: { type: array }
-        tags: { type: array, items: { type: string } }
-        status: { type: string }
-        created_at: { type: string, format: date-time }
-        updated_at: { type: string, format: date-time }
-    FindingSummary:
-      type: object
-      required: [id, run_id, rule_id, analyzer_id, ecosystem, package_name, severity_hint, confidence, status, evidence_count, created_at]
-      properties:
-        id: { type: string }
-        run_id: { type: string }
-        rule_id: { type: string }
-        rule_version: { type: string }
-        analyzer_id: { type: string }
-        analyzer_version: { type: string }
-        ecosystem: { type: string }
-        package_name: { type: string }
-        version: { type: string }
-        artifact_id: { type: string }
-        snapshot_id: { type: string }
-        category: { type: string }
-        severity_hint: { type: string }
-        confidence: { type: string }
-        title: { type: string }
-        summary: { type: string }
-        evidence_count: { type: integer, minimum: 0 }
-        tags: { type: array, items: { type: string } }
-        status: { type: string }
-        created_at: { type: string, format: date-time }
-        updated_at: { type: string, format: date-time }
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Tallow API", "version": "0.1.0"},
+  "servers": [{"url": "/api/v1", "description": "Local API base"}],
+  "security": [{"cookieAuth": []}],
+  "paths": {
+    "/healthz": {"get": {"security": [], "summary": "Health check", "responses": {"200": {"description": "healthy"}}}},
+    "/readyz": {"get": {"security": [], "summary": "Readiness check", "responses": {"200": {"description": "ready"}, "503": {"$ref": "#/components/responses/Error"}}}},
+    "/metrics": {"get": {"security": [], "summary": "Prometheus metrics", "responses": {"200": {"description": "prometheus metrics"}}}},
+    "/auth/providers": {"get": {"security": [], "summary": "List enabled auth providers", "responses": {"200": {"description": "providers", "content": {"application/json": {"schema": {"type": "object", "required": ["items"], "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/AuthProvider"}}}}}}}}}},
+    "/auth/local/login": {"post": {"security": [], "summary": "Local email/password login", "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/LocalLoginRequest"}}}}, "responses": {"200": {"description": "session", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Session"}}}}, "401": {"$ref": "#/components/responses/AuthError"}}}},
+    "/auth/logout": {"post": {"summary": "Logout current session", "responses": {"204": {"description": "logged out"}, "401": {"$ref": "#/components/responses/AuthError"}}}},
+    "/auth/me": {"get": {"summary": "Get current authenticated user", "responses": {"200": {"description": "current user", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CurrentUser"}}}}, "401": {"$ref": "#/components/responses/AuthError"}}}},
+    "/auth/github/login": {"get": {"security": [], "summary": "Begin GitHub OAuth", "parameters": [{"$ref": "#/components/parameters/RedirectPath"}], "responses": {"302": {"description": "redirect to GitHub"}, "400": {"$ref": "#/components/responses/Error"}}}},
+    "/auth/github/callback": {"get": {"security": [], "summary": "Complete GitHub OAuth", "parameters": [{"name": "code", "in": "query", "schema": {"type": "string"}}, {"name": "state", "in": "query", "schema": {"type": "string"}}], "responses": {"302": {"description": "session created and redirected"}, "400": {"$ref": "#/components/responses/OAuthError"}, "401": {"$ref": "#/components/responses/OAuthError"}}}},
+    "/admin/users": {"get": {"summary": "List users", "responses": {"200": {"description": "users", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UserPage"}}}}, "403": {"$ref": "#/components/responses/PermissionDenied"}}}},
+    "/admin/users/{user_id}/roles": {"patch": {"summary": "Update user roles", "parameters": [{"$ref": "#/components/parameters/UserID"}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["roles"], "properties": {"roles": {"type": "array", "items": {"$ref": "#/components/schemas/Role"}}}}}}}, "responses": {"200": {"description": "updated user", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/User"}}}}, "403": {"$ref": "#/components/responses/PermissionDenied"}}}},
+    "/packages": {"get": {"summary": "List packages", "parameters": [{"$ref": "#/components/parameters/Limit"}, {"$ref": "#/components/parameters/Offset"}, {"$ref": "#/components/parameters/Sort"}, {"$ref": "#/components/parameters/Ecosystem"}, {"$ref": "#/components/parameters/PackageName"}], "responses": {"200": {"description": "package page", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PackagePage"}}}}}}},
+    "/packages/{package_id}": {"get": {"summary": "Get package", "parameters": [{"$ref": "#/components/parameters/PackageID"}], "responses": {"200": {"description": "package", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Package"}}}}, "404": {"$ref": "#/components/responses/Error"}}}},
+    "/packages/{package_id}/versions": {"get": {"summary": "List package versions", "parameters": [{"$ref": "#/components/parameters/PackageID"}, {"$ref": "#/components/parameters/Limit"}, {"$ref": "#/components/parameters/Offset"}], "responses": {"200": {"description": "versions", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PackageVersionPage"}}}}}}},
+    "/versions/{version_id}": {"get": {"summary": "Get version", "parameters": [{"$ref": "#/components/parameters/VersionID"}], "responses": {"200": {"description": "version", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PackageVersion"}}}}}}},
+    "/artifacts/{artifact_id}": {"get": {"summary": "Get artifact metadata", "parameters": [{"$ref": "#/components/parameters/ArtifactID"}], "responses": {"200": {"description": "artifact", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Artifact"}}}}}}},
+    "/observations": {"get": {"summary": "List artifact observations", "parameters": [{"$ref": "#/components/parameters/Limit"}, {"$ref": "#/components/parameters/Offset"}], "responses": {"200": {"description": "observations", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ObservationPage"}}}}}}},
+    "/analyzer-runs": {"get": {"summary": "List analyzer runs", "parameters": [{"$ref": "#/components/parameters/Limit"}, {"$ref": "#/components/parameters/Offset"}, {"name": "status", "in": "query", "schema": {"type": "string"}}], "responses": {"200": {"description": "runs", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AnalyzerRunPage"}}}}}}},
+    "/analyzer-runs/{run_id}": {"get": {"summary": "Get analyzer run", "parameters": [{"name": "run_id", "in": "path", "required": true, "schema": {"type": "string"}}], "responses": {"200": {"description": "run", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AnalyzerRun"}}}}}}},
+    "/findings": {"get": {"summary": "List findings", "parameters": [{"$ref": "#/components/parameters/Limit"}, {"$ref": "#/components/parameters/Offset"}, {"$ref": "#/components/parameters/Sort"}, {"$ref": "#/components/parameters/Ecosystem"}, {"$ref": "#/components/parameters/PackageName"}, {"name": "severity", "in": "query", "schema": {"$ref": "#/components/schemas/Severity"}}, {"name": "confidence", "in": "query", "schema": {"$ref": "#/components/schemas/Confidence"}}, {"name": "status", "in": "query", "schema": {"$ref": "#/components/schemas/FindingStatus"}}], "responses": {"200": {"description": "findings", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/FindingPage"}}}}}}},
+    "/findings/{finding_id}": {"get": {"summary": "Get finding", "parameters": [{"$ref": "#/components/parameters/FindingID"}], "responses": {"200": {"description": "finding", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Finding"}}}}}}, "patch": {"summary": "Update finding triage status", "parameters": [{"$ref": "#/components/parameters/FindingID"}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["status"], "properties": {"status": {"$ref": "#/components/schemas/FindingStatus"}, "note": {"type": "string"}}}}}}, "responses": {"200": {"description": "finding", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Finding"}}}}, "403": {"$ref": "#/components/responses/PermissionDenied"}}}},
+    "/graph/impact-paths": {"get": {"summary": "List package/finding impact paths", "parameters": [{"$ref": "#/components/parameters/PackageName"}, {"name": "version", "in": "query", "schema": {"type": "string"}}, {"name": "finding_id", "in": "query", "schema": {"type": "string"}}, {"$ref": "#/components/parameters/Limit"}, {"$ref": "#/components/parameters/Offset"}], "responses": {"200": {"description": "impact paths", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ImpactPathPage"}}}}}}},
+    "/graph/affected-direct-dependencies": {"get": {"summary": "List direct dependencies affected by transitive findings", "responses": {"200": {"description": "affected dependencies", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ImpactPathPage"}}}}}}},
+    "/package-versions/{id}/statuses": {"get": {"summary": "List package version statuses", "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}], "responses": {"200": {"description": "status list"}}}},
+    "/package-versions/{id}/transitive-impacts": {"get": {"summary": "List transitive impacts", "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}], "responses": {"200": {"description": "impact list"}}}},
+    "/statuses/{id}/affected-dependents": {"get": {"summary": "List affected dependents for status", "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}], "responses": {"200": {"description": "dependent list"}}}},
+    "/source-correlations": {"get": {"summary": "List source correlation evidence", "parameters": [{"$ref": "#/components/parameters/Limit"}, {"$ref": "#/components/parameters/Offset"}], "responses": {"200": {"description": "source correlations"}}}},
+    "/package-versions/{id}/source-correlations": {"get": {"summary": "List source correlations for a package version", "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}], "responses": {"200": {"description": "source correlations"}}}},
+    "/artifacts/{id}/source-correlations": {"get": {"summary": "List source correlations for an artifact", "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}], "responses": {"200": {"description": "source correlations"}}}},
+    "/alerts": {"get": {"summary": "List alerts", "parameters": [{"$ref": "#/components/parameters/Limit"}, {"$ref": "#/components/parameters/Offset"}, {"name": "status", "in": "query", "schema": {"$ref": "#/components/schemas/AlertStatus"}}, {"name": "severity", "in": "query", "schema": {"$ref": "#/components/schemas/Severity"}}], "responses": {"200": {"description": "alerts", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AlertPage"}}}}}}, "post": {"summary": "Create alert", "responses": {"201": {"description": "alert created"}, "403": {"$ref": "#/components/responses/PermissionDenied"}}}},
+    "/alerts/{alert_id}": {"get": {"summary": "Get alert", "parameters": [{"$ref": "#/components/parameters/AlertID"}], "responses": {"200": {"description": "alert", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Alert"}}}}}}, "patch": {"summary": "Update alert triage status", "parameters": [{"$ref": "#/components/parameters/AlertID"}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["status"], "properties": {"status": {"$ref": "#/components/schemas/AlertStatus"}, "note": {"type": "string"}}}}}}, "responses": {"200": {"description": "alert"}, "403": {"$ref": "#/components/responses/PermissionDenied"}}}},
+    "/notification-routes": {"get": {"summary": "List notification routes", "responses": {"200": {"description": "routes", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/NotificationRoutePage"}}}}}}, "post": {"summary": "Create notification route", "responses": {"201": {"description": "route created"}, "403": {"$ref": "#/components/responses/PermissionDenied"}}}},
+    "/notification-routes/{route_id}": {"patch": {"summary": "Update notification route", "parameters": [{"name": "route_id", "in": "path", "required": true, "schema": {"type": "string"}}], "responses": {"200": {"description": "route updated"}, "403": {"$ref": "#/components/responses/PermissionDenied"}}}},
+    "/notification-routes/{route_id}/test": {"post": {"summary": "Send test notification", "parameters": [{"name": "route_id", "in": "path", "required": true, "schema": {"type": "string"}}], "responses": {"202": {"description": "test queued"}, "403": {"$ref": "#/components/responses/PermissionDenied"}}}},
+    "/notification-deliveries": {"get": {"summary": "List notification delivery attempts", "parameters": [{"$ref": "#/components/parameters/Limit"}, {"$ref": "#/components/parameters/Offset"}], "responses": {"200": {"description": "deliveries", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/NotificationDeliveryPage"}}}}}}},
+    "/notification-templates/preview": {"post": {"summary": "Render redacted template preview", "responses": {"200": {"description": "preview"}, "403": {"$ref": "#/components/responses/PermissionDenied"}}}},
+    "/settings": {"get": {"summary": "Get non-secret settings metadata", "responses": {"200": {"description": "settings", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Settings"}}}}}}, "patch": {"summary": "Update settings metadata", "responses": {"200": {"description": "settings"}, "403": {"$ref": "#/components/responses/PermissionDenied"}}}}
+  },
+  "components": {
+    "securitySchemes": {"cookieAuth": {"type": "apiKey", "in": "cookie", "name": "tallow_session"}},
+    "parameters": {
+      "Limit": {"name": "limit", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 200, "default": 50}},
+      "Offset": {"name": "offset", "in": "query", "schema": {"type": "integer", "minimum": 0, "default": 0}},
+      "Sort": {"name": "sort", "in": "query", "schema": {"type": "string"}},
+      "Ecosystem": {"name": "ecosystem", "in": "query", "schema": {"$ref": "#/components/schemas/Ecosystem"}},
+      "PackageName": {"name": "package", "in": "query", "schema": {"type": "string"}},
+      "PackageID": {"name": "package_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}},
+      "VersionID": {"name": "version_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}},
+      "ArtifactID": {"name": "artifact_id", "in": "path", "required": true, "schema": {"type": "string"}},
+      "FindingID": {"name": "finding_id", "in": "path", "required": true, "schema": {"type": "string"}},
+      "AlertID": {"name": "alert_id", "in": "path", "required": true, "schema": {"type": "string"}},
+      "UserID": {"name": "user_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}},
+      "RedirectPath": {"name": "redirect_path", "in": "query", "schema": {"type": "string", "default": "/"}}
+    },
+    "responses": {
+      "Error": {"description": "error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+      "AuthError": {"description": "authentication failed", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}, "examples": {"auth_failed": {"value": {"error": {"code": "auth_failed", "message": "authentication required"}}}}}}},
+      "OAuthError": {"description": "oauth failed", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}, "examples": {"invalid_state": {"value": {"error": {"code": "invalid_oauth_state", "message": "invalid oauth state"}}}, "exchange_failed": {"value": {"error": {"code": "oauth_exchange_failed", "message": "oauth exchange failed"}}}, "identity_not_allowed": {"value": {"error": {"code": "identity_not_allowed", "message": "identity is not allowed"}}}}}}},
+      "PermissionDenied": {"description": "permission denied", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}, "examples": {"permission_denied": {"value": {"error": {"code": "permission_denied", "message": "permission denied"}}}}}}}
+    },
+    "schemas": {
+      "ErrorResponse": {"type": "object", "required": ["error"], "properties": {"error": {"type": "object", "required": ["code", "message"], "properties": {"code": {"type": "string"}, "message": {"type": "string"}, "details": {"type": "string"}, "request_id": {"type": "string"}}}}},
+      "PageInfo": {"type": "object", "required": ["limit", "offset", "total"], "properties": {"limit": {"type": "integer"}, "offset": {"type": "integer"}, "total": {"type": "integer"}, "next_offset": {"type": "integer"}}},
+      "Role": {"type": "string", "enum": ["admin", "analyst", "viewer"]},
+      "Severity": {"type": "string", "enum": ["info", "low", "medium", "high", "critical"]},
+      "Confidence": {"type": "string", "enum": ["low", "medium", "high", "confirmed", "unknown"]},
+      "FindingStatus": {"type": "string", "enum": ["open", "acknowledged", "resolved", "suppressed", "false_positive"]},
+      "AlertStatus": {"type": "string", "enum": ["open", "acknowledged", "resolved", "suppressed", "reopened"]},
+      "Ecosystem": {"type": "string", "enum": ["npm", "pypi", "unknown"]},
+      "AuthProvider": {"type": "object", "required": ["name", "type", "enabled"], "properties": {"name": {"type": "string"}, "type": {"type": "string", "enum": ["local", "oauth"]}, "enabled": {"type": "boolean"}, "login_url": {"type": "string"}}},
+      "LocalLoginRequest": {"type": "object", "required": ["email", "password"], "properties": {"email": {"type": "string", "format": "email"}, "password": {"type": "string", "format": "password"}}},
+      "User": {"type": "object", "required": ["id", "email", "roles", "status"], "properties": {"id": {"type": "string", "format": "uuid"}, "email": {"type": "string", "format": "email"}, "display_name": {"type": "string"}, "roles": {"type": "array", "items": {"$ref": "#/components/schemas/Role"}}, "status": {"type": "string"}, "created_at": {"type": "string", "format": "date-time"}}},
+      "Session": {"type": "object", "required": ["user", "expires_at"], "properties": {"user": {"$ref": "#/components/schemas/User"}, "expires_at": {"type": "string", "format": "date-time"}}},
+      "CurrentUser": {"type": "object", "required": ["user", "capabilities"], "properties": {"user": {"$ref": "#/components/schemas/User"}, "provider": {"type": "string"}, "capabilities": {"type": "array", "items": {"type": "string"}}}},
+      "UserPage": {"type": "object", "required": ["items", "page"], "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/User"}}, "page": {"$ref": "#/components/schemas/PageInfo"}}},
+      "EvidenceRef": {"type": "object", "required": ["type", "ref"], "properties": {"type": {"type": "string"}, "ref": {"type": "string"}, "path": {"type": "string"}, "line": {"type": "integer"}, "excerpt": {"type": "string"}, "excerpt_safe": {"type": "boolean", "default": false}, "hash": {"type": "string"}}},
+      "Package": {"type": "object", "required": ["id", "ecosystem", "name"], "properties": {"id": {"type": "string", "format": "uuid"}, "ecosystem": {"$ref": "#/components/schemas/Ecosystem"}, "name": {"type": "string"}, "registry_url": {"type": "string"}, "namespace": {"type": "string"}}},
+      "PackageVersion": {"type": "object", "required": ["id", "package_id", "version"], "properties": {"id": {"type": "string", "format": "uuid"}, "package_id": {"type": "string", "format": "uuid"}, "version": {"type": "string"}, "observations": {"type": "array", "items": {"$ref": "#/components/schemas/Observation"}}, "artifacts": {"type": "array", "items": {"$ref": "#/components/schemas/Artifact"}}}},
+      "Artifact": {"type": "object", "required": ["id", "version_id", "filename", "verification_status"], "properties": {"id": {"type": "string"}, "version_id": {"type": "string"}, "filename": {"type": "string"}, "artifact_type": {"type": "string"}, "sha256": {"type": "string"}, "size_bytes": {"type": "integer"}, "storage_uri": {"type": "string"}, "verification_status": {"type": "string"}}},
+      "Observation": {"type": "object", "required": ["id", "artifact_id", "source", "observed_at"], "properties": {"id": {"type": "string"}, "artifact_id": {"type": "string"}, "source": {"type": "string"}, "observed_at": {"type": "string", "format": "date-time"}, "evidence": {"type": "object"}}},
+      "AnalyzerRun": {"type": "object", "required": ["id", "analyzer_id", "status"], "properties": {"id": {"type": "string"}, "analyzer_id": {"type": "string"}, "analyzer_version": {"type": "string"}, "status": {"type": "string"}, "started_at": {"type": "string", "format": "date-time"}, "finished_at": {"type": "string", "format": "date-time"}}},
+      "Finding": {"type": "object", "required": ["id", "rule_id", "severity", "confidence", "status", "summary", "evidence_refs"], "properties": {"id": {"type": "string"}, "run_id": {"type": "string"}, "rule_id": {"type": "string"}, "score": {"type": "integer"}, "severity": {"$ref": "#/components/schemas/Severity"}, "severity_hint": {"type": "string"}, "confidence": {"$ref": "#/components/schemas/Confidence"}, "status": {"$ref": "#/components/schemas/FindingStatus"}, "ecosystem": {"$ref": "#/components/schemas/Ecosystem"}, "package_name": {"type": "string"}, "version": {"type": "string"}, "title": {"type": "string"}, "summary": {"type": "string"}, "review_guidance": {"type": "string"}, "evidence_refs": {"type": "array", "items": {"$ref": "#/components/schemas/EvidenceRef"}}, "created_at": {"type": "string", "format": "date-time"}, "updated_at": {"type": "string", "format": "date-time"}}},
+      "ImpactPath": {"type": "object", "required": ["id", "status", "path"], "properties": {"id": {"type": "string"}, "finding_id": {"type": "string"}, "status": {"type": "string"}, "path": {"type": "array", "items": {"type": "string"}}, "evidence_refs": {"type": "array", "items": {"$ref": "#/components/schemas/EvidenceRef"}}}},
+      "Alert": {"type": "object", "required": ["id", "status", "severity", "title"], "properties": {"id": {"type": "string"}, "finding_id": {"type": "string"}, "status": {"$ref": "#/components/schemas/AlertStatus"}, "severity": {"$ref": "#/components/schemas/Severity"}, "title": {"type": "string"}, "summary": {"type": "string"}, "package_name": {"type": "string"}, "version": {"type": "string"}, "evidence_refs": {"type": "array", "items": {"$ref": "#/components/schemas/EvidenceRef"}}}},
+      "NotificationRoute": {"type": "object", "required": ["id", "name", "channel", "enabled"], "properties": {"id": {"type": "string"}, "name": {"type": "string"}, "channel": {"type": "string", "enum": ["email", "teams"]}, "enabled": {"type": "boolean"}, "severity_threshold": {"$ref": "#/components/schemas/Severity"}, "filters": {"type": "object"}, "secret_configured": {"type": "boolean"}}},
+      "NotificationDelivery": {"type": "object", "required": ["id", "route_id", "channel", "status", "attempts", "created_at"], "properties": {"id": {"type": "string"}, "route_id": {"type": "string"}, "alert_id": {"type": "string"}, "finding_id": {"type": "string"}, "channel": {"type": "string"}, "status": {"type": "string", "enum": ["pending", "sent", "failed"]}, "attempts": {"type": "integer"}, "provider": {"type": "string"}, "sanitized_error": {"type": "string"}, "provider_message_id": {"type": "string"}, "created_at": {"type": "string", "format": "date-time"}, "sent_at": {"type": "string", "format": "date-time"}}},
+      "Settings": {"type": "object", "properties": {"auth": {"type": "object"}, "notifications": {"type": "object"}, "ui": {"type": "object"}}},
+      "PackagePage": {"type": "object", "required": ["items", "page"], "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/Package"}}, "page": {"$ref": "#/components/schemas/PageInfo"}}},
+      "PackageVersionPage": {"type": "object", "required": ["items", "page"], "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/PackageVersion"}}, "page": {"$ref": "#/components/schemas/PageInfo"}}},
+      "ObservationPage": {"type": "object", "required": ["items", "page"], "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/Observation"}}, "page": {"$ref": "#/components/schemas/PageInfo"}}},
+      "AnalyzerRunPage": {"type": "object", "required": ["items", "page"], "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/AnalyzerRun"}}, "page": {"$ref": "#/components/schemas/PageInfo"}}},
+      "FindingPage": {"type": "object", "required": ["items", "page"], "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/Finding"}}, "page": {"$ref": "#/components/schemas/PageInfo"}}},
+      "ImpactPathPage": {"type": "object", "required": ["items", "page"], "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/ImpactPath"}}, "page": {"$ref": "#/components/schemas/PageInfo"}}},
+      "AlertPage": {"type": "object", "required": ["items", "page"], "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/Alert"}}, "page": {"$ref": "#/components/schemas/PageInfo"}}},
+      "NotificationRoutePage": {"type": "object", "required": ["items", "page"], "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/NotificationRoute"}}, "page": {"$ref": "#/components/schemas/PageInfo"}}},
+      "NotificationDeliveryPage": {"type": "object", "required": ["items", "page"], "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/NotificationDelivery"}}, "page": {"$ref": "#/components/schemas/PageInfo"}}}
+    }
+  }
+}
