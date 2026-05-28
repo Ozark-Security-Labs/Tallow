@@ -15,6 +15,7 @@ import (
 	githubauth "github.com/Ozark-Security-Labs/Tallow/internal/auth/github"
 	"github.com/Ozark-Security-Labs/Tallow/internal/auth/local"
 	"github.com/Ozark-Security-Labs/Tallow/internal/config"
+	"github.com/Ozark-Security-Labs/Tallow/internal/rbac"
 	"github.com/Ozark-Security-Labs/Tallow/internal/tallowerr"
 )
 
@@ -61,6 +62,24 @@ func TestRequireAuthRejectsMissingOrInvalidSession(t *testing.T) {
 	handler.ServeHTTP(w, httptest.NewRequest("GET", "/protected", nil))
 	if w.Code != http.StatusUnauthorized || !strings.Contains(w.Body.String(), "bad session") {
 		t.Fatalf("%d %s", w.Code, w.Body.String())
+	}
+}
+
+func TestRequirePermissionAllowsAndDenies(t *testing.T) {
+	handler := requirePermission(rbac.ManageIntegrations, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))
+
+	adminReq := httptest.NewRequest("PATCH", "/settings", nil).WithContext(auth.ContextWithPrincipal(context.Background(), auth.Principal{Roles: []auth.Role{auth.RoleAdmin}}))
+	adminW := httptest.NewRecorder()
+	handler.ServeHTTP(adminW, adminReq)
+	if adminW.Code != http.StatusNoContent {
+		t.Fatalf("admin denied: %d %s", adminW.Code, adminW.Body.String())
+	}
+
+	viewerReq := httptest.NewRequest("PATCH", "/settings", nil).WithContext(auth.ContextWithPrincipal(context.Background(), auth.Principal{Roles: []auth.Role{auth.RoleViewer}}))
+	viewerW := httptest.NewRecorder()
+	handler.ServeHTTP(viewerW, viewerReq)
+	if viewerW.Code != http.StatusForbidden || !strings.Contains(viewerW.Body.String(), "permission_denied") {
+		t.Fatalf("viewer should be denied: %d %s", viewerW.Code, viewerW.Body.String())
 	}
 }
 

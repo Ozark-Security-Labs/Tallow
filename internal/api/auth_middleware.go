@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/Ozark-Security-Labs/Tallow/internal/auth"
+	"github.com/Ozark-Security-Labs/Tallow/internal/rbac"
 	"github.com/Ozark-Security-Labs/Tallow/internal/tallowerr"
 )
 
@@ -28,6 +29,17 @@ func (s *Server) requireAuth(next http.Handler) http.Handler {
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(auth.ContextWithPrincipal(r.Context(), principal)))
+	})
+}
+
+func requirePermission(permission rbac.Permission, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		principal, ok := auth.PrincipalFromContext(r.Context())
+		if !ok || !rbac.Allowed(principal.Roles, permission) {
+			writeError(w, r, tallowerr.New(tallowerr.CodePermissionDenied, "permission denied"))
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
 }
 

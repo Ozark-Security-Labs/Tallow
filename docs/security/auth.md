@@ -54,6 +54,12 @@ Sessions use random bearer tokens stored server-side as SHA-256 token hashes. Th
 
 Tallow keeps local `users`, `identities`, `sessions`, and `roles` records even when external auth is used. Roles: `admin`, `analyst`, `viewer`.
 
+## RBAC role matrix
+
+Tallow roles are additive. `viewer` can read dashboard, packages, versions, artifacts metadata, findings, alerts, impact paths, analyzer runs, and non-secret settings metadata. `analyst` inherits viewer permissions and can triage findings and alerts. `admin` inherits analyst permissions and can manage users, roles, notification routes, integrations, settings, scans, and test notifications.
+
+Viewer and analyst roles cannot mutate settings or integrations. Viewer cannot mutate scans, findings, alerts, users, notification routes, or integrations. Denials return HTTP `403` with stable code `permission_denied`.
+
 ## Handler boundary
 
 Route handlers receive provider/session/RBAC interfaces. Provider-specific code must stay inside `internal/auth/<provider>` packages so GitHub, local, future OIDC, Clerk, or WorkOS details do not leak into API handlers.
