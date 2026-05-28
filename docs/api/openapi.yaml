@@ -49,6 +49,51 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Finding' }
         '404': { description: finding not found }
+  /v1/graph/affected-direct-dependencies:
+    get:
+      summary: List direct dependencies affected by transitive findings
+      responses:
+        '200':
+          description: Affected dependency list
+  /v1/source-correlations:
+    get:
+      summary: List source correlation evidence
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: Source correlation evidence list
+  /v1/package-versions/{id}/statuses:
+    get:
+      summary: List package version statuses
+      responses:
+        '200': { description: Status list }
+  /v1/package-versions/{id}/transitive-impacts:
+    get:
+      summary: List transitive impact records
+      responses:
+        '200': { description: Transitive impact list }
+  /v1/statuses/{id}/affected-dependents:
+    get:
+      summary: List affected dependents for a status
+      responses:
+        '200': { description: Affected dependents list }
+
+  /v1/package-versions/{id}/source-correlations:
+    get:
+      summary: List source correlations for a package version
+      responses:
+        '200': { description: Source correlation evidence list }
+  /v1/artifacts/{id}/source-correlations:
+    get:
+      summary: List source correlations for an artifact
+      responses:
+        '200': { description: Source correlation evidence list }
 components:
   schemas:
     ErrorEnvelope:

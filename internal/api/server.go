@@ -16,12 +16,15 @@ import (
 
 type Check func(context.Context) error
 type Server struct {
-	Config   config.Config
-	Logger   *slog.Logger
-	Checks   map[string]Check
-	Metrics  *metrics.Metrics
-	Findings FindingReader
-	Handler  http.Handler
+	Config       config.Config
+	Logger       *slog.Logger
+	Checks       map[string]Check
+	Metrics      *metrics.Metrics
+	Findings     FindingReader
+	Graph        GraphReader
+	Correlations CorrelationReader
+	Statuses     StatusReader
+	Handler      http.Handler
 }
 
 func New(cfg config.Config, logger *slog.Logger, checks map[string]Check) *Server {
@@ -37,7 +40,7 @@ func NewWithFindings(
 	if logger == nil {
 		logger = slog.Default()
 	}
-	s := &Server{Config: cfg, Logger: logger, Checks: checks, Metrics: metrics.New(), Findings: findings}
+	s := &Server{Config: cfg, Logger: logger, Checks: checks, Metrics: metrics.New(), Findings: findings, Graph: EmptyGraphStore{}, Correlations: EmptyCorrelationStore{}}
 	s.Handler = s.routes()
 	return s
 }
@@ -53,6 +56,13 @@ func (s *Server) routes() http.Handler {
 	r.Get("/readyz", s.ready)
 	r.Get("/v1/findings", s.listFindings)
 	r.Get("/v1/findings/{id}", s.getFinding)
+	r.Get("/v1/graph/affected-direct-dependencies", s.listAffectedDirectDependencies)
+	r.Get("/v1/source-correlations", s.listCorrelations)
+	r.Get("/v1/package-versions/{id}/statuses", s.listPackageVersionStatuses)
+	r.Get("/v1/package-versions/{id}/transitive-impacts", s.listPackageVersionTransitiveImpacts)
+	r.Get("/v1/statuses/{id}/affected-dependents", s.listAffectedDependentsByStatus)
+	r.Get("/v1/package-versions/{id}/source-correlations", s.listPackageVersionCorrelations)
+	r.Get("/v1/artifacts/{id}/source-correlations", s.listArtifactCorrelations)
 	if s.Config.Metrics.Enabled {
 		r.Handle("/metrics", s.Metrics.Handler())
 	}

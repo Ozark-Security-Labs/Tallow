@@ -58,3 +58,26 @@ Alerts must include:
 ## Privacy
 
 Do not send private repository contents to LLM or external services by default. Store only manifest paths and dependency metadata required for correlation unless users enable deeper source analysis.
+
+
+## Confidence model
+
+Correlation confidence values are `exact_metadata`, `release_tag_match`, `repository_metadata`, `manifest_observed`, `inferred_name`, `conflicting`, and `unknown`. Conflicting package metadata is represented as `conflicting` with all evidence retained; Tallow must not choose one repository and claim certainty. Missing evidence is `unknown`.
+
+## Correlation evidence schema
+
+Correlation evidence records include source field, original URL or manifest path, normalized repository reference, optional revision, confidence, explanation, and ambiguity flag. API responses expose this evidence but not private repository contents.
+
+## Non-goals
+
+Source correlation does not clone repositories by default, does not execute repository code, does not perform full package manager resolution for loose ranges, and does not use LLMs to infer ownership.
+
+
+## Test plan
+
+Correlation tests cover exact/missing/multiple/conflicting evidence:
+
+- exact or release-tag metadata: one repository candidate plus version/tag evidence;
+- missing metadata: no candidates and `unknown` confidence;
+- multiple matching claims for the same repository: retain all evidence without duplication; and
+- conflicting claims: multiple repository candidates produce `conflicting` confidence and an ambiguity flag.
