@@ -35,6 +35,12 @@ type OAuthProvider interface {
 
 The provider boundary is intentionally compatible with future Generic OIDC/JWT, Clerk, and WorkOS providers. Those implementations should return a normalized `Identity` and must not decide Tallow authorization policy.
 
+## Local auth and sessions
+
+The local provider supports a bootstrap admin configured for development or first-run setup. The bootstrap admin is only valid until a persisted admin exists. Persisted local users authenticate by email and a versioned bcrypt password hash; plaintext passwords are never accepted as stored hashes.
+
+Sessions use random bearer tokens stored server-side as SHA-256 token hashes. The browser receives only the `tallow_session` cookie. Cookies are `HttpOnly`, `SameSite=Lax`, and `Secure` unless `auth.session.dev_insecure_cookies` is explicitly enabled for local development. Logout revokes the server-side session and expires the browser cookie.
+
 ## Internal model
 
 Tallow keeps local `users`, `identities`, `sessions`, and `roles` records even when external auth is used. Roles: `admin`, `analyst`, `viewer`.

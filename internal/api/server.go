@@ -17,17 +17,18 @@ import (
 
 type Check func(context.Context) error
 type Server struct {
-	Config       config.Config
-	Logger       *slog.Logger
-	Checks       map[string]Check
-	Metrics      *metrics.Metrics
-	Findings     FindingReader
-	Auth         *auth.Manager
-	SessionAuth  SessionAuthenticator
-	Graph        GraphReader
-	Correlations CorrelationReader
-	Statuses     StatusReader
-	Handler      http.Handler
+	Config         config.Config
+	Logger         *slog.Logger
+	Checks         map[string]Check
+	Metrics        *metrics.Metrics
+	Findings       FindingReader
+	Auth           *auth.Manager
+	SessionAuth    SessionAuthenticator
+	SessionManager *auth.SessionManager
+	Graph          GraphReader
+	Correlations   CorrelationReader
+	Statuses       StatusReader
+	Handler        http.Handler
 }
 
 func New(cfg config.Config, logger *slog.Logger, checks map[string]Check) *Server {
@@ -59,6 +60,7 @@ func (s *Server) routes() http.Handler {
 	r.Get("/readyz", s.ready)
 	r.Get("/v1/auth/providers", s.listAuthProviders)
 	r.Post("/v1/auth/local/login", s.localLogin)
+	r.Post("/v1/auth/logout", s.logout)
 	r.Get("/v1/findings", s.listFindings)
 	r.Get("/v1/findings/{id}", s.getFinding)
 	r.Get("/v1/graph/affected-direct-dependencies", s.listAffectedDirectDependencies)

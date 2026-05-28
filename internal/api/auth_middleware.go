@@ -14,11 +14,15 @@ type SessionAuthenticator interface {
 
 func (s *Server) requireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if s.SessionAuth == nil {
+		authenticator := s.SessionAuth
+		if authenticator == nil && s.SessionManager != nil {
+			authenticator = s.SessionManager
+		}
+		if authenticator == nil {
 			writeError(w, r, tallowerr.New(tallowerr.CodeAuth, "authentication required"))
 			return
 		}
-		principal, err := s.SessionAuth.AuthenticateRequest(r)
+		principal, err := authenticator.AuthenticateRequest(r)
 		if err != nil {
 			writeError(w, r, err)
 			return

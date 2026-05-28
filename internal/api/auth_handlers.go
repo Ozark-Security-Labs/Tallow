@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/Ozark-Security-Labs/Tallow/internal/auth"
 	"github.com/Ozark-Security-Labs/Tallow/internal/tallowerr"
@@ -19,6 +20,11 @@ type localLoginRequest struct {
 
 type identityResponse struct {
 	Identity *auth.Identity `json:"identity"`
+}
+
+type sessionResponse struct {
+	User      *auth.Identity `json:"user"`
+	ExpiresAt string         `json:"expires_at"`
 }
 
 func (s *Server) listAuthProviders(w http.ResponseWriter, r *http.Request) {
@@ -52,5 +58,24 @@ func (s *Server) localLogin(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, identityResponse{Identity: identity})
+	if s.SessionManager == nil {
+		writeJSON(w, http.StatusOK, identityResponse{Identity: identity})
+		return
+	}
+	session, err := s.SessionManager.CreateHTTP(w, r, identity)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, sessionResponse{User: identity, ExpiresAt: session.ExpiresAt.Format(time.RFC3339)})
+}
+
+func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
+	if s.SessionManager != nil {
+		if err := s.SessionManager.LogoutHTTP(w, r); err != nil {
+			writeError(w, r, err)
+			return
+		}
+	}
+	w.WriteHeader(http.StatusNoContent)
 }

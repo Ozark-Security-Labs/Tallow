@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/Ozark-Security-Labs/Tallow/internal/auth"
+	"github.com/Ozark-Security-Labs/Tallow/internal/auth/local"
 	"github.com/Ozark-Security-Labs/Tallow/internal/config"
 	"github.com/Ozark-Security-Labs/Tallow/internal/tallowerr"
 )
@@ -105,6 +106,44 @@ func (handlerFakePasswordProvider) AuthenticatePassword(_ context.Context, email
 		return nil, auth.ErrInvalidCredentials
 	}
 	return &auth.Identity{Provider: "local", ProviderSubject: email, Email: email, Roles: []auth.Role{auth.RoleAdmin}}, nil
+}
+
+func TestLocalLoginCreatesAndLogoutRevokesSession(t *testing.T) {
+	password := "test-password"
+	provider := local.NewProvider(local.Config{Enabled: true, BootstrapAdminEmail: "admin@example.com", BootstrapAdminPassword: password}, nil)
+	manager, err := auth.NewManager(provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := New(config.Default(), slog.Default(), nil)
+	s.Auth = manager
+	s.SessionManager = auth.NewSessionManager(auth.NewMemorySessionStore(), auth.SessionOptions{SecureCookies: true})
+
+	w := httptest.NewRecorder()
+	s.Handler.ServeHTTP(w, httptest.NewRequest("POST", "/v1/auth/local/login", strings.NewReader(`{"email":"admin@example.com","password":"`+password+`"}`)))
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "expires_at") {
+		t.Fatalf("%d %s", w.Code, w.Body.String())
+	}
+	cookies := w.Result().Cookies()
+	if len(cookies) != 1 || cookies[0].Name != auth.DefaultSessionCookieName || !cookies[0].HttpOnly || !cookies[0].Secure {
+		t.Fatalf("bad cookies: %#v", cookies)
+	}
+
+	logoutReq := httptest.NewRequest("POST", "/v1/auth/logout", nil)
+	logoutReq.AddCookie(cookies[0])
+	logoutW := httptest.NewRecorder()
+	s.Handler.ServeHTTP(logoutW, logoutReq)
+	if logoutW.Code != http.StatusNoContent {
+		t.Fatalf("%d %s", logoutW.Code, logoutW.Body.String())
+	}
+	protected := s.requireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))
+	protectedReq := httptest.NewRequest("GET", "/protected", nil)
+	protectedReq.AddCookie(cookies[0])
+	protectedW := httptest.NewRecorder()
+	protected.ServeHTTP(protectedW, protectedReq)
+	if protectedW.Code != http.StatusUnauthorized {
+		t.Fatalf("expected revoked session, got %d", protectedW.Code)
+	}
 }
 
 func TestProviderHandlerMapsProviderFailures(t *testing.T) {
