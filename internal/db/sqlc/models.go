@@ -8,6 +8,20 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Alert struct {
+	ID           string
+	FindingID    pgtype.Text
+	PackageName  string
+	Version      string
+	Severity     string
+	Status       string
+	Title        string
+	Summary      string
+	EvidenceRefs []byte
+	CreatedAt    pgtype.Timestamptz
+	UpdatedAt    pgtype.Timestamptz
+}
+
 type AnalyzerRun struct {
 	ID              string
 	JobID           string
@@ -127,6 +141,41 @@ type Finding struct {
 	UpdatedAt       pgtype.Timestamptz
 }
 
+type NotificationDelivery struct {
+	ID                string
+	RouteID           pgtype.Text
+	AlertID           pgtype.Text
+	FindingID         pgtype.Text
+	Channel           string
+	Status            string
+	Attempts          int32
+	SanitizedError    string
+	ProviderMessageID string
+	CreatedAt         pgtype.Timestamptz
+	SentAt            pgtype.Timestamptz
+}
+
+type NotificationRoute struct {
+	ID                string
+	Name              string
+	Channel           string
+	Enabled           bool
+	SeverityThreshold string
+	FiltersJson       []byte
+	ConfigJson        []byte
+	CreatedAt         pgtype.Timestamptz
+	UpdatedAt         pgtype.Timestamptz
+}
+
+type OauthState struct {
+	NonceHash    string
+	Provider     string
+	RedirectPath string
+	ExpiresAt    pgtype.Timestamptz
+	ConsumedAt   pgtype.Timestamptz
+	CreatedAt    pgtype.Timestamptz
+}
+
 type Package struct {
 	ID             pgtype.UUID
 	Ecosystem      string
@@ -187,6 +236,17 @@ type ScmSource struct {
 	LastIndexedAt pgtype.Timestamptz
 }
 
+type Session struct {
+	ID         string
+	TokenHash  string
+	UserID     pgtype.UUID
+	Provider   string
+	CreatedAt  pgtype.Timestamptz
+	ExpiresAt  pgtype.Timestamptz
+	RevokedAt  pgtype.Timestamptz
+	LastSeenAt pgtype.Timestamptz
+}
+
 type SourceCorrelation struct {
 	ID                   pgtype.UUID
 	PackageVersionID     pgtype.UUID
@@ -230,4 +290,27 @@ type User struct {
 	ID              pgtype.UUID
 	ExternalSubject string
 	CreatedAt       pgtype.Timestamptz
+}
+
+type UserCredential struct {
+	UserID        pgtype.UUID
+	PasswordHash  string
+	HashAlgorithm string
+	UpdatedAt     pgtype.Timestamptz
+}
+
+type UserIdentity struct {
+	ID              pgtype.UUID
+	UserID          pgtype.UUID
+	Provider        string
+	ProviderSubject string
+	Username        string
+	Email           string
+	CreatedAt       pgtype.Timestamptz
+}
+
+type UserRole struct {
+	UserID    pgtype.UUID
+	Role      string
+	CreatedAt pgtype.Timestamptz
 }
