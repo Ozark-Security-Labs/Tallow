@@ -15,6 +15,8 @@ type Config struct {
 	Storage       StorageConfig
 	Auth          AuthConfig
 	Notifications NotificationsConfig
+	LLM           LLMConfig
+	Community     CommunitySignalsConfig
 	Metrics       MetricsConfig
 	Log           LogConfig
 }
@@ -67,7 +69,7 @@ type MetricsConfig struct{ Enabled bool }
 type LogConfig struct{ Level string }
 
 func Default() Config {
-	return Config{Server: ServerConfig{"127.0.0.1:8844"}, Postgres: PostgresConfig{"postgres://tallow:tallow@localhost:5432/tallow?sslmode=disable"}, NATS: NATSConfig{"nats://localhost:4222"}, Storage: StorageConfig{"./var/tallow/storage"}, Auth: AuthConfig{Session: AuthSessionConfig{CookieName: "tallow_session", TTL: "24h", SecureCookies: true}, Local: AuthLocalConfig{Enabled: true}}, Notifications: NotificationsConfig{Email: NotificationsEmailConfig{SMTPHost: "localhost", SMTPPort: 25, From: "tallow@example.com"}, Teams: NotificationsTeamsConfig{}}, Metrics: MetricsConfig{true}, Log: LogConfig{"info"}}
+	return Config{Server: ServerConfig{"127.0.0.1:8844"}, Postgres: PostgresConfig{"postgres://tallow:tallow@localhost:5432/tallow?sslmode=disable"}, NATS: NATSConfig{"nats://localhost:4222"}, Storage: StorageConfig{"./var/tallow/storage"}, Auth: AuthConfig{Session: AuthSessionConfig{CookieName: "tallow_session", TTL: "24h", SecureCookies: true}, Local: AuthLocalConfig{Enabled: true}}, Notifications: NotificationsConfig{Email: NotificationsEmailConfig{SMTPHost: "localhost", SMTPPort: 25, From: "tallow@example.com"}, Teams: NotificationsTeamsConfig{}}, LLM: DefaultLLMConfig(), Community: DefaultCommunitySignalsConfig(), Metrics: MetricsConfig{true}, Log: LogConfig{"info"}}
 }
 
 func Load(env map[string]string) (Config, error) {
@@ -176,6 +178,77 @@ func Load(env map[string]string) (Config, error) {
 	if v, ok := get("TALLOW_NOTIFICATIONS_TEAMS_WEBHOOK_URL_REF"); ok {
 		c.Notifications.Teams.WebhookURLRef = v
 	}
+
+	if v, ok := get("TALLOW_LLM_ENABLED"); ok {
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			return c, fmt.Errorf("invalid TALLOW_LLM_ENABLED: %w", err)
+		}
+		c.LLM.Enabled = b
+	}
+	if v, ok := get("TALLOW_LLM_PROVIDER_TYPE"); ok {
+		c.LLM.Provider.Type = v
+	}
+	if v, ok := get("TALLOW_LLM_PROVIDER_NAME"); ok {
+		c.LLM.Provider.Name = v
+	}
+	if v, ok := get("TALLOW_LLM_PROVIDER_MODEL"); ok {
+		c.LLM.Provider.Model = v
+	}
+	if v, ok := get("TALLOW_LLM_PROVIDER_COMMAND"); ok {
+		c.LLM.Provider.Command = splitCSV(v)
+	}
+	if v, ok := get("TALLOW_LLM_PROVIDER_ENDPOINT"); ok {
+		c.LLM.Provider.Endpoint = v
+	}
+	if v, ok := get("TALLOW_LLM_PROVIDER_API_KEY_ENV"); ok {
+		c.LLM.Provider.APIKeyEnv = v
+	}
+	if v, ok := get("TALLOW_LLM_PROMPT_TEMPLATE"); ok {
+		c.LLM.PromptTemplate = v
+	}
+	if v, ok := get("TALLOW_LLM_REDACTION_POLICY"); ok {
+		c.LLM.RedactionPolicy = v
+	}
+	if v, ok := get("TALLOW_LLM_MAX_EVIDENCE_ITEMS"); ok {
+		n, err := strconv.Atoi(v)
+		if err != nil {
+			return c, fmt.Errorf("invalid TALLOW_LLM_MAX_EVIDENCE_ITEMS: %w", err)
+		}
+		c.LLM.MaxEvidenceItems = n
+	}
+	if v, ok := get("TALLOW_LLM_MAX_SNIPPET_BYTES"); ok {
+		n, err := strconv.Atoi(v)
+		if err != nil {
+			return c, fmt.Errorf("invalid TALLOW_LLM_MAX_SNIPPET_BYTES: %w", err)
+		}
+		c.LLM.MaxSnippetBytes = n
+	}
+	if v, ok := get("TALLOW_LLM_TIMEOUT_SECONDS"); ok {
+		n, err := strconv.Atoi(v)
+		if err != nil {
+			return c, fmt.Errorf("invalid TALLOW_LLM_TIMEOUT_SECONDS: %w", err)
+		}
+		c.LLM.TimeoutSeconds = n
+	}
+
+	if v, ok := get("TALLOW_COMMUNITY_SIGNALS_ENABLED"); ok {
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			return c, fmt.Errorf("invalid TALLOW_COMMUNITY_SIGNALS_ENABLED: %w", err)
+		}
+		c.Community.Sharing.Enabled = b
+	}
+	if v, ok := get("TALLOW_COMMUNITY_SIGNALS_ORG_ID"); ok {
+		c.Community.Sharing.OrganizationID = v
+	}
+	if v, ok := get("TALLOW_COMMUNITY_SIGNALS_ALLOWED_CLASSES"); ok {
+		c.Community.Sharing.AllowedSignalClasses = splitCSV(v)
+	}
+	if v, ok := get("TALLOW_COMMUNITY_SIGNALS_ANONYMIZATION"); ok {
+		c.Community.Sharing.AnonymizationLevel = v
+	}
+
 	if v, ok := get("TALLOW_METRICS_ENABLED"); ok {
 		b, err := strconv.ParseBool(v)
 		if err != nil {
@@ -226,6 +299,12 @@ func (c Config) Validate() error {
 	}
 	if _, err := time.ParseDuration(c.Auth.Session.TTL); err != nil {
 		return fmt.Errorf("invalid auth session ttl: %w", err)
+	}
+	if err := c.LLM.Validate(); err != nil {
+		return err
+	}
+	if err := c.Community.Validate(); err != nil {
+		return err
 	}
 	switch c.Log.Level {
 	case "debug", "info", "warn", "error":

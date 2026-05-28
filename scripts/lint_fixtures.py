@@ -119,6 +119,17 @@ def main(argv: list[str] | None = None) -> int:
             errors.append(f"{root}: path does not exist")
             continue
         errors.extend(lint_root(root))
+        manifest = root / "manifest.json"
+        if manifest.exists() and "prompt-injection" in root.as_posix():
+            try:
+                payload = json.loads(manifest.read_text(encoding="utf-8"))
+                if payload.get("schema_version") != "prompt-injection-fixtures/v1" or payload.get("synthetic") is not True:
+                    errors.append(f"{manifest}: invalid prompt-injection fixture manifest")
+                for item in payload.get("fixtures", []):
+                    if item.get("synthetic") is not True or not item.get("threat_class") or not item.get("vector"):
+                        errors.append(f"{manifest}: fixture entry missing synthetic/threat_class/vector metadata")
+            except Exception as exc:
+                errors.append(f"{manifest}: failed to parse prompt-injection manifest: {exc}")
     if errors:
         print("\n".join(errors), file=sys.stderr)
         return 1

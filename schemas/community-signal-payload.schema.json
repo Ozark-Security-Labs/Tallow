@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tallow.osl.dev/schemas/community-signal-payload.schema.json",
+  "title": "Tallow Community Signal Payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "sharing_enabled", "generated_at", "producer", "signals", "privacy"],
+  "properties": {
+    "schema_version": {"const": "community-signals/v1"},
+    "sharing_enabled": {"type": "boolean"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "producer": {"type": "object", "additionalProperties": false, "required": ["instance_id_hash", "tallow_version"], "properties": {"instance_id_hash": {"type": "string"}, "organization_id_hash": {"type": "string"}, "tallow_version": {"type": "string"}}},
+    "signals": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["signal_id", "ecosystem", "package_name_hash", "rule_id", "signal_type", "observed_at_coarse", "evidence_digest"], "properties": {"signal_id": {"type": "string"}, "ecosystem": {"type": "string"}, "package_name_hash": {"type": "string"}, "rule_id": {"type": "string"}, "signal_type": {"type": "string"}, "observed_at_coarse": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00Z$"}, "evidence_digest": {"type": "string"}, "confidence": {"type": "string", "enum": ["low", "medium", "high", "unknown"]}}}},
+    "privacy": {"type": "object", "additionalProperties": false, "required": ["raw_artifacts_included", "private_repo_names_included", "users_included", "secrets_included", "redaction_policy_version"], "properties": {"raw_artifacts_included": {"const": false}, "private_repo_names_included": {"const": false}, "users_included": {"const": false}, "secrets_included": {"const": false}, "redaction_policy_version": {"type": "string"}}}
+  }
+}

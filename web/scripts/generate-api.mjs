@@ -29,6 +29,7 @@ export interface PackageVersion { id: string; package_id: string; version: strin
 export interface AnalyzerRun { id: string; analyzer_id: string; analyzer_version?: string; status: string; started_at?: string; finished_at?: string }
 export interface ImpactPath { id: string; finding_id?: string; status: string; path: string[]; evidence_refs?: EvidenceRef[] }
 export interface NotificationRoute { id: string; name: string; channel: 'email' | 'teams'; enabled: boolean; secret_configured?: boolean }
+export interface LLMNarrative { id: string; source: 'llm'; summary: string; attack_hypothesis?: string; evidence_ids?: string[]; recommended_actions?: string[]; provider_type: string; provider_name: string; model: string; prompt_template_version: string; input_digest: string; created_at?: string }
 
 export interface ListResponse<T> { items: T[]; page?: PageInfo; next_cursor?: string }
 `;

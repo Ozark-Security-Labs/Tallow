@@ -1,0 +1,6 @@
+apiVersion: v2
+name: tallow
+description: Experimental Helm chart for Tallow dependency release surveillance
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

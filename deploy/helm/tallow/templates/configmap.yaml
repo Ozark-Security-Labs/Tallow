@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "tallow.fullname" . }}-config
+  labels:
+{{ include "tallow.labels" . | indent 4 }}
+data:
+  TALLOW_SERVER_LISTEN: "0.0.0.0:8844"
+  TALLOW_NATS_URL: {{ .Values.nats.url | quote }}
+  TALLOW_STORAGE_ROOT: {{ .Values.storage.root | quote }}
+  TALLOW_LLM_ENABLED: {{ .Values.llm.enabled | quote }}
+  TALLOW_COMMUNITY_SIGNALS_ENABLED: {{ .Values.communitySignals.sharing.enabled | quote }}
+  TALLOW_COMMUNITY_SIGNALS_ANONYMIZATION: {{ .Values.communitySignals.sharing.anonymizationLevel | quote }}
+{{- if .Values.llm.enabled }}
+  TALLOW_LLM_PROVIDER_TYPE: {{ .Values.llm.provider.type | quote }}
+  TALLOW_LLM_PROVIDER_NAME: {{ .Values.llm.provider.name | quote }}
+  TALLOW_LLM_PROVIDER_MODEL: {{ .Values.llm.provider.model | quote }}
+  TALLOW_LLM_PROVIDER_ENDPOINT: {{ .Values.llm.provider.endpoint | quote }}
+{{- end }}
+{{- if .Values.communitySignals.sharing.enabled }}
+  TALLOW_COMMUNITY_SIGNALS_ORG_ID: {{ .Values.communitySignals.sharing.organizationID | quote }}
+  TALLOW_COMMUNITY_SIGNALS_ALLOWED_CLASSES: {{ join "," .Values.communitySignals.sharing.allowedSignalClasses | quote }}
+{{- end }}

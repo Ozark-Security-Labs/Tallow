@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tallow.osl.dev/schemas/llm-evidence-bundle.schema.json",
+  "title": "Tallow LLM Evidence Bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "bundle_id", "subject", "canonical_severity", "deterministic_findings", "evidence", "redaction", "constraints"],
+  "properties": {
+    "schema_version": {"const": "v1"},
+    "bundle_id": {"type": "string"},
+    "subject": {"type": "object", "additionalProperties": false, "required": ["ecosystem", "package_name"], "properties": {"ecosystem": {"type": "string"}, "package_name": {"type": "string"}, "version": {"type": "string"}}},
+    "canonical_severity": {"type": "string", "enum": ["info", "low", "medium", "high", "critical"]},
+    "deterministic_findings": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["finding_id", "rule_id", "canonical_severity", "evidence_ids"], "properties": {"finding_id": {"type": "string"}, "rule_id": {"type": "string"}, "title": {"type": "string"}, "canonical_severity": {"type": "string"}, "evidence_ids": {"type": "array", "items": {"type": "string"}}}}},
+    "evidence": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["evidence_id", "kind", "digest", "redacted_text"], "properties": {"evidence_id": {"type": "string"}, "kind": {"type": "string"}, "path": {"type": "string"}, "digest": {"type": "string"}, "redacted_text": {"type": "string"}}}},
+    "redaction": {"type": "object", "additionalProperties": false, "required": ["policy_version", "redacted_fields", "omitted_evidence_count", "max_snippet_bytes"], "properties": {"policy_version": {"type": "string"}, "redacted_fields": {"type": "object", "additionalProperties": {"type": "integer"}}, "omitted_evidence_count": {"type": "integer", "minimum": 0}, "max_snippet_bytes": {"type": "integer", "minimum": 1}}},
+    "constraints": {"type": "object", "additionalProperties": false, "required": ["llm_may_change_severity", "llm_may_create_findings", "tools_available"], "properties": {"llm_may_change_severity": {"const": false}, "llm_may_create_findings": {"const": false}, "tools_available": {"type": "array", "maxItems": 0}}}
+  }
+}

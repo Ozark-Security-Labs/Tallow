@@ -100,10 +100,15 @@ def test_snippet_redacts_standalone_known_token_shapes():
     evidence = file_evidence(
         "package.json",
         artifact_id="a",
-        snippet="leaked ghp_abcdefghijklmnopqrstuvwxyz npm_abcdefghijklmnopqrstuv",
+        snippet=(
+            "leaked ghp_abcdefghijklmnopqrstuvwxyz "
+            "github_pat_1234567890abcdefghijklmnopqrstuvwxyz "
+            "npm_abcdefghijklmnopqrstuv"
+        ),
     )
     assert evidence["excerpt_redacted"] is True
     assert "ghp_abcdefghijklmnopqrstuvwxyz" not in evidence["excerpt"]
+    assert "github_pat_" not in evidence["excerpt"]
     assert "npm_abcdefghijklmnopqrstuv" not in evidence["excerpt"]
 
 

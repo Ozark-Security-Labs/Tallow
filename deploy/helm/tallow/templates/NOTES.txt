@@ -1,0 +1,8 @@
+Tallow Helm chart is experimental. Docker Compose remains the primary local deployment path.
+
+Required external services/secrets:
+- PostgreSQL DSN in Secret {{ .Values.postgres.existingSecret }} key {{ .Values.postgres.secretKey }}
+- NATS JetStream at {{ .Values.nats.url }}
+- Persistent storage PVC {{ include "tallow.fullname" . }}-storage
+
+LLM and community signal sharing are disabled by default.

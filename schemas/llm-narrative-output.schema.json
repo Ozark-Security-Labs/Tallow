@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tallow.osl.dev/schemas/llm-narrative-output.schema.json",
+  "title": "Tallow LLM Narrative Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "verdict", "confidence_label", "summary", "attack_hypothesis", "supporting_evidence_ids", "benign_explanations", "recommended_actions", "uncertainty_notes", "canonical_severity_restated", "severity_override_attempted"],
+  "properties": {
+    "schema_version": {"const": "v1"},
+    "verdict": {"type": "string", "enum": ["needs_review", "likely_benign", "suspicious", "insufficient_evidence"]},
+    "confidence_label": {"type": "string", "enum": ["low", "medium", "high"]},
+    "summary": {"type": "string", "minLength": 1, "maxLength": 4000},
+    "attack_hypothesis": {"type": "string", "maxLength": 4000},
+    "supporting_evidence_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "benign_explanations": {"type": "array", "items": {"type": "string", "maxLength": 1000}},
+    "recommended_actions": {"type": "array", "items": {"type": "string", "maxLength": 1000}},
+    "uncertainty_notes": {"type": "array", "items": {"type": "string", "maxLength": 1000}},
+    "canonical_severity_restated": {"type": "string", "enum": ["info", "low", "medium", "high", "critical", ""]},
+    "severity_override_attempted": {"const": false}
+  }
+}

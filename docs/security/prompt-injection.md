@@ -57,3 +57,22 @@ Prompt-injection fixture strings must include attempts to:
 - Hide or delete findings.
 
 Expected result: summary may mention suspicious text as evidence, but policy/severity/tooling remain unchanged.
+
+
+## Versioned prompt templates
+
+Prompt templates are versioned with identifiers such as `llm-narrative-v1` and validated against `schemas/llm-prompt-template.schema.json`. Templates may only use declared allowlisted variables: `subject_json`, `findings_json`, `evidence_json`, and `constraints_json`. Unknown placeholders fail validation and CI.
+
+The system prompt must mark package contents and maintainer-controlled text as hostile untrusted evidence before any evidence block is rendered.
+
+
+## Redaction pipeline
+
+The LLM redaction pipeline runs before prompt rendering and before community export. It redacts token-like values, email addresses, URL credentials, common absolute local paths, and oversized snippets. Redaction returns deterministic audit counts so stored narratives and exports can report what was removed without retaining the original secret. Builders refuse unredacted raw artifact content.
+
+
+## Fixture corpus
+
+The synthetic fixture corpus lives in `testdata/llm-fixtures/prompt-injection/`. Every fixture is Tallow-owned, inert, safe, and synthetic. `manifest.json` records stable `case_id`, `threat_class`, `vector`, expected behavior, and `must_not` invariants. Threat classes use stable Tallow labels aligned with OWASP ASI-01 metadata, including `ASI-01/direct`, `ASI-01/indirect`, `ASI-01/memory-persistent`, and `ASI-01/multi-turn`.
+
+Memory-persistent and multi-turn fixtures simulate hostile text that could be summarized or resurfaced later. The expected behavior is `summary_only` or `quote_as_untrusted_evidence_only`; hostile text must never become trusted future instructions, policy, canonical severity, tool access, finding deletion, or output schema.

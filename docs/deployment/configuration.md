@@ -29,3 +29,46 @@ auth:
 - The bootstrap admin password must come from an environment or secret reference, not from committed YAML.
 - Once a persisted admin exists, bootstrap admin login is disabled.
 - GitHub `allowed_orgs` and `allowed_teams` are optional allow hooks. When both are empty, any successfully authenticated GitHub identity is accepted for identity mapping and then receives Tallow-owned roles.
+
+
+## Optional LLM narrative enrichment
+
+LLM narrative enrichment is disabled by default and is non-authoritative. Deterministic findings, severity, policy, and alerts continue to work without an LLM provider.
+
+```yaml
+llm:
+  enabled: false
+  provider:
+    type: "" # fake, cli, http_api, or openai_compatible when explicitly enabled
+    name: ""
+    model: ""
+    command: []
+    endpoint: ""
+    api_key_env: TALLOW_LLM_API_KEY
+  prompt_template: configs/llm/prompts/narrative-v1.yaml
+  redaction_policy: configs/redaction/default.yaml
+  max_evidence_items: 20
+  max_snippet_bytes: 4096
+  timeout_seconds: 30
+  store_prompts: false
+  store_outputs: true
+```
+
+Environment equivalents include `TALLOW_LLM_ENABLED`, `TALLOW_LLM_PROVIDER_TYPE`, `TALLOW_LLM_PROVIDER_NAME`, `TALLOW_LLM_PROVIDER_MODEL`, `TALLOW_LLM_PROVIDER_COMMAND`, `TALLOW_LLM_PROVIDER_ENDPOINT`, and `TALLOW_LLM_PROVIDER_API_KEY_ENV`. API keys must come from environment or secret references, not committed YAML.
+
+
+## Community signal sharing
+
+Community signal sharing is disabled by default and must be enabled by an admin. Store allowed signal classes and anonymization level explicitly.
+
+```yaml
+communitySignals:
+  sharing:
+    enabled: false
+    organization_id: ""
+    allowed_signal_classes: []
+    anonymization_level: coarse
+```
+
+
+Helm values mirror these environment settings under `deploy/helm/tallow/values.yaml`. The Helm chart is experimental and keeps LLM and community sharing disabled by default.

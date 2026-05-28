@@ -1,0 +1,5 @@
+policy_version: redaction-v1
+redact_emails: true
+redact_tokens: true
+redact_absolute_paths: true
+max_snippet_bytes: 4096

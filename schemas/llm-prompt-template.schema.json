@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tallow.osl.dev/schemas/llm-prompt-template.schema.json",
+  "title": "Tallow LLM Prompt Template",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["template_version", "system", "developer", "user_template", "variables", "output_schema_ref", "max_input_chars"],
+  "properties": {
+    "template_version": {"type": "string", "pattern": "^llm-narrative-v[0-9]+$"},
+    "system": {"type": "string", "minLength": 40, "pattern": "(?i)(hostile|untrusted).*evidence"},
+    "developer": {"type": "string", "minLength": 40},
+    "user_template": {"type": "string", "minLength": 1},
+    "variables": {
+      "type": "array",
+      "items": {"type": "string", "enum": ["subject_json", "findings_json", "evidence_json", "constraints_json"]},
+      "uniqueItems": true
+    },
+    "output_schema_ref": {"const": "schemas/llm-narrative-output.schema.json"},
+    "max_input_chars": {"type": "integer", "minimum": 1000, "maximum": 200000}
+  }
+}

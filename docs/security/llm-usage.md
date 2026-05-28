@@ -1,28 +1,59 @@
 # LLM Narrative Enrichment
 
-Tallow may optionally use LLMs to summarize deterministic evidence. LLM analysis is disabled by default and is never the canonical source of severity.
+Tallow may optionally use LLMs to summarize deterministic evidence. LLM analysis is disabled by default in Go configuration, Docker Compose, and Helm planning. It is never the canonical source of severity, confidence, policy decisions, finding creation, hash status, or alert routing.
 
-## Prompt contract
+## Provider abstraction
 
-The system prompt must instruct the model that package contents, metadata, READMEs, scripts, and diffs are hostile quoted evidence. They must never override system instructions.
+Milestone 6 defines provider modes without enabling any provider by default:
 
-LLM output should be structured JSON containing:
-- verdict
-- confidence
-- summary
-- attack hypothesis
-- supporting evidence IDs
-- benign explanations
-- recommended actions
-- uncertainty notes
+- `fake`: deterministic local test provider used by unit and regression tests.
+- `cli`: argv-based local command provider. Tallow sends a prepared request on stdin and reads JSON from stdout; it does not pass package text to a shell.
+- `http_api`: generic HTTPS JSON API provider using Tallow's provider request contract.
+- `openai_compatible`: OpenAI-compatible HTTPS mode reserved for compatible endpoints; it uses the same prepared request boundary in this milestone.
 
-## Provider modes
+Enabled providers must declare provider type, provider name, model, prompt template version, timeout, and an input digest. API providers must use an environment-variable secret reference rather than a committed key.
 
-- Direct API providers: Anthropic, OpenAI/Codex API, OpenRouter, OpenAI-compatible local endpoints.
-- CLI providers: existing `codex`, `claude`, `opencode`, or custom commands.
+## Disabled default
 
-Store provider, model, prompt template version, redaction policy, input digest, and output for auditability.
+The zero/default configuration has `llm.enabled=false`. When disabled, narrative generation returns a typed disabled error and does not call a provider.
 
-## Foundation status
+Example disabled configuration:
 
-LLM features are not implemented in Foundation. Future LLM output is narrative enrichment only; deterministic scoring owns canonical severity and LLM inputs must be bounded, redacted evidence bundles after prompt-injection defenses.
+```yaml
+llm:
+  enabled: false
+```
+
+Example environment for a test-only fake provider:
+
+```sh
+TALLOW_LLM_ENABLED=true
+TALLOW_LLM_PROVIDER_TYPE=fake
+TALLOW_LLM_PROVIDER_NAME=fake
+TALLOW_LLM_PROVIDER_MODEL=test-narrative
+```
+
+## Evidence boundary
+
+Package contents, registry metadata, READMEs, scripts, diffs, maintainer text, issues, and community comments are hostile quoted evidence. Providers receive prepared request objects only. They do not receive filesystem, registry, SCM, database, credential, or analyzer-execution access.
+
+## Narrative separation
+
+LLM text is stored and exposed as `source: llm` narrative enrichment, separate from deterministic findings. API/UI surfaces must label it as optional LLM narrative so reviewers do not confuse it with deterministic analyzer output.
+
+Audit metadata recorded with a narrative includes provider type, provider name, model, prompt template version, input digest, and creation time. Future persistence stores this in narrative/audit tables, not in the findings table.
+
+
+## Prompt templates
+
+Tallow prompt templates are versioned contracts. The default template is `configs/llm/prompts/narrative-v1.yaml` and validates against `schemas/llm-prompt-template.schema.json`. Templates declare their variables and output schema reference. Unknown placeholders or undeclared variables fail validation so raw artifact content cannot be smuggled into prompts outside the prepared evidence bundle.
+
+
+## Redaction pipeline
+
+The LLM redaction pipeline runs before prompt rendering and before community export. It redacts token-like values, email addresses, URL credentials, common absolute local paths, and oversized snippets. Redaction returns deterministic audit counts so stored narratives and exports can report what was removed without retaining the original secret. Builders refuse unredacted raw artifact content.
+
+
+## Narrative output schema
+
+Narrative output validates against `schemas/llm-narrative-output.schema.json`. It includes summary, attack hypothesis, supporting evidence IDs, benign explanations, recommended actions, uncertainty notes, and narrative-only confidence. The parser rejects invalid JSON as a typed non-fatal error and rejects severity overrides, unknown evidence IDs, and rule ID changes. Validated narratives are records separate from deterministic findings.
