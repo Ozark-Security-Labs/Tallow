@@ -1,0 +1,6 @@
+Tallow digest for 24h.
+Findings: 3
+Critical: 1
+High: 2
+Packages: npm/left-pad, pypi/sample
+Review: https://tallow.local/...

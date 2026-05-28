@@ -1,0 +1,24 @@
+{
+  "id": "email.high_risk_finding",
+  "version": "1",
+  "description": "Email notification for a high-risk finding requiring review.",
+  "compatible_channels": ["email"],
+  "variables": {
+    "package_name": {"type": "string", "required": true, "redaction": "none", "description": "Package name"},
+    "version": {"type": "string", "required": true, "redaction": "none", "description": "Package version"},
+    "ecosystem": {"type": "string", "required": true, "redaction": "none", "description": "Package ecosystem"},
+    "severity": {"type": "string", "required": true, "redaction": "none", "description": "Deterministic severity"},
+    "confidence": {"type": "string", "required": true, "redaction": "none", "description": "Finding confidence"},
+    "rule_ids": {"type": "string", "required": true, "redaction": "none", "description": "Rule identifiers"},
+    "evidence_summary": {"type": "string", "required": true, "redaction": "none", "description": "Concise evidence summary"},
+    "triage_url": {"type": "url", "required": true, "redaction": "url", "description": "Triage link"},
+    "review_action": {"type": "string", "required": true, "redaction": "none", "description": "Recommended reviewer action"}
+  },
+  "targets": {
+    "email": {
+      "subject": "Tallow review needed: {{ ecosystem }}/{{ package_name }} {{ version }} ({{ severity }})",
+      "text": "Tallow found signals requiring review.\nPackage: {{ ecosystem }}/{{ package_name }}\nVersion: {{ version }}\nSeverity: {{ severity }}\nConfidence: {{ confidence }}\nRules: {{ rule_ids }}\nEvidence: {{ evidence_summary }}\nReview: {{ triage_url }}\nAction: {{ review_action }}",
+      "html": "<h1>Tallow finding requires review</h1><p><strong>Package:</strong> {{ ecosystem }}/{{ package_name }} {{ version }}</p><p><strong>Severity:</strong> {{ severity }}; <strong>Confidence:</strong> {{ confidence }}</p><p><strong>Rules:</strong> {{ rule_ids }}</p><p><strong>Evidence:</strong> {{ evidence_summary }}</p><p><strong>Review:</strong> {{ triage_url }}</p><p><strong>Action:</strong> {{ review_action }}</p>"
+    }
+  }
+}

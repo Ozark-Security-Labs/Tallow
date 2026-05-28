@@ -1,0 +1,9 @@
+Tallow found signals requiring review.
+Package: npm/left-pad
+Version: 1.3.0
+Severity: high
+Confidence: high
+Rules: npm.lifecycle.install_script
+Evidence: install script writes to temporary directory
+Review: https://tallow.local/...
+Action: Review the package release evidence and decide whether to suppress or escalate.
