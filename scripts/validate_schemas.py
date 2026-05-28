@@ -86,6 +86,7 @@ def validate_examples(registry: Registry) -> list[str]:
     example_map = {
         "analyzer-input": "schemas/analyzer-input.schema.json",
         "analyzer-output": "schemas/analyzer-output.schema.json",
+        "llm-prompt-template": "schemas/llm-prompt-template.schema.json",
     }
     examples_dir = SCHEMAS / "examples"
     if not examples_dir.exists():
@@ -111,7 +112,7 @@ def fixture_kind(path: Path) -> str | None:
     if name == "unpack-manifest.golden.json":
         return "unpack-manifest"
     prefixes = sorted(
-        ["artifact-observed", "envelope", "evidence-ref"],
+        ["prompt-template", "artifact-observed", "envelope", "evidence-ref"],
         key=len,
         reverse=True,
     )
@@ -128,8 +129,9 @@ def validate_fixtures(registry: Registry) -> list[str]:
         "artifact-observed": "schemas/events/artifact-observed.v1.schema.json",
         "evidence-ref": "schemas/evidence/evidence-ref.v1.schema.json",
         "unpack-manifest": "schemas/unpack-manifest.schema.json",
+        "prompt-template": "schemas/llm-prompt-template.schema.json",
     }
-    extra_fixtures = [ROOT / "testdata/snapshots/unpack-manifest.golden.json"]
+    extra_fixtures = [ROOT / "testdata/snapshots/unpack-manifest.golden.json"] + sorted((ROOT / "testdata/schema-invalid/llm").glob("*.json"))
     fixture_paths = sorted(SCHEMAS.glob("testdata/**/*.json"))
     fixture_paths.extend(path for path in extra_fixtures if path.exists())
     for path in fixture_paths:

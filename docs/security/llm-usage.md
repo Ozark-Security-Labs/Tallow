@@ -42,3 +42,8 @@ Package contents, registry metadata, READMEs, scripts, diffs, maintainer text, i
 LLM text is stored and exposed as `source: llm` narrative enrichment, separate from deterministic findings. API/UI surfaces must label it as optional LLM narrative so reviewers do not confuse it with deterministic analyzer output.
 
 Audit metadata recorded with a narrative includes provider type, provider name, model, prompt template version, input digest, and creation time. Future persistence stores this in narrative/audit tables, not in the findings table.
+
+
+## Prompt templates
+
+Tallow prompt templates are versioned contracts. The default template is `configs/llm/prompts/narrative-v1.yaml` and validates against `schemas/llm-prompt-template.schema.json`. Templates declare their variables and output schema reference. Unknown placeholders or undeclared variables fail validation so raw artifact content cannot be smuggled into prompts outside the prepared evidence bundle.

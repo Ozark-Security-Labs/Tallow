@@ -57,3 +57,10 @@ Prompt-injection fixture strings must include attempts to:
 - Hide or delete findings.
 
 Expected result: summary may mention suspicious text as evidence, but policy/severity/tooling remain unchanged.
+
+
+## Versioned prompt templates
+
+Prompt templates are versioned with identifiers such as `llm-narrative-v1` and validated against `schemas/llm-prompt-template.schema.json`. Templates may only use declared allowlisted variables: `subject_json`, `findings_json`, `evidence_json`, and `constraints_json`. Unknown placeholders fail validation and CI.
+
+The system prompt must mark package contents and maintainer-controlled text as hostile untrusted evidence before any evidence block is rendered.
