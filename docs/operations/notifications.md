@@ -25,6 +25,16 @@ The initial email templates are:
 
 Every email template has plaintext and HTML targets. Snapshot tests cover both variants and use wording such as “signals requiring review,” not unsupported claims of confirmed malware.
 
+## Microsoft Teams templates
+
+The initial Teams templates are:
+
+- `teams.high_risk_finding`: Adaptive Card JSON with package, version, severity, rule IDs, and redacted evidence link.
+- `teams.scan_failed`: compact message JSON with package, version, severity, rule context, and redacted evidence link.
+- `teams.digest`: compact digest message JSON with package summary, window, highest severity, rules, and redacted evidence link.
+
+Teams template tests parse and compare canonical JSON snapshots. Templates must not render webhook URLs, OAuth tokens, raw artifact bodies, or untrusted markdown action spoofing content.
+
 Run:
 
 ```sh
