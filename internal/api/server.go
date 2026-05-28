@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/Ozark-Security-Labs/Tallow/internal/auth"
 	"github.com/Ozark-Security-Labs/Tallow/internal/config"
 	"github.com/Ozark-Security-Labs/Tallow/internal/metrics"
 	"github.com/Ozark-Security-Labs/Tallow/internal/requestid"
@@ -21,6 +22,8 @@ type Server struct {
 	Checks       map[string]Check
 	Metrics      *metrics.Metrics
 	Findings     FindingReader
+	Auth         *auth.Manager
+	SessionAuth  SessionAuthenticator
 	Graph        GraphReader
 	Correlations CorrelationReader
 	Statuses     StatusReader
@@ -54,6 +57,8 @@ func (s *Server) routes() http.Handler {
 	}
 	r.Get("/healthz", s.health)
 	r.Get("/readyz", s.ready)
+	r.Get("/v1/auth/providers", s.listAuthProviders)
+	r.Post("/v1/auth/local/login", s.localLogin)
 	r.Get("/v1/findings", s.listFindings)
 	r.Get("/v1/findings/{id}", s.getFinding)
 	r.Get("/v1/graph/affected-direct-dependencies", s.listAffectedDirectDependencies)

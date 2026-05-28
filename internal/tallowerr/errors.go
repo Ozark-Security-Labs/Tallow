@@ -9,17 +9,22 @@ import (
 type Code string
 
 const (
-	CodeValidation          Code = "validation_failed"
-	CodeAuth                Code = "auth_failed"
-	CodeHashMismatch        Code = "hash_mismatch"
-	CodeUnpackRejected      Code = "unpack_rejected"
-	CodeAnalyzerFailed      Code = "analyzer_failed"
-	CodeRegistryUnavailable Code = "registry_unavailable"
-	CodeDatabaseUnavailable Code = "database_unavailable"
-	CodeEventBusUnavailable Code = "event_bus_unavailable"
-	CodeNotFound            Code = "not_found"
-	CodeInternal            Code = "internal_error"
-	CodeNotImplemented      Code = "not_implemented"
+	CodeValidation           Code = "validation_failed"
+	CodeAuth                 Code = "auth_failed"
+	CodePermissionDenied     Code = "permission_denied"
+	CodeAuthProviderDisabled Code = "auth_provider_disabled"
+	CodeInvalidOAuthState    Code = "invalid_oauth_state"
+	CodeOAuthExchangeFailed  Code = "oauth_exchange_failed"
+	CodeIdentityNotAllowed   Code = "identity_not_allowed"
+	CodeHashMismatch         Code = "hash_mismatch"
+	CodeUnpackRejected       Code = "unpack_rejected"
+	CodeAnalyzerFailed       Code = "analyzer_failed"
+	CodeRegistryUnavailable  Code = "registry_unavailable"
+	CodeDatabaseUnavailable  Code = "database_unavailable"
+	CodeEventBusUnavailable  Code = "event_bus_unavailable"
+	CodeNotFound             Code = "not_found"
+	CodeInternal             Code = "internal_error"
+	CodeNotImplemented       Code = "not_implemented"
 )
 
 type Error struct {
@@ -48,8 +53,10 @@ func HTTPStatus(code Code) int {
 	switch code {
 	case CodeValidation:
 		return http.StatusBadRequest
-	case CodeAuth:
+	case CodeAuth, CodeInvalidOAuthState, CodeOAuthExchangeFailed, CodeIdentityNotAllowed, CodeAuthProviderDisabled:
 		return http.StatusUnauthorized
+	case CodePermissionDenied:
+		return http.StatusForbidden
 	case CodeDatabaseUnavailable, CodeEventBusUnavailable, CodeRegistryUnavailable:
 		return http.StatusServiceUnavailable
 	case CodeNotImplemented:
