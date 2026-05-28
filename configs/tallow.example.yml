@@ -6,6 +6,35 @@ nats:
   url: "nats://localhost:4222"
 storage:
   root: "./var/tallow/storage"
+auth:
+  session:
+    cookie_name: tallow_session
+    ttl: 24h
+    secure_cookies: true
+    dev_insecure_cookies: false
+  local:
+    enabled: true
+    bootstrap_admin_email: admin@example.com
+    bootstrap_admin_password_env: TALLOW_BOOTSTRAP_ADMIN_PASSWORD
+  github:
+    enabled: false
+    client_id: ""
+    client_secret_env: TALLOW_GITHUB_CLIENT_SECRET
+    callback_url: http://localhost:8844/v1/auth/github/callback
+    allowed_orgs: []
+    allowed_teams: []
+notifications:
+  email:
+    enabled: false
+    smtp_host: localhost
+    smtp_port: 1025
+    username: ""
+    password_ref: TALLOW_SMTP_PASSWORD
+    from: tallow@example.com
+    to: [ops@example.com]
+  teams:
+    enabled: false
+    webhook_url_ref: TALLOW_TEAMS_WEBHOOK_URL
 metrics:
   enabled: true
 log:

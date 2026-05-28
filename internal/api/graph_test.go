@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Ozark-Security-Labs/Tallow/internal/auth"
 	"github.com/Ozark-Security-Labs/Tallow/internal/config"
 )
 
@@ -20,7 +21,7 @@ func (f fakeGraphStore) ListAffectedDirectDependencies(_ context.Context, filter
 }
 
 func TestListAffectedDirectDependencies(t *testing.T) {
-	s := NewWithFindings(config.Default(), slog.Default(), nil, EmptyFindingStore{})
+	s := authorizeTestServer(NewWithFindings(config.Default(), slog.Default(), nil, EmptyFindingStore{}), auth.RoleViewer)
 	s.Graph = fakeGraphStore{items: []AffectedDependency{{Package: "direct", Version: "1.0.0", SourceFindingID: "finding-1", Status: "affected_by_transitive", Depth: 1, PathFingerprint: "abc"}}}
 	s.Handler = s.routes()
 	w := httptest.NewRecorder()
@@ -43,7 +44,7 @@ func (fakeStatusStore) ListAffectedDependentsByStatus(_ context.Context, id stri
 }
 
 func TestPackageStatusRoutesUseDedicatedHandlers(t *testing.T) {
-	s := NewWithFindings(config.Default(), slog.Default(), nil, EmptyFindingStore{})
+	s := authorizeTestServer(NewWithFindings(config.Default(), slog.Default(), nil, EmptyFindingStore{}), auth.RoleViewer)
 	s.Statuses = fakeStatusStore{}
 	s.Handler = s.routes()
 	cases := map[string]string{

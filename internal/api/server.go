@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/Ozark-Security-Labs/Tallow/internal/auth"
 	"github.com/Ozark-Security-Labs/Tallow/internal/config"
 	"github.com/Ozark-Security-Labs/Tallow/internal/metrics"
+	"github.com/Ozark-Security-Labs/Tallow/internal/rbac"
 	"github.com/Ozark-Security-Labs/Tallow/internal/requestid"
 	"github.com/Ozark-Security-Labs/Tallow/internal/tallowerr"
 	"github.com/go-chi/chi/v5"
@@ -16,15 +18,18 @@ import (
 
 type Check func(context.Context) error
 type Server struct {
-	Config       config.Config
-	Logger       *slog.Logger
-	Checks       map[string]Check
-	Metrics      *metrics.Metrics
-	Findings     FindingReader
-	Graph        GraphReader
-	Correlations CorrelationReader
-	Statuses     StatusReader
-	Handler      http.Handler
+	Config         config.Config
+	Logger         *slog.Logger
+	Checks         map[string]Check
+	Metrics        *metrics.Metrics
+	Findings       FindingReader
+	Auth           *auth.Manager
+	SessionAuth    SessionAuthenticator
+	SessionManager *auth.SessionManager
+	Graph          GraphReader
+	Correlations   CorrelationReader
+	Statuses       StatusReader
+	Handler        http.Handler
 }
 
 func New(cfg config.Config, logger *slog.Logger, checks map[string]Check) *Server {
@@ -54,15 +59,44 @@ func (s *Server) routes() http.Handler {
 	}
 	r.Get("/healthz", s.health)
 	r.Get("/readyz", s.ready)
-	r.Get("/v1/findings", s.listFindings)
-	r.Get("/v1/findings/{id}", s.getFinding)
-	r.Get("/v1/graph/affected-direct-dependencies", s.listAffectedDirectDependencies)
-	r.Get("/v1/source-correlations", s.listCorrelations)
-	r.Get("/v1/package-versions/{id}/statuses", s.listPackageVersionStatuses)
-	r.Get("/v1/package-versions/{id}/transitive-impacts", s.listPackageVersionTransitiveImpacts)
-	r.Get("/v1/statuses/{id}/affected-dependents", s.listAffectedDependentsByStatus)
-	r.Get("/v1/package-versions/{id}/source-correlations", s.listPackageVersionCorrelations)
-	r.Get("/v1/artifacts/{id}/source-correlations", s.listArtifactCorrelations)
+	r.Get("/v1/auth/providers", s.listAuthProviders)
+	r.Post("/v1/auth/local/login", s.localLogin)
+	r.Get("/v1/auth/github/login", s.githubLogin)
+	r.Get("/v1/auth/github/callback", s.githubCallback)
+	r.Get("/v1/auth/me", chain(s.requireAuth, s.currentUser))
+	r.Post("/v1/auth/logout", chain(s.requireAuth, csrfGuard, s.logout))
+	r.Get("/v1/admin/users", chain(s.requireAuth, permissionMiddleware(rbac.ManageUsers), s.listUsers))
+	r.Patch("/v1/admin/users/{user_id}/roles", chain(s.requireAuth, csrfGuard, permissionMiddleware(rbac.ManageUsers), s.updateUserRoles))
+	r.Get("/v1/findings", chain(s.requireAuth, permissionMiddleware(rbac.ReadFindings), s.listFindings))
+	r.Get("/v1/findings/{id}", chain(s.requireAuth, permissionMiddleware(rbac.ReadFindings), s.getFinding))
+	r.Patch("/v1/findings/{id}", chain(s.requireAuth, csrfGuard, permissionMiddleware(rbac.TriageFindings), s.updateFinding))
+	r.Get("/v1/packages", chain(s.requireAuth, permissionMiddleware(rbac.ReadPackages), s.listPackages))
+	r.Get("/v1/packages/{package_id}", chain(s.requireAuth, permissionMiddleware(rbac.ReadPackages), s.getPackage))
+	r.Get("/v1/packages/{package_id}/versions", chain(s.requireAuth, permissionMiddleware(rbac.ReadPackages), s.listPackageVersions))
+	r.Get("/v1/versions/{version_id}", chain(s.requireAuth, permissionMiddleware(rbac.ReadPackages), s.getVersion))
+	r.Get("/v1/artifacts/{artifact_id}", chain(s.requireAuth, permissionMiddleware(rbac.ReadPackages), s.getArtifact))
+	r.Get("/v1/observations", chain(s.requireAuth, permissionMiddleware(rbac.ReadPackages), s.listObservations))
+	r.Get("/v1/analyzer-runs", chain(s.requireAuth, permissionMiddleware(rbac.ReadAnalyzerRuns), s.listAnalyzerRuns))
+	r.Get("/v1/analyzer-runs/{run_id}", chain(s.requireAuth, permissionMiddleware(rbac.ReadAnalyzerRuns), s.getAnalyzerRun))
+	r.Get("/v1/settings", chain(s.requireAuth, permissionMiddleware(rbac.ReadSettings), s.getSettings))
+	r.Patch("/v1/settings", chain(s.requireAuth, csrfGuard, permissionMiddleware(rbac.MutateSettings), s.updateSettings))
+	r.Get("/v1/alerts", chain(s.requireAuth, permissionMiddleware(rbac.ReadAlerts), s.listAlerts))
+	r.Get("/v1/alerts/{alert_id}", chain(s.requireAuth, permissionMiddleware(rbac.ReadAlerts), s.getAlert))
+	r.Patch("/v1/alerts/{alert_id}", chain(s.requireAuth, csrfGuard, permissionMiddleware(rbac.TriageAlerts), s.updateAlert))
+	r.Get("/v1/notification-routes", chain(s.requireAuth, permissionMiddleware(rbac.ManageNotifications), s.listNotificationRoutes))
+	r.Post("/v1/notification-routes", chain(s.requireAuth, csrfGuard, permissionMiddleware(rbac.ManageNotifications), s.createNotificationRoute))
+	r.Patch("/v1/notification-routes/{route_id}", chain(s.requireAuth, csrfGuard, permissionMiddleware(rbac.ManageNotifications), s.updateNotificationRoute))
+	r.Post("/v1/notification-routes/{route_id}/test", chain(s.requireAuth, csrfGuard, permissionMiddleware(rbac.TestNotifications), s.testNotificationRoute))
+	r.Get("/v1/notification-deliveries", chain(s.requireAuth, permissionMiddleware(rbac.ManageNotifications), s.listNotificationDeliveries))
+	r.Post("/v1/notification-templates/preview", chain(s.requireAuth, csrfGuard, permissionMiddleware(rbac.ManageNotifications), s.previewNotificationTemplate))
+	r.Get("/v1/graph/impact-paths", chain(s.requireAuth, permissionMiddleware(rbac.ReadImpact), s.listAffectedDirectDependencies))
+	r.Get("/v1/graph/affected-direct-dependencies", chain(s.requireAuth, permissionMiddleware(rbac.ReadImpact), s.listAffectedDirectDependencies))
+	r.Get("/v1/source-correlations", chain(s.requireAuth, permissionMiddleware(rbac.ReadImpact), s.listCorrelations))
+	r.Get("/v1/package-versions/{id}/statuses", chain(s.requireAuth, permissionMiddleware(rbac.ReadImpact), s.listPackageVersionStatuses))
+	r.Get("/v1/package-versions/{id}/transitive-impacts", chain(s.requireAuth, permissionMiddleware(rbac.ReadImpact), s.listPackageVersionTransitiveImpacts))
+	r.Get("/v1/statuses/{id}/affected-dependents", chain(s.requireAuth, permissionMiddleware(rbac.ReadImpact), s.listAffectedDependentsByStatus))
+	r.Get("/v1/package-versions/{id}/source-correlations", chain(s.requireAuth, permissionMiddleware(rbac.ReadImpact), s.listPackageVersionCorrelations))
+	r.Get("/v1/artifacts/{id}/source-correlations", chain(s.requireAuth, permissionMiddleware(rbac.ReadImpact), s.listArtifactCorrelations))
 	if s.Config.Metrics.Enabled {
 		r.Handle("/metrics", s.Metrics.Handler())
 	}
@@ -86,6 +120,30 @@ func (s *Server) ready(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, 200, map[string]string{"status": "ready"})
 }
+
+type middleware func(http.Handler) http.Handler
+
+func chain(middlewaresAndHandler ...any) http.HandlerFunc {
+	var handler http.Handler
+	for i := len(middlewaresAndHandler) - 1; i >= 0; i-- {
+		switch v := middlewaresAndHandler[i].(type) {
+		case http.HandlerFunc:
+			handler = v
+		case func(http.ResponseWriter, *http.Request):
+			handler = http.HandlerFunc(v)
+		case middleware:
+			handler = v(handler)
+		case func(http.Handler) http.Handler:
+			handler = v(handler)
+		}
+	}
+	return handler.ServeHTTP
+}
+
+func permissionMiddleware(permission rbac.Permission) middleware {
+	return func(next http.Handler) http.Handler { return requirePermission(permission, next) }
+}
+
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)

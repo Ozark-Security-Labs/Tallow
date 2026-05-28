@@ -1,0 +1,37 @@
+import { readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+const specPath = resolve("../docs/api/openapi.yaml");
+const spec = JSON.parse(readFileSync(specPath, "utf8"));
+const schemas = Object.keys(spec.components?.schemas ?? {}).sort();
+
+const content = `/* Generated from docs/api/openapi.yaml. Do not edit by hand. */
+export const apiInfo = ${JSON.stringify(spec.info, null, 2)} as const;
+export const apiPaths = ${JSON.stringify(Object.keys(spec.paths).sort(), null, 2)} as const;
+export const apiSchemas = ${JSON.stringify(schemas, null, 2)} as const;
+
+export type Role = 'admin' | 'analyst' | 'viewer';
+export type Severity = 'info' | 'low' | 'medium' | 'high' | 'critical';
+export type Confidence = 'low' | 'medium' | 'high' | 'confirmed' | 'unknown';
+export type FindingStatus = 'open' | 'acknowledged' | 'resolved' | 'suppressed' | 'false_positive';
+export type AlertStatus = 'open' | 'acknowledged' | 'resolved' | 'suppressed' | 'reopened';
+
+export interface ErrorResponse { error: { code: string; message: string; request_id?: string; details?: string } }
+export interface PageInfo { limit: number; offset: number; total: number; next_offset?: number }
+export interface User { id: string; email: string; display_name?: string; roles: Role[]; status: string }
+export interface CurrentUser { user: User; provider?: string; capabilities: string[] }
+export interface AuthProvider { name: string; provider?: string; type: 'local' | 'oauth' | 'password'; label?: string; enabled: boolean; login_url?: string }
+export interface Finding { id: string; rule_id: string; package_name?: string; version?: string; severity?: Severity; severity_hint?: string; confidence: Confidence | string; status: FindingStatus | string; summary: string; evidence_refs?: EvidenceRef[]; evidence?: EvidenceRef[]; evidence_count?: number; updated_at?: string }
+export interface EvidenceRef { type: string; ref: string; path?: string; line?: number; excerpt?: string; excerpt_safe?: boolean; hash?: string }
+export interface Alert { id: string; finding_id?: string; status: AlertStatus; severity: Severity; title: string; summary?: string; package_name?: string; version?: string; evidence_refs?: EvidenceRef[] }
+export interface PackageSummary { id: string; ecosystem: string; name: string; registry_url?: string }
+export interface PackageVersion { id: string; package_id: string; version: string }
+export interface AnalyzerRun { id: string; analyzer_id: string; analyzer_version?: string; status: string; started_at?: string; finished_at?: string }
+export interface ImpactPath { id: string; finding_id?: string; status: string; path: string[]; evidence_refs?: EvidenceRef[] }
+export interface NotificationRoute { id: string; name: string; channel: 'email' | 'teams'; enabled: boolean; secret_configured?: boolean }
+
+export interface ListResponse<T> { items: T[]; page?: PageInfo; next_cursor?: string }
+`;
+
+writeFileSync(resolve("src/api/generated.ts"), content);
+console.log(`Generated src/api/generated.ts from ${schemas.length} schemas`);

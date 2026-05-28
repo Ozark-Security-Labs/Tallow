@@ -1,0 +1,6 @@
+Tallow could not complete a scan.
+Package: pypi/sample
+Version: 2.0.0
+Run: run-1
+Error: analyzer exited with code 2
+Review: https://tallow.local/...

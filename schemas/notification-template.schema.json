@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ozark-security-labs.github.io/tallow/schemas/notification-template.schema.json",
+  "type": "object",
+  "required": ["id", "version", "description", "compatible_channels", "variables", "targets"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z0-9_.-]+$"},
+    "version": {"type": "string"},
+    "description": {"type": "string"},
+    "compatible_channels": {"type": "array", "items": {"enum": ["email", "teams"]}, "minItems": 1, "uniqueItems": true},
+    "variables": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/variable"}
+    },
+    "targets": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "object",
+          "properties": {
+            "subject": {"type": "string"},
+            "text": {"type": "string"},
+            "html": {"type": "string"}
+          },
+          "additionalProperties": false
+        },
+        "teams": {
+          "type": "object",
+          "properties": {"card_json": {"type": "string"}},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "variable": {
+      "type": "object",
+      "required": ["type", "required", "redaction", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {"enum": ["string", "number", "boolean", "string_list", "url"]},
+        "required": {"type": "boolean"},
+        "redaction": {"enum": ["none", "secret", "url"]},
+        "description": {"type": "string"}
+      }
+    }
+  }
+}

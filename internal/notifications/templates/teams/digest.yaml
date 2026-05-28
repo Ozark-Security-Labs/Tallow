@@ -1,0 +1,51 @@
+{
+  "id": "teams.digest",
+  "version": "1",
+  "description": "Teams card for digest summary.",
+  "compatible_channels": ["teams"],
+  "variables":
+    {
+      "package_name":
+        {
+          "type": "string",
+          "required": true,
+          "redaction": "none",
+          "description": "Package summary"
+        },
+      "version":
+        {
+          "type": "string",
+          "required": true,
+          "redaction": "none",
+          "description": "Digest window"
+        },
+      "severity":
+        {
+          "type": "string",
+          "required": true,
+          "redaction": "none",
+          "description": "Highest severity"
+        },
+      "rule_ids":
+        {
+          "type": "string",
+          "required": true,
+          "redaction": "none",
+          "description": "Digest rule IDs"
+        },
+      "evidence_url":
+        {
+          "type": "url",
+          "required": true,
+          "redaction": "url",
+          "description": "Digest link"
+        }
+    },
+  "targets":
+    {
+      "teams":
+        {
+          "card_json": "{\"type\":\"message\",\"text\":\"Tallow digest {{ version }}: {{ severity }} signals for {{ package_name }}. Rules: {{ rule_ids }}. Evidence: {{ evidence_url }}\"}"
+        }
+    }
+}

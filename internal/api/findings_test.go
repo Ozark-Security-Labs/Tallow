@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Ozark-Security-Labs/Tallow/internal/auth"
 	"github.com/Ozark-Security-Labs/Tallow/internal/config"
 )
 
@@ -19,6 +20,16 @@ type fakeFindingStore struct {
 func (f fakeFindingStore) GetFinding(_ context.Context, id string) (FindingRecord, error) {
 	for _, item := range f.items {
 		if item.ID == id {
+			return item, nil
+		}
+	}
+	return FindingRecord{}, ErrFindingNotFound
+}
+
+func (f fakeFindingStore) UpdateFindingStatus(_ context.Context, id, status string) (FindingRecord, error) {
+	for _, item := range f.items {
+		if item.ID == id {
+			item.Status = status
 			return item, nil
 		}
 	}
@@ -61,7 +72,7 @@ func (f fakeFindingStore) ListFindings(_ context.Context, filters FindingFilters
 }
 
 func findingSrv(items []FindingRecord) *Server {
-	return NewWithFindings(config.Default(), slog.Default(), nil, fakeFindingStore{items: items})
+	return authorizeTestServer(NewWithFindings(config.Default(), slog.Default(), nil, fakeFindingStore{items: items}), auth.RoleViewer)
 }
 
 func sampleFinding(id string, createdAt time.Time) FindingRecord {
@@ -134,6 +145,16 @@ func TestFindingCursorFiltersAfterLastSeen(t *testing.T) {
 	w := httptest.NewRecorder()
 	s.Handler.ServeHTTP(w, httptest.NewRequest("GET", "/v1/findings?cursor="+cursor, nil))
 	if w.Code != 200 || !strings.Contains(w.Body.String(), older.ID) {
+		t.Fatalf("%d %s", w.Code, w.Body.String())
+	}
+}
+
+func TestUpdateFindingStatus(t *testing.T) {
+	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	s := authorizeTestServer(NewWithFindings(config.Default(), slog.Default(), nil, fakeFindingStore{items: []FindingRecord{sampleFinding("fin_1", now)}}), auth.RoleAnalyst)
+	w := httptest.NewRecorder()
+	s.Handler.ServeHTTP(w, httptest.NewRequest("PATCH", "/v1/findings/fin_1", strings.NewReader(`{"status":"triaged"}`)))
+	if w.Code != 200 || !strings.Contains(w.Body.String(), `"status":"triaged"`) {
 		t.Fatalf("%d %s", w.Code, w.Body.String())
 	}
 }

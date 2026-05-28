@@ -1,0 +1,36 @@
+{
+  "name": "tallow-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate:api": "node scripts/generate-api.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "lint": "eslint src --ext ts,tsx",
+    "build": "npm run generate:api && tsc --noEmit && vite build"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "typescript": "latest",
+    "vite": "latest"
+  },
+  "devDependencies": {
+    "@eslint/js": "latest",
+    "@testing-library/jest-dom": "latest",
+    "@testing-library/react": "latest",
+    "@testing-library/user-event": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "eslint": "latest",
+    "eslint-plugin-react-hooks": "latest",
+    "eslint-plugin-react-refresh": "latest",
+    "globals": "latest",
+    "jsdom": "latest",
+    "typescript-eslint": "^8.60.0",
+    "vitest": "latest"
+  }
+}
