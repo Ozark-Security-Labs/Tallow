@@ -104,11 +104,22 @@ func TestSensitiveRoutesRequireAuth(t *testing.T) {
 
 func TestCSRFGuardRejectsCrossOriginUnsafeMethods(t *testing.T) {
 	handler := csrfGuard(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))
-	req := httptest.NewRequest("POST", "http://tallow.local/v1/settings", nil)
+	req := httptest.NewRequest("PATCH", "http://tallow.local/v1/settings", nil)
 	req.Header.Set("Origin", "https://evil.example")
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 	if w.Code != http.StatusForbidden || !strings.Contains(w.Body.String(), "permission_denied") {
+		t.Fatalf("expected csrf denial, got %d %s", w.Code, w.Body.String())
+	}
+}
+
+func TestAdminRolePatchRequiresCSRF(t *testing.T) {
+	s := authorizeTestServer(New(config.Default(), slog.Default(), nil), auth.RoleAdmin)
+	req := httptest.NewRequest("PATCH", "http://tallow.local/v1/admin/users/u1/roles", strings.NewReader(`{"roles":["viewer"]}`))
+	req.Header.Set("Origin", "https://evil.example")
+	w := httptest.NewRecorder()
+	s.Handler.ServeHTTP(w, req)
+	if w.Code != http.StatusForbidden {
 		t.Fatalf("expected csrf denial, got %d %s", w.Code, w.Body.String())
 	}
 }

@@ -88,6 +88,10 @@ type FindingReader interface {
 	ListFindings(context.Context, FindingFilters) ([]FindingRecord, error)
 }
 
+type FindingWriter interface {
+	UpdateFindingStatus(context.Context, string, string) (FindingRecord, error)
+}
+
 type EmptyFindingStore struct{}
 
 func (EmptyFindingStore) GetFinding(context.Context, string) (FindingRecord, error) {
@@ -138,6 +142,36 @@ func (s *Server) getFinding(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		writeError(w, r, tallowerr.Wrap(tallowerr.CodeDatabaseUnavailable, "get finding failed", err))
+		return
+	}
+	writeJSON(w, http.StatusOK, record)
+}
+
+func (s *Server) updateFinding(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var payload struct {
+		Status string `json:"status"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		writeError(w, r, tallowerr.New(tallowerr.CodeValidation, "invalid finding update body"))
+		return
+	}
+	if err := validateFindingStatus(payload.Status); err != nil || payload.Status == "" {
+		writeError(w, r, tallowerr.New(tallowerr.CodeValidation, "invalid finding status"))
+		return
+	}
+	writer, ok := s.Findings.(FindingWriter)
+	if !ok {
+		writeError(w, r, tallowerr.New(tallowerr.CodeNotImplemented, "finding updates are not configured"))
+		return
+	}
+	record, err := writer.UpdateFindingStatus(r.Context(), id, payload.Status)
+	if errors.Is(err, ErrFindingNotFound) {
+		writeError(w, r, tallowerr.New(tallowerr.CodeNotFound, "finding not found"))
+		return
+	}
+	if err != nil {
+		writeError(w, r, tallowerr.Wrap(tallowerr.CodeDatabaseUnavailable, "update finding failed", err))
 		return
 	}
 	writeJSON(w, http.StatusOK, record)
