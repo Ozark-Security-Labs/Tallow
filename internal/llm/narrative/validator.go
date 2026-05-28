@@ -31,6 +31,15 @@ type Context struct {
 }
 
 func ParseAndValidate(raw []byte, ctx Context) (Output, error) {
+	required := map[string]json.RawMessage{}
+	if err := json.Unmarshal(raw, &required); err != nil {
+		return Output{}, fmt.Errorf("%w: %v", ErrInvalidJSON, err)
+	}
+	for _, key := range []string{"schema_version", "verdict", "confidence_label", "summary", "attack_hypothesis", "supporting_evidence_ids", "benign_explanations", "recommended_actions", "uncertainty_notes", "canonical_severity_restated", "severity_override_attempted"} {
+		if _, ok := required[key]; !ok {
+			return Output{}, fmt.Errorf("invalid narrative output schema: missing %s", key)
+		}
+	}
 	var out Output
 	dec := json.NewDecoder(strings.NewReader(string(raw)))
 	dec.DisallowUnknownFields()

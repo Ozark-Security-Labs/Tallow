@@ -37,3 +37,10 @@ func TestDeterministicAuditOrdering(t *testing.T) {
 		}
 	}
 }
+
+func TestRedactsFineGrainedGitHubPAT(t *testing.T) {
+	res := DefaultRedactor{}.RedactText("github_pat_1234567890abcdefghijklmnopqrstuvwxyz", Options{MaxBytes: 4096})
+	if strings.Contains(res.Text, "github_pat_") {
+		t.Fatal(res.Text)
+	}
+}

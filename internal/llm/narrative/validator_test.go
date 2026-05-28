@@ -44,3 +44,10 @@ func TestRejectsMissingRequiredNarrativeFields(t *testing.T) {
 		t.Fatal("expected required field rejection")
 	}
 }
+
+func TestRejectsMissingSeverityOverrideField(t *testing.T) {
+	raw := []byte(`{"schema_version":"v1","verdict":"needs_review","confidence_label":"medium","summary":"x","attack_hypothesis":"x","supporting_evidence_ids":[],"benign_explanations":[],"recommended_actions":[],"uncertainty_notes":[],"canonical_severity_restated":"high"}`)
+	if _, err := ParseAndValidate(raw, Context{CanonicalSeverity: "high"}); err == nil {
+		t.Fatal("expected missing severity_override_attempted rejection")
+	}
+}

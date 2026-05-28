@@ -38,7 +38,7 @@ var patterns = []struct {
 	re        *regexp.Regexp
 }{
 	{"aws_access_key_id", "[REDACTED:AWS_ACCESS_KEY_ID]", regexp.MustCompile(`\bAKIA[0-9A-Z]{16}\b`)},
-	{"github_token", "[REDACTED:GITHUB_TOKEN]", regexp.MustCompile(`\bgh[pousr]_[A-Za-z0-9_]{20,}\b`)},
+	{"github_token", "[REDACTED:GITHUB_TOKEN]", regexp.MustCompile(`\b(?:gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{22,})\b`)},
 	{"bearer_token", "[REDACTED:TOKEN]", regexp.MustCompile(`(?i)bearer\s+[A-Za-z0-9._\-]{12,}`)},
 	{"api_token", "[REDACTED:TOKEN]", regexp.MustCompile(`(?i)(token|secret|password|api[_-]?key)\s*[:=]\s*["']?[A-Za-z0-9._\-/+=]{12,}`)},
 	{"url_credential", "[REDACTED:URL_CREDENTIAL]", regexp.MustCompile(`https?://[^\s/@]+:[^\s/@]+@[^\s]+`)},
