@@ -100,6 +100,28 @@ func Load(env map[string]string) (Config, error) {
 	if v, ok := get("TALLOW_AUTH_LOCAL_BOOTSTRAP_ADMIN_PASSWORD"); ok {
 		c.Auth.Local.BootstrapAdminPassword = v
 	}
+	if v, ok := get("TALLOW_AUTH_GITHUB_ENABLED"); ok {
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			return c, fmt.Errorf("invalid TALLOW_AUTH_GITHUB_ENABLED: %w", err)
+		}
+		c.Auth.GitHub.Enabled = b
+	}
+	if v, ok := get("TALLOW_AUTH_GITHUB_CLIENT_ID"); ok {
+		c.Auth.GitHub.ClientID = v
+	}
+	if v, ok := get("TALLOW_AUTH_GITHUB_CLIENT_SECRET"); ok {
+		c.Auth.GitHub.ClientSecret = v
+	}
+	if v, ok := get("TALLOW_AUTH_GITHUB_CALLBACK_URL"); ok {
+		c.Auth.GitHub.CallbackURL = v
+	}
+	if v, ok := get("TALLOW_AUTH_GITHUB_ALLOWED_ORGS"); ok {
+		c.Auth.GitHub.AllowedOrgs = splitCSV(v)
+	}
+	if v, ok := get("TALLOW_AUTH_GITHUB_ALLOWED_TEAMS"); ok {
+		c.Auth.GitHub.AllowedTeams = splitCSV(v)
+	}
 	if v, ok := get("TALLOW_METRICS_ENABLED"); ok {
 		b, err := strconv.ParseBool(v)
 		if err != nil {
@@ -120,6 +142,18 @@ func LoadFromEnvironment() (Config, error) {
 	}
 	return Load(env)
 }
+func splitCSV(value string) []string {
+	parts := strings.Split(value, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			out = append(out, part)
+		}
+	}
+	return out
+}
+
 func (c Config) Validate() error {
 	if strings.TrimSpace(c.Server.ListenAddress) == "" {
 		return fmt.Errorf("server listen address required")

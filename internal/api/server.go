@@ -60,6 +60,8 @@ func (s *Server) routes() http.Handler {
 	r.Get("/readyz", s.ready)
 	r.Get("/v1/auth/providers", s.listAuthProviders)
 	r.Post("/v1/auth/local/login", s.localLogin)
+	r.Get("/v1/auth/github/login", s.githubLogin)
+	r.Get("/v1/auth/github/callback", s.githubCallback)
 	r.Post("/v1/auth/logout", s.logout)
 	r.Get("/v1/findings", s.listFindings)
 	r.Get("/v1/findings/{id}", s.getFinding)

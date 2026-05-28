@@ -7,6 +7,7 @@ import (
 
 	"github.com/Ozark-Security-Labs/Tallow/internal/auth"
 	"github.com/Ozark-Security-Labs/Tallow/internal/tallowerr"
+	"github.com/go-chi/chi/v5"
 )
 
 type authProvidersResponse struct {
@@ -68,6 +69,42 @@ func (s *Server) localLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, sessionResponse{User: identity, ExpiresAt: session.ExpiresAt.Format(time.RFC3339)})
+}
+
+func (s *Server) githubLogin(w http.ResponseWriter, r *http.Request) {
+	if s.Auth == nil {
+		writeError(w, r, auth.ErrProviderDisabled)
+		return
+	}
+	start, err := s.Auth.BeginOAuth(r.Context(), "github", r.URL.Query().Get("redirect_path"))
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	http.Redirect(w, r, start.RedirectURL, http.StatusFound)
+}
+
+func (s *Server) githubCallback(w http.ResponseWriter, r *http.Request) {
+	if s.Auth == nil {
+		writeError(w, r, auth.ErrProviderDisabled)
+		return
+	}
+	provider := chi.URLParam(r, "provider")
+	if provider == "" {
+		provider = "github"
+	}
+	identity, err := s.Auth.CompleteOAuth(r.Context(), provider, r.URL.Query())
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	if s.SessionManager != nil {
+		if _, err := s.SessionManager.CreateHTTP(w, r, identity); err != nil {
+			writeError(w, r, err)
+			return
+		}
+	}
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {

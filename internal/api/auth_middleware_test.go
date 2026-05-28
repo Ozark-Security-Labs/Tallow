@@ -6,10 +6,13 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Ozark-Security-Labs/Tallow/internal/auth"
+	githubauth "github.com/Ozark-Security-Labs/Tallow/internal/auth/github"
 	"github.com/Ozark-Security-Labs/Tallow/internal/auth/local"
 	"github.com/Ozark-Security-Labs/Tallow/internal/config"
 	"github.com/Ozark-Security-Labs/Tallow/internal/tallowerr"
@@ -146,6 +149,34 @@ func TestLocalLoginCreatesAndLogoutRevokesSession(t *testing.T) {
 	}
 }
 
+func TestGitHubOAuthHandlers(t *testing.T) {
+	provider := githubauth.NewProvider(githubauth.Config{Enabled: true, ClientID: "client", ClientSecret: "client-secret-value", CallbackURL: "http://localhost/v1/auth/github/callback", StateKey: []byte("0123456789abcdef0123456789abcdef")}, oauthHandlerClient{}, time.Now)
+	manager, err := auth.NewManager(provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := New(config.Default(), slog.Default(), nil)
+	s.Auth = manager
+	s.SessionManager = auth.NewSessionManager(auth.NewMemorySessionStore(), auth.SessionOptions{SecureCookies: true})
+
+	loginW := httptest.NewRecorder()
+	s.Handler.ServeHTTP(loginW, httptest.NewRequest("GET", "/v1/auth/github/login?redirect_path=/findings", nil))
+	if loginW.Code != http.StatusFound || !strings.Contains(loginW.Header().Get("Location"), "github.com/login/oauth/authorize") {
+		t.Fatalf("%d %s", loginW.Code, loginW.Header().Get("Location"))
+	}
+	location := loginW.Header().Get("Location")
+	parsed, err := url.Parse(location)
+	if err != nil {
+		t.Fatal(err)
+	}
+	state := parsed.Query().Get("state")
+	callbackW := httptest.NewRecorder()
+	s.Handler.ServeHTTP(callbackW, httptest.NewRequest("GET", "/v1/auth/github/callback?code=ok&state="+url.QueryEscape(state), nil))
+	if callbackW.Code != http.StatusFound || len(callbackW.Result().Cookies()) != 1 {
+		t.Fatalf("%d cookies=%#v body=%s", callbackW.Code, callbackW.Result().Cookies(), callbackW.Body.String())
+	}
+}
+
 func TestProviderHandlerMapsProviderFailures(t *testing.T) {
 	manager, err := auth.NewManager(errorProvider{})
 	if err != nil {
@@ -158,6 +189,21 @@ func TestProviderHandlerMapsProviderFailures(t *testing.T) {
 	if w.Code != http.StatusUnauthorized || !strings.Contains(w.Body.String(), "auth_failed") {
 		t.Fatalf("%d %s", w.Code, w.Body.String())
 	}
+}
+
+type oauthHandlerClient struct{}
+
+func (oauthHandlerClient) ExchangeCode(context.Context, string, string, string, string) (string, error) {
+	return "token", nil
+}
+func (oauthHandlerClient) CurrentUser(context.Context, string) (githubauth.User, error) {
+	return githubauth.User{ID: 42, Login: "octo", Name: "Octo"}, nil
+}
+func (oauthHandlerClient) PrimaryEmail(context.Context, string) (string, error) {
+	return "octo@example.com", nil
+}
+func (oauthHandlerClient) TeamMemberships(context.Context, string) ([]githubauth.Team, error) {
+	return []githubauth.Team{{Org: "ozark", Slug: "security"}}, nil
 }
 
 type errorProvider struct{}

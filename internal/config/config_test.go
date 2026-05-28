@@ -12,11 +12,11 @@ func TestDefaults(t *testing.T) {
 	}
 }
 func TestOverrides(t *testing.T) {
-	c, err := Load(map[string]string{"TALLOW_SERVER_LISTEN": ":1", "TALLOW_POSTGRES_DSN": "postgres://x", "TALLOW_NATS_URL": "nats://x", "TALLOW_STORAGE_ROOT": "./data", "TALLOW_AUTH_SESSION_COOKIE_NAME": "custom_session", "TALLOW_AUTH_SESSION_TTL": "12h", "TALLOW_AUTH_SECURE_COOKIES": "false", "TALLOW_AUTH_DEV_INSECURE_COOKIES": "true", "TALLOW_AUTH_LOCAL_ENABLED": "false", "TALLOW_AUTH_LOCAL_BOOTSTRAP_ADMIN_EMAIL": "admin@example.com", "TALLOW_AUTH_LOCAL_BOOTSTRAP_ADMIN_PASSWORD": "test-password", "TALLOW_METRICS_ENABLED": "false", "TALLOW_LOG_LEVEL": "debug"})
+	c, err := Load(map[string]string{"TALLOW_SERVER_LISTEN": ":1", "TALLOW_POSTGRES_DSN": "postgres://x", "TALLOW_NATS_URL": "nats://x", "TALLOW_STORAGE_ROOT": "./data", "TALLOW_AUTH_SESSION_COOKIE_NAME": "custom_session", "TALLOW_AUTH_SESSION_TTL": "12h", "TALLOW_AUTH_SECURE_COOKIES": "false", "TALLOW_AUTH_DEV_INSECURE_COOKIES": "true", "TALLOW_AUTH_LOCAL_ENABLED": "false", "TALLOW_AUTH_LOCAL_BOOTSTRAP_ADMIN_EMAIL": "admin@example.com", "TALLOW_AUTH_LOCAL_BOOTSTRAP_ADMIN_PASSWORD": "test-password", "TALLOW_AUTH_GITHUB_ENABLED": "true", "TALLOW_AUTH_GITHUB_CLIENT_ID": "client", "TALLOW_AUTH_GITHUB_CLIENT_SECRET": "client-secret-value", "TALLOW_AUTH_GITHUB_CALLBACK_URL": "http://localhost/callback", "TALLOW_AUTH_GITHUB_ALLOWED_ORGS": "ozark,other", "TALLOW_AUTH_GITHUB_ALLOWED_TEAMS": "ozark/security", "TALLOW_METRICS_ENABLED": "false", "TALLOW_LOG_LEVEL": "debug"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Server.ListenAddress != ":1" || c.Metrics.Enabled || c.Log.Level != "debug" || c.Auth.Session.CookieName != "custom_session" || c.Auth.Session.TTL != "12h" || c.Auth.Session.SecureCookies || !c.Auth.Session.DevInsecureCookies || c.Auth.Local.Enabled {
+	if c.Server.ListenAddress != ":1" || c.Metrics.Enabled || c.Log.Level != "debug" || c.Auth.Session.CookieName != "custom_session" || c.Auth.Session.TTL != "12h" || c.Auth.Session.SecureCookies || !c.Auth.Session.DevInsecureCookies || c.Auth.Local.Enabled || !c.Auth.GitHub.Enabled || len(c.Auth.GitHub.AllowedOrgs) != 2 || len(c.Auth.GitHub.AllowedTeams) != 1 {
 		t.Fatalf("bad override %#v", c)
 	}
 }

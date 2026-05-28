@@ -9,6 +9,7 @@ import (
 
 	"github.com/Ozark-Security-Labs/Tallow/internal/api"
 	"github.com/Ozark-Security-Labs/Tallow/internal/auth"
+	githubauth "github.com/Ozark-Security-Labs/Tallow/internal/auth/github"
 	"github.com/Ozark-Security-Labs/Tallow/internal/auth/local"
 	"github.com/Ozark-Security-Labs/Tallow/internal/config"
 	"github.com/Ozark-Security-Labs/Tallow/internal/db/sqlc"
@@ -51,6 +52,9 @@ func main() {
 	providers := []auth.Provider{}
 	if cfg.Auth.Local.Enabled {
 		providers = append(providers, local.NewProvider(local.Config{Enabled: true, BootstrapAdminEmail: cfg.Auth.Local.BootstrapAdminEmail, BootstrapAdminPassword: cfg.Auth.Local.BootstrapAdminPassword}, nil))
+	}
+	if cfg.Auth.GitHub.Enabled {
+		providers = append(providers, githubauth.NewProvider(githubauth.Config{Enabled: true, ClientID: cfg.Auth.GitHub.ClientID, ClientSecret: cfg.Auth.GitHub.ClientSecret, CallbackURL: cfg.Auth.GitHub.CallbackURL, AllowedOrgs: cfg.Auth.GitHub.AllowedOrgs, AllowedTeams: cfg.Auth.GitHub.AllowedTeams, StateKey: []byte(cfg.Auth.GitHub.ClientSecret)}, githubauth.NewHTTPClient(), time.Now))
 	}
 	authManager, err := auth.NewManager(providers...)
 	if err != nil {

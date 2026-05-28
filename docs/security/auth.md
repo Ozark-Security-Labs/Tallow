@@ -31,6 +31,15 @@ type OAuthProvider interface {
 - Local email/password auth.
 - GitHub OAuth without requiring an external auth service.
 
+## GitHub OAuth
+
+The GitHub provider is built in and does not require Clerk, WorkOS, or another hosted auth service. Operators configure `client_id`, a secret-backed client secret, callback URL, and optional allow hooks:
+
+- `allowed_orgs`: permits any member of the listed GitHub organizations.
+- `allowed_teams`: permits members of listed `org/team-slug` teams.
+
+OAuth state contains provider, nonce, issue time, expiry time, and redirect path. It is HMAC-signed, expires, and is rejected on replay in the running process. Callback handling validates state before exchanging the code, maps GitHub `/user` plus primary `/user/emails` data into a normalized identity, and never logs access tokens or client secrets.
+
 ## Future providers
 
 The provider boundary is intentionally compatible with future Generic OIDC/JWT, Clerk, and WorkOS providers. Those implementations should return a normalized `Identity` and must not decide Tallow authorization policy.
