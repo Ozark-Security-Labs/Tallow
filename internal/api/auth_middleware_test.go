@@ -168,6 +168,43 @@ func TestLocalLoginCreatesAndLogoutRevokesSession(t *testing.T) {
 	}
 }
 
+func TestCurrentUserAndAdminRoutesRequireAuthAndRBAC(t *testing.T) {
+	password := "test-password"
+	provider := local.NewProvider(local.Config{Enabled: true, BootstrapAdminEmail: "admin@example.com", BootstrapAdminPassword: password}, nil)
+	manager, err := auth.NewManager(provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := New(config.Default(), slog.Default(), nil)
+	s.Auth = manager
+	s.SessionManager = auth.NewSessionManager(auth.NewMemorySessionStore(), auth.SessionOptions{SecureCookies: true})
+
+	unauth := httptest.NewRecorder()
+	s.Handler.ServeHTTP(unauth, httptest.NewRequest("GET", "/v1/auth/me", nil))
+	if unauth.Code != http.StatusUnauthorized {
+		t.Fatalf("expected unauthorized, got %d", unauth.Code)
+	}
+
+	login := httptest.NewRecorder()
+	s.Handler.ServeHTTP(login, httptest.NewRequest("POST", "/v1/auth/local/login", strings.NewReader(`{"email":"admin@example.com","password":"`+password+`"}`)))
+	cookie := login.Result().Cookies()[0]
+	meReq := httptest.NewRequest("GET", "/v1/auth/me", nil)
+	meReq.AddCookie(cookie)
+	me := httptest.NewRecorder()
+	s.Handler.ServeHTTP(me, meReq)
+	if me.Code != http.StatusOK || !strings.Contains(me.Body.String(), "users:manage") {
+		t.Fatalf("%d %s", me.Code, me.Body.String())
+	}
+
+	adminReq := httptest.NewRequest("GET", "/v1/admin/users", nil)
+	adminReq.AddCookie(cookie)
+	admin := httptest.NewRecorder()
+	s.Handler.ServeHTTP(admin, adminReq)
+	if admin.Code != http.StatusOK {
+		t.Fatalf("%d %s", admin.Code, admin.Body.String())
+	}
+}
+
 func TestGitHubOAuthHandlers(t *testing.T) {
 	provider := githubauth.NewProvider(githubauth.Config{Enabled: true, ClientID: "client", ClientSecret: "client-secret-value", CallbackURL: "http://localhost/v1/auth/github/callback", StateKey: []byte("0123456789abcdef0123456789abcdef")}, oauthHandlerClient{}, time.Now)
 	manager, err := auth.NewManager(provider)

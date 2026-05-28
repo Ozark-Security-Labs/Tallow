@@ -7,6 +7,7 @@ import (
 	"github.com/Ozark-Security-Labs/Tallow/internal/auth"
 	"github.com/Ozark-Security-Labs/Tallow/internal/config"
 	"github.com/Ozark-Security-Labs/Tallow/internal/metrics"
+	"github.com/Ozark-Security-Labs/Tallow/internal/rbac"
 	"github.com/Ozark-Security-Labs/Tallow/internal/requestid"
 	"github.com/Ozark-Security-Labs/Tallow/internal/tallowerr"
 	"github.com/go-chi/chi/v5"
@@ -62,7 +63,10 @@ func (s *Server) routes() http.Handler {
 	r.Post("/v1/auth/local/login", s.localLogin)
 	r.Get("/v1/auth/github/login", s.githubLogin)
 	r.Get("/v1/auth/github/callback", s.githubCallback)
+	r.Get("/v1/auth/me", chain(s.requireAuth, s.currentUser))
 	r.Post("/v1/auth/logout", s.logout)
+	r.Get("/v1/admin/users", chain(s.requireAuth, permissionMiddleware(rbac.ManageUsers), s.listUsers))
+	r.Patch("/v1/admin/users/{user_id}/roles", chain(s.requireAuth, permissionMiddleware(rbac.ManageUsers), s.updateUserRoles))
 	r.Get("/v1/findings", s.listFindings)
 	r.Get("/v1/findings/{id}", s.getFinding)
 	r.Get("/v1/graph/affected-direct-dependencies", s.listAffectedDirectDependencies)
@@ -95,6 +99,30 @@ func (s *Server) ready(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, 200, map[string]string{"status": "ready"})
 }
+
+type middleware func(http.Handler) http.Handler
+
+func chain(middlewaresAndHandler ...any) http.HandlerFunc {
+	var handler http.Handler
+	for i := len(middlewaresAndHandler) - 1; i >= 0; i-- {
+		switch v := middlewaresAndHandler[i].(type) {
+		case http.HandlerFunc:
+			handler = v
+		case func(http.ResponseWriter, *http.Request):
+			handler = http.HandlerFunc(v)
+		case middleware:
+			handler = v(handler)
+		case func(http.Handler) http.Handler:
+			handler = v(handler)
+		}
+	}
+	return handler.ServeHTTP
+}
+
+func permissionMiddleware(permission rbac.Permission) middleware {
+	return func(next http.Handler) http.Handler { return requirePermission(permission, next) }
+}
+
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)

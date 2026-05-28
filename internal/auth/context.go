@@ -3,10 +3,10 @@ package auth
 import "context"
 
 type Principal struct {
-	UserID   string
-	Email    string
-	Provider string
-	Roles    []Role
+	UserID   string `json:"user_id"`
+	Email    string `json:"email"`
+	Provider string `json:"provider"`
+	Roles    []Role `json:"roles"`
 }
 
 type contextKey struct{}

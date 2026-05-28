@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Ozark-Security-Labs/Tallow/internal/auth"
+	"github.com/Ozark-Security-Labs/Tallow/internal/rbac"
 	"github.com/Ozark-Security-Labs/Tallow/internal/tallowerr"
 	"github.com/go-chi/chi/v5"
 )
@@ -26,6 +27,15 @@ type identityResponse struct {
 type sessionResponse struct {
 	User      *auth.Identity `json:"user"`
 	ExpiresAt string         `json:"expires_at"`
+}
+
+type currentUserResponse struct {
+	User         auth.Principal `json:"user"`
+	Capabilities []string       `json:"capabilities"`
+}
+
+type usersResponse struct {
+	Items []auth.Principal `json:"items"`
 }
 
 func (s *Server) listAuthProviders(w http.ResponseWriter, r *http.Request) {
@@ -105,6 +115,28 @@ func (s *Server) githubCallback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func (s *Server) currentUser(w http.ResponseWriter, r *http.Request) {
+	principal, ok := auth.PrincipalFromContext(r.Context())
+	if !ok {
+		writeError(w, r, tallowerr.New(tallowerr.CodeAuth, "authentication required"))
+		return
+	}
+	permissions := rbac.Capabilities(principal.Roles)
+	capabilities := make([]string, 0, len(permissions))
+	for _, permission := range permissions {
+		capabilities = append(capabilities, string(permission))
+	}
+	writeJSON(w, http.StatusOK, currentUserResponse{User: principal, Capabilities: capabilities})
+}
+
+func (s *Server) listUsers(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, usersResponse{Items: []auth.Principal{}})
+}
+
+func (s *Server) updateUserRoles(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]string{"status": "roles_updated"})
 }
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
