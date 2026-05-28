@@ -69,3 +69,6 @@ communitySignals:
     allowed_signal_classes: []
     anonymization_level: coarse
 ```
+
+
+Helm values mirror these environment settings under `deploy/helm/tallow/values.yaml`. The Helm chart is experimental and keeps LLM and community sharing disabled by default.

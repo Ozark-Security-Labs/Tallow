@@ -1,0 +1,46 @@
+replicaCount: 1
+image:
+  repository: ghcr.io/ozark-security-labs/tallow
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+service:
+  type: ClusterIP
+  port: 8844
+postgres:
+  dsn: ""
+  existingSecret: tallow-postgres
+  secretKey: dsn
+nats:
+  url: nats://tallow-nats:4222
+storage:
+  root: /var/lib/tallow/storage
+  size: 10Gi
+  storageClassName: ""
+llm:
+  enabled: false
+  provider:
+    type: ""
+    name: ""
+    model: ""
+    endpoint: ""
+    existingSecret: ""
+    apiKeyKey: api-key
+communitySignals:
+  sharing:
+    enabled: false
+    organizationID: ""
+    allowedSignalClasses: []
+    anonymizationLevel: coarse
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  allowPrivilegeEscalation: false
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+networkPolicy:
+  enabled: true
