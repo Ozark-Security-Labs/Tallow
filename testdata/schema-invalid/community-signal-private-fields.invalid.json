@@ -1,0 +1,8 @@
+{
+  "schema_version": "community-signals/v1",
+  "sharing_enabled": true,
+  "generated_at": "2026-05-28T14:33:09Z",
+  "producer": {"instance_id_hash": "sha256:x", "tallow_version": "test"},
+  "signals": [],
+  "privacy": {"raw_artifacts_included": true, "private_repo_names_included": false, "users_included": false, "secrets_included": false, "redaction_policy_version": "redaction-v1"}
+}

@@ -57,3 +57,8 @@ communitySignals:
   sharing:
     enabled: false
 ```
+
+
+## Payload schema
+
+Community signal payloads validate against `schemas/community-signal-payload.schema.json`. Payloads include ecosystem, hashed package name, rule ID, signal type, evidence digest, and coarse hourly timestamps. Privacy flags for raw artifacts, private repository names, users, and secrets must remain `false`; validators reject private fields or unhashed private package names. Golden enabled and disabled fixtures live under `testdata/community-signals/`.

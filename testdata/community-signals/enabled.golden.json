@@ -1,0 +1,29 @@
+{
+  "schema_version": "community-signals/v1",
+  "sharing_enabled": true,
+  "generated_at": "2026-05-28T14:33:09Z",
+  "producer": {
+    "instance_id_hash": "sha256:f48d9ed4e16079907d8dbe6c88fe7da89f1f30f44d74c79ed69c749049f5e035",
+    "organization_id_hash": "sha256:19be7ffc2c36731288e6c15d9bdb53a83321675f9c5a068552a2bfd20d5d6dc1",
+    "tallow_version": "test"
+  },
+  "signals": [
+    {
+      "signal_id": "S-1",
+      "ecosystem": "npm",
+      "package_name_hash": "sha256:95dfaec1ddc9309a82686febc3e56eeff4d17579ba6ed679651636b22db13a56",
+      "rule_id": "rule-1",
+      "signal_type": "yanked",
+      "observed_at_coarse": "2026-05-28T14:00:00Z",
+      "evidence_digest": "sha256:evidence",
+      "confidence": "medium"
+    }
+  ],
+  "privacy": {
+    "raw_artifacts_included": false,
+    "private_repo_names_included": false,
+    "users_included": false,
+    "secrets_included": false,
+    "redaction_policy_version": "redaction-v1"
+  }
+}
