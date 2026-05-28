@@ -1,0 +1,1 @@
+export function ImpactPaths() { return <section><h2>Impact paths</h2><p>Shows affected dependency paths when graph data exists. Affected packages are review targets, not automatically classified as compromised.</p><ol><li>app → left-pad@1.3.0</li></ol></section>; }

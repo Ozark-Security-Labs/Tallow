@@ -1,2 +1,3 @@
-import { EmptyState } from '../components/EmptyState';
-export function Findings() { return <section><h2>Findings</h2><EmptyState message="Signals requiring review will appear here." /></section>; }
+import { FindingDetail } from './findings/FindingDetail';
+import { FindingsList } from './findings/FindingsList';
+export function Findings() { return window.location.pathname.includes('/findings/') ? <FindingDetail /> : <FindingsList />; }
