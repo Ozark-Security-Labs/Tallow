@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Ozark-Security-Labs/Tallow/internal/auth"
 	"github.com/Ozark-Security-Labs/Tallow/internal/config"
 )
 
@@ -61,7 +62,7 @@ func (f fakeFindingStore) ListFindings(_ context.Context, filters FindingFilters
 }
 
 func findingSrv(items []FindingRecord) *Server {
-	return NewWithFindings(config.Default(), slog.Default(), nil, fakeFindingStore{items: items})
+	return authorizeTestServer(NewWithFindings(config.Default(), slog.Default(), nil, fakeFindingStore{items: items}), auth.RoleViewer)
 }
 
 func sampleFinding(id string, createdAt time.Time) FindingRecord {

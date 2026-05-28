@@ -31,6 +31,14 @@ func (f fakeSessionAuthenticator) AuthenticateRequest(*http.Request) (auth.Princ
 	return f.principal, nil
 }
 
+func authorizeTestServer(s *Server, roles ...auth.Role) *Server {
+	if len(roles) == 0 {
+		roles = []auth.Role{auth.RoleAdmin}
+	}
+	s.SessionAuth = fakeSessionAuthenticator{principal: auth.Principal{UserID: "test-user", Email: "test@example.com", Provider: "test", Roles: roles}}
+	return s
+}
+
 func TestRequireAuthAddsPrincipal(t *testing.T) {
 	s := New(config.Default(), slog.Default(), nil)
 	s.SessionAuth = fakeSessionAuthenticator{principal: auth.Principal{UserID: "user-1", Roles: []auth.Role{auth.RoleViewer}}}
@@ -80,6 +88,28 @@ func TestRequirePermissionAllowsAndDenies(t *testing.T) {
 	handler.ServeHTTP(viewerW, viewerReq)
 	if viewerW.Code != http.StatusForbidden || !strings.Contains(viewerW.Body.String(), "permission_denied") {
 		t.Fatalf("viewer should be denied: %d %s", viewerW.Code, viewerW.Body.String())
+	}
+}
+
+func TestSensitiveRoutesRequireAuth(t *testing.T) {
+	s := New(config.Default(), slog.Default(), nil)
+	for _, path := range []string{"/v1/findings", "/v1/findings/fin-1", "/v1/graph/affected-direct-dependencies", "/v1/source-correlations", "/v1/package-versions/pv1/statuses", "/v1/packages", "/v1/analyzer-runs", "/v1/settings"} {
+		w := httptest.NewRecorder()
+		s.Handler.ServeHTTP(w, httptest.NewRequest("GET", path, nil))
+		if w.Code != http.StatusUnauthorized {
+			t.Fatalf("%s: expected 401, got %d %s", path, w.Code, w.Body.String())
+		}
+	}
+}
+
+func TestCSRFGuardRejectsCrossOriginUnsafeMethods(t *testing.T) {
+	handler := csrfGuard(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))
+	req := httptest.NewRequest("POST", "http://tallow.local/v1/settings", nil)
+	req.Header.Set("Origin", "https://evil.example")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusForbidden || !strings.Contains(w.Body.String(), "permission_denied") {
+		t.Fatalf("expected csrf denial, got %d %s", w.Code, w.Body.String())
 	}
 }
 
@@ -143,7 +173,7 @@ func TestLocalLoginCreatesAndLogoutRevokesSession(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	s.Handler.ServeHTTP(w, httptest.NewRequest("POST", "/v1/auth/local/login", strings.NewReader(`{"email":"admin@example.com","password":"`+password+`"}`)))
-	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "expires_at") {
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "settings:mutate") {
 		t.Fatalf("%d %s", w.Code, w.Body.String())
 	}
 	cookies := w.Result().Cookies()

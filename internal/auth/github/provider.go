@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"sort"
 	"strings"
@@ -113,7 +114,7 @@ func (p *Provider) CompleteOAuth(ctx context.Context, query url.Values) (*auth.I
 	if !allowedByHooks(p.config.AllowedOrgs, p.config.AllowedTeams, teams) {
 		return nil, auth.ErrIdentityNotAllowed
 	}
-	return &auth.Identity{Provider: "github", ProviderSubject: strings.TrimSpace(user.Login), Email: email, Username: user.Login, DisplayName: user.Name, Roles: []auth.Role{auth.RoleViewer}}, nil
+	return &auth.Identity{Provider: "github", ProviderSubject: fmt.Sprintf("%d", user.ID), Email: email, Username: user.Login, DisplayName: user.Name, Roles: []auth.Role{auth.RoleViewer}}, nil
 }
 
 func allowedByHooks(orgs, teams []string, memberships []Team) bool {

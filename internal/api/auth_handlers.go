@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/Ozark-Security-Labs/Tallow/internal/auth"
 	"github.com/Ozark-Security-Labs/Tallow/internal/rbac"
@@ -24,18 +23,22 @@ type identityResponse struct {
 	Identity *auth.Identity `json:"identity"`
 }
 
-type sessionResponse struct {
-	User      *auth.Identity `json:"user"`
-	ExpiresAt string         `json:"expires_at"`
+type apiUser struct {
+	ID          string      `json:"id"`
+	Email       string      `json:"email"`
+	DisplayName string      `json:"display_name,omitempty"`
+	Roles       []auth.Role `json:"roles"`
+	Status      string      `json:"status"`
 }
 
 type currentUserResponse struct {
-	User         auth.Principal `json:"user"`
-	Capabilities []string       `json:"capabilities"`
+	User         apiUser  `json:"user"`
+	Provider     string   `json:"provider,omitempty"`
+	Capabilities []string `json:"capabilities"`
 }
 
 type usersResponse struct {
-	Items []auth.Principal `json:"items"`
+	Items []apiUser `json:"items"`
 }
 
 func (s *Server) listAuthProviders(w http.ResponseWriter, r *http.Request) {
@@ -73,12 +76,11 @@ func (s *Server) localLogin(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, identityResponse{Identity: identity})
 		return
 	}
-	session, err := s.SessionManager.CreateHTTP(w, r, identity)
-	if err != nil {
+	if _, err := s.SessionManager.CreateHTTP(w, r, identity); err != nil {
 		writeError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, sessionResponse{User: identity, ExpiresAt: session.ExpiresAt.Format(time.RFC3339)})
+	writeJSON(w, http.StatusOK, currentUserResponse{User: userFromIdentity(identity), Provider: identity.Provider, Capabilities: capabilityStrings(identity.Roles)})
 }
 
 func (s *Server) githubLogin(w http.ResponseWriter, r *http.Request) {
@@ -123,20 +125,32 @@ func (s *Server) currentUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, tallowerr.New(tallowerr.CodeAuth, "authentication required"))
 		return
 	}
-	permissions := rbac.Capabilities(principal.Roles)
-	capabilities := make([]string, 0, len(permissions))
-	for _, permission := range permissions {
-		capabilities = append(capabilities, string(permission))
-	}
-	writeJSON(w, http.StatusOK, currentUserResponse{User: principal, Capabilities: capabilities})
+	writeJSON(w, http.StatusOK, currentUserResponse{User: userFromPrincipal(principal), Provider: principal.Provider, Capabilities: capabilityStrings(principal.Roles)})
 }
 
 func (s *Server) listUsers(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, usersResponse{Items: []auth.Principal{}})
+	writeJSON(w, http.StatusOK, usersResponse{Items: []apiUser{}})
 }
 
 func (s *Server) updateUserRoles(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "roles_updated"})
+}
+
+func capabilityStrings(roles []auth.Role) []string {
+	permissions := rbac.Capabilities(roles)
+	capabilities := make([]string, 0, len(permissions))
+	for _, permission := range permissions {
+		capabilities = append(capabilities, string(permission))
+	}
+	return capabilities
+}
+
+func userFromIdentity(identity *auth.Identity) apiUser {
+	return apiUser{ID: identity.ProviderSubject, Email: identity.Email, DisplayName: identity.DisplayName, Roles: identity.Roles, Status: "active"}
+}
+
+func userFromPrincipal(principal auth.Principal) apiUser {
+	return apiUser{ID: principal.UserID, Email: principal.Email, Roles: principal.Roles, Status: "active"}
 }
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {

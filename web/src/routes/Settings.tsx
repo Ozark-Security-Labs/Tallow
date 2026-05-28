@@ -1,1 +1,3 @@
-export function Settings() { return <section><h2>Settings</h2><p>Non-secret auth and notification route metadata.</p></section>; }
+import { SettingsHome } from './settings/SettingsHome';
+import { NotificationRoutes } from './settings/NotificationRoutes';
+export function Settings() { return <><SettingsHome /><NotificationRoutes /></>; }

@@ -71,7 +71,7 @@ func TestGitHubOAuthCallbackMapsUser(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if identity.Provider != "github" || identity.ProviderSubject != "octo" || identity.Email != "octo@example.com" || identity.Roles[0] != auth.RoleViewer {
+	if identity.Provider != "github" || identity.ProviderSubject != "42" || identity.Username != "octo" || identity.Email != "octo@example.com" || identity.Roles[0] != auth.RoleViewer {
 		t.Fatalf("unexpected identity: %#v", identity)
 	}
 }

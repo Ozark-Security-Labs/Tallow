@@ -20,7 +20,7 @@ export interface ErrorResponse { error: { code: string; message: string; request
 export interface PageInfo { limit: number; offset: number; total: number; next_offset?: number }
 export interface User { id: string; email: string; display_name?: string; roles: Role[]; status: string }
 export interface CurrentUser { user: User; provider?: string; capabilities: string[] }
-export interface AuthProvider { name: string; type: 'local' | 'oauth'; enabled: boolean; login_url?: string }
+export interface AuthProvider { name: string; provider?: string; type: 'local' | 'oauth' | 'password'; label?: string; enabled: boolean; login_url?: string }
 export interface Finding { id: string; rule_id: string; package_name?: string; version?: string; severity?: Severity; severity_hint?: string; confidence: Confidence | string; status: FindingStatus | string; summary: string; evidence_refs?: EvidenceRef[]; evidence?: EvidenceRef[]; evidence_count?: number; updated_at?: string }
 export interface EvidenceRef { type: string; ref: string; path?: string; line?: number; excerpt?: string; excerpt_safe?: boolean; hash?: string }
 export interface Alert { id: string; finding_id?: string; status: AlertStatus; severity: Severity; title: string; summary?: string; package_name?: string; version?: string; evidence_refs?: EvidenceRef[] }

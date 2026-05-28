@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Ozark-Security-Labs/Tallow/internal/auth"
 	"github.com/Ozark-Security-Labs/Tallow/internal/config"
 )
 
@@ -35,7 +36,7 @@ func (f *fakeCorrelationStore) ListCorrelationsByArtifact(_ context.Context, id 
 }
 
 func TestListCorrelationsExposesEvidence(t *testing.T) {
-	s := NewWithFindings(config.Default(), slog.Default(), nil, EmptyFindingStore{})
+	s := authorizeTestServer(NewWithFindings(config.Default(), slog.Default(), nil, EmptyFindingStore{}), auth.RoleViewer)
 	s.Correlations = &fakeCorrelationStore{items: []CorrelationRecord{{Package: "pkg", Version: "1.0.0", SourceURL: "https://github.com/o/r", Confidence: "repository_metadata", Evidence: []map[string]string{{"source": "repository", "url": "https://github.com/o/r"}}}}}
 	s.Handler = s.routes()
 	w := httptest.NewRecorder()
@@ -47,7 +48,7 @@ func TestListCorrelationsExposesEvidence(t *testing.T) {
 
 func TestCorrelationAliasRoutesFilterByPathID(t *testing.T) {
 	store := &fakeCorrelationStore{items: []CorrelationRecord{{Package: "pkg", Version: "1.0.0", SourceURL: "https://github.com/o/r", Confidence: "repository_metadata", Evidence: []map[string]string{{"source": "repository"}}}}}
-	s := NewWithFindings(config.Default(), slog.Default(), nil, EmptyFindingStore{})
+	s := authorizeTestServer(NewWithFindings(config.Default(), slog.Default(), nil, EmptyFindingStore{}), auth.RoleViewer)
 	s.Correlations = store
 	s.Handler = s.routes()
 	w := httptest.NewRecorder()
