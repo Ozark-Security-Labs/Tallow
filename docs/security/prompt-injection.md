@@ -64,3 +64,8 @@ Expected result: summary may mention suspicious text as evidence, but policy/sev
 Prompt templates are versioned with identifiers such as `llm-narrative-v1` and validated against `schemas/llm-prompt-template.schema.json`. Templates may only use declared allowlisted variables: `subject_json`, `findings_json`, `evidence_json`, and `constraints_json`. Unknown placeholders fail validation and CI.
 
 The system prompt must mark package contents and maintainer-controlled text as hostile untrusted evidence before any evidence block is rendered.
+
+
+## Redaction pipeline
+
+The LLM redaction pipeline runs before prompt rendering and before community export. It redacts token-like values, email addresses, URL credentials, common absolute local paths, and oversized snippets. Redaction returns deterministic audit counts so stored narratives and exports can report what was removed without retaining the original secret. Builders refuse unredacted raw artifact content.

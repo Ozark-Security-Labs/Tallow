@@ -47,3 +47,8 @@ Audit metadata recorded with a narrative includes provider type, provider name, 
 ## Prompt templates
 
 Tallow prompt templates are versioned contracts. The default template is `configs/llm/prompts/narrative-v1.yaml` and validates against `schemas/llm-prompt-template.schema.json`. Templates declare their variables and output schema reference. Unknown placeholders or undeclared variables fail validation so raw artifact content cannot be smuggled into prompts outside the prepared evidence bundle.
+
+
+## Redaction pipeline
+
+The LLM redaction pipeline runs before prompt rendering and before community export. It redacts token-like values, email addresses, URL credentials, common absolute local paths, and oversized snippets. Redaction returns deterministic audit counts so stored narratives and exports can report what was removed without retaining the original secret. Builders refuse unredacted raw artifact content.
