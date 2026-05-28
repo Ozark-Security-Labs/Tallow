@@ -58,3 +58,8 @@ Every adapter requires:
 - Rate limit/backoff behavior tests.
 - Malformed response tests.
 - Idempotent observation upsert tests.
+
+
+## Milestone 6 Go interfaces
+
+Registry expansion uses `internal/adapters/registry.Adapter`, which covers package identity, metadata, artifacts, and registry hash claims. npm and PyPI wrappers conform while preserving existing registry client behavior. SCM expansion uses `internal/adapters/scm.Adapter`, which covers repository resolution, source evidence, and revision metadata. GitHub conforms through the existing SCM adapter and normalization code. Fake adapters and JSON fixtures document contract expectations for future Go, Rust, GitLab, Forgejo, and generic Git implementations.
